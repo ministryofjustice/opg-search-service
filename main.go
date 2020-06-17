@@ -6,6 +6,7 @@ import (
 	"github.com/ministryofjustice/opg-go-healthcheck/healthcheck"
 	"log"
 	"net/http"
+	"opg-search-service/handlers"
 	"os"
 	"os/signal"
 	"time"
@@ -26,15 +27,15 @@ func main() {
 	})
 
 	// Create a sub-router for protected handlers
-	//getRouter := sm.Methods(http.MethodGet).Subrouter()
+	postRouter := sm.Methods(http.MethodPost).Subrouter()
 	//getRouter.Use(middleware.JwtVerify)
 
 	// Register protected handlers
-	//zh, err := handlers.NewZipHandler(l)
-	//if err != nil {
-	//	l.Fatal(err)
-	//}
-	//getRouter.Handle("/zip/{reference}", zh)
+	iph, err := handlers.NewIndexPersonHandler(l)
+	if err != nil {
+		l.Fatal(err)
+	}
+	postRouter.Handle("/index/person", iph)
 
 	s := &http.Server{
 		Addr:         ":8000",           // configure the bind address
@@ -42,7 +43,7 @@ func main() {
 		ErrorLog:     l,                 // Set the logger for the server
 		IdleTimeout:  120 * time.Second, // max time fro connections using TCP Keep-Alive
 		ReadTimeout:  1 * time.Second,   // max time to read request from the client
-		WriteTimeout: 15 * time.Minute,  // max time to write response to the client
+		WriteTimeout: 1 * time.Minute,   // max time to write response to the client
 	}
 
 	// start the server
