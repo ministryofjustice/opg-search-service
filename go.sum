@@ -1,0 +1,4 @@
+github.com/gorilla/mux v1.7.4 h1:VuZ8uybHlWmqV03+zRzdwKL4tUnIp1MAQtp1mIFE1bc=
+github.com/gorilla/mux v1.7.4/go.mod h1:DVbg23sWSpFRCP0SfiEN6jmj59UnW/n46BH5rLB71So=
+github.com/ministryofjustice/opg-go-healthcheck v1.1.0 h1:MHKgp78y85hSH7xnciNp3DCu8naeNAtUx5r7s/Q9mzk=
+github.com/ministryofjustice/opg-go-healthcheck v1.1.0/go.mod h1:Xc+DW9mL8o34oBadko+6sdrpu62G1tuKbjedy5vFnX4=
