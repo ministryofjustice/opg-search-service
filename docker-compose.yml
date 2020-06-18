@@ -1,0 +1,19 @@
+---
+version: "3.6"
+
+services:
+  search_service:
+    image: search-service
+    build: .
+    ports:
+      - 8000:8000
+    env_file:
+      - docker-compose.env
+  localstack:
+    image: localstack/localstack:0.10.5
+    environment:
+      DEFAULT_REGION: eu-west-1
+      HOSTNAME_EXTERNAL: localstack
+      SERVICES: es
+    ports:
+      - 4578:4578
