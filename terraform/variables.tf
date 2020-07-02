@@ -23,6 +23,10 @@ variable "execution_role_arn" {
   description = "ARN of the ECS Execution Role"
 }
 
+variable "ingress_source_security_group_id" {
+  description = "Source security group ID for Ingress traffic"
+}
+
 variable "task_role_assume_policy" {
   description = "Assume Role Policy Object"
 }

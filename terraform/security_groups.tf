@@ -29,6 +29,6 @@ resource "aws_security_group_rule" "search_service_ecs_api" {
   protocol                 = "tcp"
   from_port                = 80
   to_port                  = 80
-  source_security_group_id = var.api_security_group
+  source_security_group_id = var.ingress_source_security_group_id
   security_group_id        = aws_security_group.search_service.id
 }
