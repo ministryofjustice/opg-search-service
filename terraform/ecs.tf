@@ -63,10 +63,20 @@ locals {
     essential = true,
     image     = "${var.ecr_repository_url}:${var.search_service_tag`}",
     portMappings = [{
-      containerPort = 8000,
-      hostPort      = 8000,
+      containerPort = 80,
+      hostPort      = 80,
       protocol      = "tcp"
     }],
+    healthCheck = {
+      command = [
+        "CMD-SHELL",
+        "curl -f http://localhost/services/search-service/health-check || exit 1"
+      ],
+      startPeriod = 30,
+      interval    = 15,
+      timeout     = 10,
+      retries     = 3
+    },
     logConfiguration = {
       logDriver = "awslogs",
       options = {
@@ -75,7 +85,12 @@ locals {
         awslogs-stream-prefix = "search-service"
       }
     },
-    environment = [],
+    environment = [
+      {
+        name  = "PATH_PREFIX",
+        value = "/services/search-service"
+      },
+    ],
     secrets     = [],
     mountPoints = [],
     volumesFrom = [],
