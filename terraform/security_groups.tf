@@ -15,7 +15,6 @@ resource "aws_security_group" "search_service" {
 }
 
 resource "aws_security_group_rule" "search_service_ecs_egress" {
-  count             = local.enabled
   type              = "egress"
   protocol          = "-1"
   from_port         = 0
@@ -26,7 +25,6 @@ resource "aws_security_group_rule" "search_service_ecs_egress" {
 }
 
 resource "aws_security_group_rule" "search_service_ecs_api" {
-  count                    = local.enabled
   type                     = "ingress"
   protocol                 = "tcp"
   from_port                = 80
