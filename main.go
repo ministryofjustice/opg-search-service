@@ -6,7 +6,7 @@ import (
 	"github.com/ministryofjustice/opg-go-healthcheck/healthcheck"
 	"log"
 	"net/http"
-	"opg-search-service/handlers"
+	"opg-search-service/person"
 	"os"
 	"os/signal"
 	"time"
@@ -21,7 +21,14 @@ func main() {
 	// Create new serveMux
 	sm := mux.NewRouter().PathPrefix(os.Getenv("PATH_PREFIX")).Subrouter()
 
+	// swagger:operation GET /health-check check health-check
 	// Register the health check handler
+	// ---
+	// responses:
+	//   '200':
+	//     description: Search service is up and running
+	//   '404':
+	//     description: Not found
 	sm.HandleFunc("/health-check", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
@@ -31,11 +38,11 @@ func main() {
 	//getRouter.Use(middleware.JwtVerify)
 
 	// Register protected handlers
-	iph, err := handlers.NewIndexPersonHandler(l)
+	iph, err := person.NewIndexHandler(l)
 	if err != nil {
 		l.Fatal(err)
 	}
-	postRouter.Handle("/index/person", iph)
+	postRouter.Handle("/persons", iph)
 
 	s := &http.Server{
 		Addr:         ":8000",           // configure the bind address

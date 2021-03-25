@@ -1,37 +1,34 @@
-package handlers
+package person
 
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 	"opg-search-service/elasticsearch"
-	"opg-search-service/person"
-	"opg-search-service/request"
 )
 
-type IndexPersonHandler struct {
+type IndexHandler struct {
 	logger *log.Logger
 	es     *elasticsearch.Client
 }
 
-func NewIndexPersonHandler(logger *log.Logger) (*IndexPersonHandler, error) {
+func NewIndexHandler(logger *log.Logger) (*IndexHandler, error) {
 	client, err := elasticsearch.NewClient(logger)
 	if err != nil {
 		logger.Println(err)
 		return nil, errors.New("unable to create a new Elasticsearch client")
 	}
 
-	return &IndexPersonHandler{
+	return &IndexHandler{
 		logger,
 		client,
 	}, nil
 }
 
-func (i IndexPersonHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	// get person IDs from payload
-	var ir request.IndexRequest
+func (i IndexHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
+	// get persons from payload
+	var ir IndexRequest
 
 	err := json.NewDecoder(r.Body).Decode(&ir)
 	if err != nil {
@@ -42,20 +39,15 @@ func (i IndexPersonHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	fail := false
 
-	for _, id := range ir.Ids {
-		p := person.Person{
-			FirstName: fmt.Sprintf("Test %d", id),
-			LastName:  "Test",
-		}
-
+	for _, p := range ir.Persons {
 		// index person in elasticsearch
 		err = i.es.Index(p)
 		if err != nil {
 			i.logger.Println(err)
-			i.logger.Println("unable to index person", id)
+			i.logger.Println("unable to index person", p.Id)
 			fail = true
 		} else {
-			i.logger.Println("person indexed successfully", id)
+			i.logger.Println("person indexed successfully", p.Id)
 		}
 	}
 
@@ -64,4 +56,6 @@ func (i IndexPersonHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		i.logger.Println(errString)
 		http.Error(rw, errString, http.StatusInternalServerError)
 	}
+
+	rw.WriteHeader(http.StatusAccepted)
 }
