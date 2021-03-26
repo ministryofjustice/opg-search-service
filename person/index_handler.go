@@ -6,6 +6,8 @@ import (
 	"log"
 	"net/http"
 	"opg-search-service/elasticsearch"
+	"opg-search-service/response"
+	"time"
 )
 
 type IndexHandler struct {
@@ -27,35 +29,37 @@ func NewIndexHandler(logger *log.Logger) (*IndexHandler, error) {
 }
 
 func (i IndexHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	// get persons from payload
-	var ir IndexRequest
+	start := time.Now()
 
-	err := json.NewDecoder(r.Body).Decode(&ir)
+	// get persons from payload
+	var req IndexRequest
+	resp := new(response.IndexResponse)
+
+	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		i.logger.Println("unable to decode JSON request", r.Body)
-		http.Error(rw, err.Error(), http.StatusBadRequest)
+		i.logger.Println(err.Error())
+		http.Error(rw, "Unable to decode JSON request", http.StatusBadRequest)
 		return
 	}
 
-	fail := false
-
-	for _, p := range ir.Persons {
+	for _, p := range req.Persons {
 		// index person in elasticsearch
-		err = i.es.Index(p)
-		if err != nil {
-			i.logger.Println(err)
-			i.logger.Println("unable to index person", p.Id)
-			fail = true
-		} else {
-			i.logger.Println("person indexed successfully", p.Id)
-		}
+		resp.Results = append(resp.Results, *i.es.Index(p))
 	}
 
-	if fail {
-		errString := "one or more of the indexing requests has failed"
-		i.logger.Println(errString)
-		http.Error(rw, errString, http.StatusInternalServerError)
+	jsonResp, err := json.Marshal(resp)
+	if err != nil {
+		i.logger.Println(err.Error())
+		http.Error(rw, "Unable to encode response object to JSON", http.StatusBadRequest)
+		return
 	}
 
 	rw.WriteHeader(http.StatusAccepted)
+
+	_, err = rw.Write(jsonResp)
+	if err != nil {
+		i.logger.Println(err.Error())
+	}
+
+	i.logger.Println("Request took: ", time.Since(start))
 }

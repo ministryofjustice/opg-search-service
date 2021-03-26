@@ -6,6 +6,10 @@ type Person struct {
 	LastName  string
 }
 
+func (p Person) GetId() int {
+	return p.Id
+}
+
 func (p Person) GetIndexName() string {
 	return "person"
 }
