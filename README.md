@@ -22,6 +22,8 @@ By default the local URL is http://localhost:8000/services/search-service, where
 
 Run `make test` to execute the test suites and output code coverage for each package.
 
+Run `make gosec` to execute the [Golang Security Checker](https://github.com/securego/gosec)
+
 #### End-to-end tests
 
 End-to-end tests are executed as part of the `make test` command.
