@@ -1,7 +1,6 @@
 package elasticsearch
 
 import (
-	"errors"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 	"io/ioutil"
@@ -17,18 +16,21 @@ type Client struct {
 }
 
 type Indexable interface {
-	GetIndexName() string
-	GetJson() string
+	Id() int
+	IndexName() string
+	Json() string
 }
 
 func NewClient(logger *log.Logger) (*Client, error) {
 	return &Client{logger: logger}, nil
 }
 
-func (c Client) Index(i Indexable) error {
+func (c Client) Index(i Indexable) *IndexResult {
+	c.logger.Printf("Indexing %T ID %d", i, i.Id())
+
 	// Basic information for the Amazon Elasticsearch Service domain
 	domain := os.Getenv("AWS_ELASTICSEARCH_ENDPOINT") // e.g. https://my-domain.region.es.amazonaws.com
-	endpoint := domain + "/" + i.GetIndexName() + "/" + "_doc"
+	endpoint := domain + "/" + i.IndexName() + "/" + "_doc"
 
 	var region string
 	var ok bool
@@ -37,7 +39,7 @@ func (c Client) Index(i Indexable) error {
 	}
 	service := "es"
 
-	body := strings.NewReader(i.GetJson())
+	body := strings.NewReader(i.Json())
 
 	// Get credentials from environment variables and create the AWS Signature Version 4 signer
 	cred := credentials.NewEnvCredentials()
@@ -46,10 +48,15 @@ func (c Client) Index(i Indexable) error {
 	// An HTTP client for sending the request
 	client := &http.Client{}
 
+	iRes := IndexResult{Id: i.Id()}
+
 	// Form the HTTP request
 	req, err := http.NewRequest(http.MethodPost, endpoint, body)
 	if err != nil {
-		return err
+		c.logger.Println(err.Error())
+		iRes.StatusCode = http.StatusInternalServerError
+		iRes.Message = "Unable to create index request"
+		return &iRes
 	}
 
 	// You can probably infer Content-Type programmatically, but here, we just say that it's JSON
@@ -60,14 +67,24 @@ func (c Client) Index(i Indexable) error {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return err
+		c.logger.Println(err.Error())
+		iRes.StatusCode = http.StatusInternalServerError
+		iRes.Message = "Unable to send index request"
+		return &iRes
 	}
 
-	if resp.StatusCode != 200 && resp.StatusCode != 201 {
+	iRes.StatusCode = resp.StatusCode
+
+	switch iRes.StatusCode {
+	case http.StatusOK:
+		iRes.Message = "Index updated"
+	case http.StatusCreated:
+		iRes.Message = "Index created"
+	default:
 		bodyBytes, _ := ioutil.ReadAll(resp.Body)
-		return errors.New(string(bodyBytes))
+		iRes.Message = string(bodyBytes)
 	}
 
 	c.logger.Println(resp.Status + "\n")
-	return nil
+	return &iRes
 }

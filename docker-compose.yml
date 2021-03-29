@@ -10,16 +10,13 @@ services:
     env_file:
       - docker-compose.env
   localstack:
-    image: localstack/localstack:0.12.7
+    image: localstack/localstack-full:0.12.8
     environment:
       DEFAULT_REGION: eu-west-1
       HOSTNAME_EXTERNAL: localstack
       SERVICES: es
     volumes:
       - "./scripts/localstack:/docker-entrypoint-initaws.d"
-    ports:
-      - 4566:4566
-      - 4571:4571
   swagger-ui:
     image: swaggerapi/swagger-ui
     environment:
@@ -37,3 +34,6 @@ services:
       - ./:/go/src
     working_dir: /go/src
     entrypoint: ["swagger", "generate", "spec", "-o", "/go/src/swagger.yml", "--scan-models"]
+  wait-for-it:
+    image: wait-for-it
+    build: ./wait-for-it
