@@ -5,7 +5,7 @@ Development repository: Managed by opg-org-infra &amp; Terraform
 
 ### Required Tools
 
-- Go 1.14.2
+- Go 1.16
 - Docker with docker-compose
 
 ### Optional Tools

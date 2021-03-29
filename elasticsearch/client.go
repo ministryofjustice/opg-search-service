@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"reflect"
 	"strings"
 	"time"
 )
@@ -17,9 +16,9 @@ type Client struct {
 }
 
 type Indexable interface {
-	GetId() int
-	GetIndexName() string
-	GetJson() string
+	Id() int
+	IndexName() string
+	Json() string
 }
 
 func NewClient(logger *log.Logger) (*Client, error) {
@@ -27,11 +26,11 @@ func NewClient(logger *log.Logger) (*Client, error) {
 }
 
 func (c Client) Index(i Indexable) *IndexResult {
-	c.logger.Printf("Indexing %s ID %d", reflect.TypeOf(i).PkgPath(), i.GetId())
+	c.logger.Printf("Indexing %T ID %d", i, i.Id())
 
 	// Basic information for the Amazon Elasticsearch Service domain
 	domain := os.Getenv("AWS_ELASTICSEARCH_ENDPOINT") // e.g. https://my-domain.region.es.amazonaws.com
-	endpoint := domain + "/" + i.GetIndexName() + "/" + "_doc"
+	endpoint := domain + "/" + i.IndexName() + "/" + "_doc"
 
 	var region string
 	var ok bool
@@ -40,7 +39,7 @@ func (c Client) Index(i Indexable) *IndexResult {
 	}
 	service := "es"
 
-	body := strings.NewReader(i.GetJson())
+	body := strings.NewReader(i.Json())
 
 	// Get credentials from environment variables and create the AWS Signature Version 4 signer
 	cred := credentials.NewEnvCredentials()
@@ -49,7 +48,7 @@ func (c Client) Index(i Indexable) *IndexResult {
 	// An HTTP client for sending the request
 	client := &http.Client{}
 
-	iRes := IndexResult{Id: i.GetId()}
+	iRes := IndexResult{Id: i.Id()}
 
 	// Form the HTTP request
 	req, err := http.NewRequest(http.MethodPost, endpoint, body)

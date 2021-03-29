@@ -1,19 +1,23 @@
 package person
 
 type Person struct {
-	Id        int
+	id        int
 	FirstName string
 	LastName  string
 }
 
-func (p Person) GetId() int {
-	return p.Id
+func (p Person) Id() int {
+	return p.id
 }
 
-func (p Person) GetIndexName() string {
+func (p Person) SetId(id int) {
+	p.id = id
+}
+
+func (p Person) IndexName() string {
 	return "person"
 }
 
-func (p Person) GetJson() string {
+func (p Person) Json() string {
 	return `{"FirstName": "` + p.FirstName + `", "LastName": "` + p.LastName + `"}`
 }

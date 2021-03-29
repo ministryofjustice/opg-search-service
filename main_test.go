@@ -29,10 +29,10 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 
 	// define fixtures
 	suite.testPerson = &person.Person{
-		Id:        3,
 		FirstName: "John",
 		LastName:  "Doe",
 	}
+	suite.testPerson.SetId(3)
 
 	// wait for ES service to stand up
 	time.Sleep(time.Second * 10)
@@ -97,7 +97,7 @@ func (suite *EndToEndTestSuite) TestIndexPerson() {
 	expectedResp := response.IndexResponse{
 		Results: []elasticsearch.IndexResult{
 			{
-				Id:         suite.testPerson.Id,
+				Id:         suite.testPerson.Id(),
 				StatusCode: 201,
 				Message:    "Index created",
 			},
