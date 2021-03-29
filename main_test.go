@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/stretchr/testify/suite"
 	"log"
 	"net"
 	"net/http"
@@ -14,18 +13,23 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/suite"
 )
 
 type EndToEndTestSuite struct {
 	suite.Suite
 	testPerson *person.Person
 	esClient   *elasticsearch.Client
+	authHeader string
 }
 
 func (suite *EndToEndTestSuite) SetupSuite() {
 	logBuf := new(bytes.Buffer)
 	logger := log.New(logBuf, "opg-file-service ", log.LstdFlags)
 	suite.esClient, _ = elasticsearch.NewClient(logger)
+
+	suite.authHeader = "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1ODcwNTIzMTcsImV4cCI6OTk5OTk5OTk5OSwic2Vzc2lvbi1kYXRhIjoiVGVzdC5NY1Rlc3RGYWNlQG1haWwuY29tIn0.8HtN6aTAnE2YFI9rJD8drzqgrXPkyUbwRRJymcPSmHk"
 
 	// define fixtures
 	suite.testPerson = &person.Person{
@@ -78,6 +82,7 @@ func (suite *EndToEndTestSuite) TestIndexPerson() {
 	reqBody := bytes.NewReader(jsonBody)
 	req, _ := http.NewRequest(http.MethodPost, suite.GetUrl("/persons"), reqBody)
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", suite.authHeader)
 
 	resp, err := client.Do(req)
 	if err != nil {

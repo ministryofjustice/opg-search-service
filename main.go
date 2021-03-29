@@ -2,14 +2,16 @@ package main
 
 import (
 	"context"
-	"github.com/gorilla/mux"
-	"github.com/ministryofjustice/opg-go-healthcheck/healthcheck"
 	"log"
 	"net/http"
+	"opg-search-service/middleware"
 	"opg-search-service/person"
 	"os"
 	"os/signal"
 	"time"
+
+	"github.com/gorilla/mux"
+	"github.com/ministryofjustice/opg-go-healthcheck/healthcheck"
 )
 
 func main() {
@@ -35,7 +37,7 @@ func main() {
 
 	// Create a sub-router for protected handlers
 	postRouter := sm.Methods(http.MethodPost).Subrouter()
-	//getRouter.Use(middleware.JwtVerify)
+	postRouter.Use(middleware.JwtVerify)
 
 	// Register protected handlers
 	iph, err := person.NewIndexHandler(l)
