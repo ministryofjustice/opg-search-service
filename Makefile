@@ -1,7 +1,7 @@
 test: ## Run all test suites
-	docker-compose --project-name search-service-test \
-	-f docker-compose.yml -f docker-compose.test.yml \
-	run --rm search_service_test make go-test
+	docker-compose --project-name search-service-test up -d localstack
+	docker-compose --project-name search-service-test run --rm wait-for-it -address=localstack:4571 --timeout=30 -debug
+	docker-compose --project-name search-service-test -f docker-compose.yml -f docker-compose.test.yml run --rm search_service_test make go-test
 	docker-compose --project-name search-service-test down
 
 go-test:
@@ -20,5 +20,5 @@ swagger-up: # Serve swagger API docs on port 8383
 swagger-down:
 	docker-compose --project-name search-service-docs down
 
-docs: # Alias for make swagger-up (Generate API swagger docs)
+docs: # Alias for make swagger-up (Serve API swagger docs)
 	make swagger-up

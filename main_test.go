@@ -34,38 +34,25 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 		LastName:  "Doe",
 	}
 
+	// wait for ES service to stand up
+	time.Sleep(time.Second * 10)
+
 	// start the app
 	go main()
 
-	log.Printf("Waiting up to 30 seconds for the search service and ElasticSearch servers to start")
-	ssUp := false
-	esUp := false
-	retries := 30
+	// wait up to 5 seconds for the app to start
+	retries := 5
 	for i := 1; i <= retries; i++ {
-		if !ssUp {
-			conn, err := net.DialTimeout("tcp", "localhost:8000", time.Second)
-			if err == nil {
-				ssUp = true
-				conn.Close()
-			}
+		conn, err := net.DialTimeout("tcp", "localhost:8000", time.Second)
+		if err != nil {
+			time.Sleep(time.Second)
+			continue
 		}
-		if !esUp {
-			conn, err := net.DialTimeout("tcp", os.Getenv("AWS_ELASTICSEARCH_ENDPOINT"), time.Second)
-			if err == nil {
-				esUp = true
-				conn.Close()
-			}
-		}
-
-		if ssUp && esUp {
-			return
-		}
-
-		log.Printf("Search service: '%t', ElasticSearch: '%t' after %d retries", ssUp, esUp, i)
-		time.Sleep(time.Second)
+		conn.Close()
+		return
 	}
 
-	suite.Fail(fmt.Sprintf("Unable to start search service and ElasticSearch after %d attempts", retries))
+	suite.Fail(fmt.Sprintf("Unable to start search service server after %d attempts", retries))
 }
 
 func (suite *EndToEndTestSuite) GetUrl(path string) string {
