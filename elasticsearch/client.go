@@ -63,7 +63,10 @@ func (c Client) Index(i Indexable) *IndexResult {
 	req.Header.Add("Content-Type", "application/json")
 
 	// Sign the request, send it, and print the response
-	signer.Sign(req, body, service, region, time.Now())
+	_, err = signer.Sign(req, body, service, region, time.Now())
+	if err != nil {
+		c.logger.Println(err.Error())
+	}
 
 	resp, err := client.Do(req)
 	if err != nil {
