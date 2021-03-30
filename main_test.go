@@ -20,7 +20,7 @@ import (
 type EndToEndTestSuite struct {
 	suite.Suite
 	testPerson *person.Person
-	esClient   elasticsearch.ClientInterface
+	esClient   *elasticsearch.Client
 	authHeader string
 }
 
@@ -30,16 +30,14 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 
 	logBuf := new(bytes.Buffer)
 	logger := log.New(logBuf, "opg-file-service ", log.LstdFlags)
-	httpClient := &http.Client{}
-	suite.esClient, _ = elasticsearch.NewClient(httpClient, logger)
+	suite.esClient, _ = elasticsearch.NewClient(&http.Client{}, logger)
 
 	suite.authHeader = "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1ODcwNTIzMTcsImV4cCI6OTk5OTk5OTk5OSwic2Vzc2lvbi1kYXRhIjoiVGVzdC5NY1Rlc3RGYWNlQG1haWwuY29tIn0.8HtN6aTAnE2YFI9rJD8drzqgrXPkyUbwRRJymcPSmHk"
 
 	// define fixtures
-	id := int64(3)
 	suite.testPerson = &person.Person{
 		UID:           "3",
-		Normalizeduid: &id,
+		Normalizeduid: 3,
 		Firstname:     "John",
 		Surname:       "Doe",
 	}
@@ -49,13 +47,6 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 
 	// start the app
 	go main()
-
-	// delete all indices
-	req, _ := http.NewRequest(http.MethodDelete, os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")+"/_all", nil)
-	resp, err := httpClient.Do(req)
-	suite.NotNil(resp)
-	suite.Nil(err)
-	suite.Equal(http.StatusOK, resp.StatusCode)
 
 	// wait up to 5 seconds for the app to start
 	retries := 5

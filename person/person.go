@@ -1,13 +1,10 @@
 package person
 
-import (
-	"encoding/json"
-	"opg-search-service/response"
-)
+import "encoding/json"
 
 type Person struct {
 	UID             string `json:"uId"`
-	Normalizeduid   *int64 `json:"normalizedUid"`
+	Normalizeduid   int64  `json:"normalizedUid"`
 	Workphonenumber struct {
 		ID          int    `json:"id"`
 		Phonenumber string `json:"phoneNumber"`
@@ -77,11 +74,7 @@ type Person struct {
 }
 
 func (p Person) Id() int64 {
-	val := int64(0)
-	if p.Normalizeduid != nil {
-		val = *p.Normalizeduid
-	}
-	return val
+	return p.Normalizeduid
 }
 
 func (p Person) IndexName() string {
@@ -91,17 +84,4 @@ func (p Person) IndexName() string {
 func (p Person) Json() string {
 	b, _ := json.Marshal(p)
 	return string(b)
-}
-
-func (p Person) Validate() []response.Error {
-	var errs []response.Error
-
-	if p.Normalizeduid == nil {
-		errs = append(errs, response.Error{
-			Name:        "normalizedUid",
-			Description: "field is empty",
-		})
-	}
-
-	return errs
 }
