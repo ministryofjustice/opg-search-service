@@ -5,9 +5,11 @@ workflows:
     jobs:
       - test_search_service:
           name: test_search_service
+      - gosec_search_service:
+          name: gosec_search_service
       - build_search_service:
           name: build_search_service
-          requires: [test_search_service]
+          requires: [test_search_service,gosec_search_service]
 
 orbs:
   search_service:
@@ -85,6 +87,15 @@ jobs:
           command: gotestsum --junitfile unit-tests.xml
       - store_test_results:
           path: /tmp/test-results
+
+  gosec_search_service:
+    docker:
+      - image: circleci/golang
+    steps:
+      - checkout
+      - run: |
+          wget -O - -q https://raw.githubusercontent.com/securego/gosec/master/install.sh | sh -s v2.7.0
+          ./bin/gosec ./...
 
   build_search_service:
     executor: search_service/python

@@ -8,6 +8,9 @@ go-test:
 	go mod download
 	gotestsum --format short-verbose -- -coverprofile=../cover.out ./...
 
+gosec: # Run Golang Security Checker
+	docker-compose --project-name search-service-gosec -f docker-compose.yml -f docker-compose.test.yml run --rm search_service_gosec
+
 swagger-generate: # Generate API swagger docs from inline code annotations using Go Swagger (https://goswagger.io/)
 	docker-compose --project-name search-service-docs-generate \
     -f docker-compose.yml run --rm swagger-generate

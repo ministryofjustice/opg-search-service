@@ -12,3 +12,9 @@ services:
       - docker-compose.env
     volumes:
       - .:/go/src/app
+  search_service_gosec:
+    image: securego/gosec:v2.7.0
+    volumes:
+      - .:/go/src/app
+    working_dir: /go/src/app
+    entrypoint: ["/bin/gosec", "/go/src/app/..."]

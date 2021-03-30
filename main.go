@@ -69,5 +69,5 @@ func main() {
 	l.Println("Received terminate, graceful shutdown", sig)
 
 	tc, _ := context.WithTimeout(context.Background(), 30*time.Second)
-	s.Shutdown(tc)
+	_ = s.Shutdown(tc)
 }
