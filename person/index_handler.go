@@ -16,7 +16,7 @@ type IndexHandler struct {
 }
 
 func NewIndexHandler(logger *log.Logger) (*IndexHandler, error) {
-	client, err := elasticsearch.NewClient(logger)
+	client, err := elasticsearch.NewClient(&http.Client{}, logger)
 	if err != nil {
 		logger.Println(err)
 		return nil, errors.New("unable to create a new Elasticsearch client")

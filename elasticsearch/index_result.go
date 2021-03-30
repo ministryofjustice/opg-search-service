@@ -1,7 +1,7 @@
 package elasticsearch
 
 type IndexResult struct {
-	Id         int
+	Id         int64
 	StatusCode int
 	Message    string
 }

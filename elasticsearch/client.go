@@ -11,18 +11,26 @@ import (
 	"time"
 )
 
+type HTTPClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
 type Client struct {
-	logger *log.Logger
+	httpClient HTTPClient
+	logger     *log.Logger
 }
 
 type Indexable interface {
-	Id() int
+	Id() int64
 	IndexName() string
 	Json() string
 }
 
-func NewClient(logger *log.Logger) (*Client, error) {
-	return &Client{logger: logger}, nil
+func NewClient(httpClient HTTPClient, logger *log.Logger) (*Client, error) {
+	return &Client{
+		httpClient: httpClient,
+		logger:     logger,
+	}, nil
 }
 
 func (c Client) Index(i Indexable) *IndexResult {
@@ -45,9 +53,6 @@ func (c Client) Index(i Indexable) *IndexResult {
 	cred := credentials.NewEnvCredentials()
 	signer := v4.NewSigner(cred)
 
-	// An HTTP client for sending the request
-	client := &http.Client{}
-
 	iRes := IndexResult{Id: i.Id()}
 
 	// Form the HTTP request
@@ -68,7 +73,7 @@ func (c Client) Index(i Indexable) *IndexResult {
 		c.logger.Println(err.Error())
 	}
 
-	resp, err := client.Do(req)
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		c.logger.Println(err.Error())
 		iRes.StatusCode = http.StatusInternalServerError
