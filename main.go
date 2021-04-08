@@ -23,8 +23,8 @@ func main() {
 	// Create new serveMux
 	sm := mux.NewRouter().PathPrefix(os.Getenv("PATH_PREFIX")).Subrouter()
 
-	// swagger:operation GET /health-check check health-check
-	// Register the health check handler
+	// swagger:operation GET /health-check health-check
+	// Check if the service is up and running
 	// ---
 	// responses:
 	//   '200':
@@ -40,10 +40,214 @@ func main() {
 	postRouter.Use(middleware.JwtVerify)
 
 	// Register protected handlers
+
 	iph, err := person.NewIndexHandler(l)
 	if err != nil {
 		l.Fatal(err)
 	}
+	// swagger:operation POST /persons post-persons
+	// Index one or many Persons
+	// ---
+	// consumes:
+	// - application/json
+	// produces:
+	// - application/json
+	// parameters:
+	// - in: "body"
+	//   name: "body"
+	//   description: ""
+	//   required: true
+	//   schema:
+	//     type: object
+	//     properties:
+	//       persons:
+	//         type: array
+	//         items:
+	//           type: object
+	//           properties:
+	//             uId:
+	//               type: string
+	//             normalizedUid:
+	//               type: integer
+	//               format: int64
+	//             workPhoneNumber:
+	//               type: object
+	//               properties:
+	//                 id:
+	//                   type: integer
+	//                   format: int32
+	//                 phoneNumber:
+	//                   type: string
+	//                 type:
+	//                   type: string
+	//                 default:
+	//                   type: boolean
+	//                 className:
+	//                   type: string
+	//             homePhoneNumber:
+	//               type: object
+	//               properties:
+	//                 id:
+	//                   type: integer
+	//                   format: int32
+	//                 phoneNumber:
+	//                   type: string
+	//                 type:
+	//                   type: string
+	//                 default:
+	//                   type: boolean
+	//                 className:
+	//                   type: string
+	//             mobilePhoneNumber:
+	//               type: object
+	//               properties:
+	//                 id:
+	//                   type: integer
+	//                   format: int32
+	//                 phoneNumber:
+	//                   type: string
+	//                 type:
+	//                   type: string
+	//                 default:
+	//                   type: boolean
+	//                 className:
+	//                   type: string
+	//             email:
+	//               type: string
+	//             dob:
+	//               type: string
+	//             firstname:
+	//               type: string
+	//             middlenames:
+	//               type: string
+	//             surname:
+	//               type: string
+	//             addressLine1:
+	//               type: string
+	//             addressLine2:
+	//               type: string
+	//             addressLine3:
+	//               type: string
+	//             town:
+	//               type: string
+	//             county:
+	//               type: string
+	//             postcode:
+	//               type: string
+	//             country:
+	//               type: string
+	//             isAirmailRequired:
+	//               type: boolean
+	//             addresses:
+	//               type: array
+	//               items:
+	//                 type: object
+	//                 properties:
+	//                   addressLines:
+	//                     type: array
+	//                     items:
+	//                       type: string
+	//                   postcode:
+	//                     type: string
+	//                   className:
+	//                     type: string
+	//             phoneNumber:
+	//               type: string
+	//             phoneNumbers:
+	//               type: array
+	//               items:
+	//                 type: object
+	//                 properties:
+	//                   id:
+	//                     type: integer
+	//                     format: int32
+	//                   phoneNumber:
+	//                     type: string
+	//                   type:
+	//                     type: string
+	//                   default:
+	//                     type: boolean
+	//                   className:
+	//                     type: string
+	//             personType:
+	//               type: string
+	//             cases:
+	//               type: array
+	//               items:
+	//                 type: object
+	//                 properties:
+	//                   uId:
+	//                     type: string
+	//                   normalizedUid:
+	//                     type: integer
+	//                     format: int64
+	//                   caseRecNumber:
+	//                     type: string
+	//                   batchId:
+	//                     type: string
+	//                   className:
+	//                     type: string
+	//             orders:
+	//               type: array
+	//               items:
+	//                 type: object
+	//                 properties:
+	//                   order:
+	//                     type: object
+	//                     properties:
+	//                       uId:
+	//                         type: string
+	//                       normalizedUid:
+	//                         type: integer
+	//                         format: int64
+	//                       caseRecNumber:
+	//                         type: string
+	//                       batchId:
+	//                         type: string
+	//                       className:
+	//                         type: string
+	//                   className:
+	//                     type: string
+	//             className:
+	//               type: string
+	// responses:
+	//   '202':
+	//     description: The request has been handled and individual index responses are included in the response body
+	//     schema:
+	//       type: object
+	//       properties:
+	//         results:
+	//           type: array
+	//           items:
+	//             type: object
+	//             properties:
+	//               id:
+	//                 type: integer
+	//                 format: int64
+	//               statusCode:
+	//                 type: integer
+	//               message:
+	//                 type: string
+	//   '400':
+	//     description: Request failed validation
+	//     schema:
+	//       type: object
+	//       properties:
+	//         message:
+	//           type: string
+	//         errors:
+	//           type: array
+	//           items:
+	//             type: object
+	//             properties:
+	//               name:
+	//                 type: string
+	//               description:
+	//                 type: string
+	//   '404':
+	//     description: Not found
+	//   '500':
+	//     description: Unexpected error occurred
 	postRouter.Handle("/persons", iph)
 
 	s := &http.Server{

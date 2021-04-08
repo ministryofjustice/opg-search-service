@@ -74,6 +74,6 @@ func verifyToken(header string, secret string) (*jwt.Token, *authorisationError)
 
 func hashEmail(email string, salt string) string {
 	hash := sha256.New()
-	hash.Write([]byte(salt + email))
+	_, _ = hash.Write([]byte(salt + email))
 	return hex.EncodeToString(hash.Sum(nil))
 }

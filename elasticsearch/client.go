@@ -7,22 +7,35 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
 
-type Client struct {
-	logger *log.Logger
+type HTTPClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
+type ClientInterface interface {
+	Index(i Indexable) *IndexResult
 }
 
 type Indexable interface {
-	Id() int
+	Id() int64
 	IndexName() string
 	Json() string
 }
 
-func NewClient(logger *log.Logger) (*Client, error) {
-	return &Client{logger: logger}, nil
+type Client struct {
+	httpClient HTTPClient
+	logger     *log.Logger
+}
+
+func NewClient(httpClient HTTPClient, logger *log.Logger) (ClientInterface, error) {
+	return &Client{
+		httpClient: httpClient,
+		logger:     logger,
+	}, nil
 }
 
 func (c Client) Index(i Indexable) *IndexResult {
@@ -30,7 +43,7 @@ func (c Client) Index(i Indexable) *IndexResult {
 
 	// Basic information for the Amazon Elasticsearch Service domain
 	domain := os.Getenv("AWS_ELASTICSEARCH_ENDPOINT") // e.g. https://my-domain.region.es.amazonaws.com
-	endpoint := domain + "/" + i.IndexName() + "/" + "_doc"
+	endpoint := domain + "/" + i.IndexName() + "/_doc/" + strconv.FormatInt(i.Id(), 10)
 
 	var region string
 	var ok bool
@@ -45,13 +58,10 @@ func (c Client) Index(i Indexable) *IndexResult {
 	cred := credentials.NewEnvCredentials()
 	signer := v4.NewSigner(cred)
 
-	// An HTTP client for sending the request
-	client := &http.Client{}
-
 	iRes := IndexResult{Id: i.Id()}
 
 	// Form the HTTP request
-	req, err := http.NewRequest(http.MethodPost, endpoint, body)
+	req, err := http.NewRequest(http.MethodPut, endpoint, body)
 	if err != nil {
 		c.logger.Println(err.Error())
 		iRes.StatusCode = http.StatusInternalServerError
@@ -63,16 +73,13 @@ func (c Client) Index(i Indexable) *IndexResult {
 	req.Header.Add("Content-Type", "application/json")
 
 	// Sign the request, send it, and print the response
-	_, err = signer.Sign(req, body, service, region, time.Now())
-	if err != nil {
-		c.logger.Println(err.Error())
-	}
+	_, _ = signer.Sign(req, body, service, region, time.Now())
 
-	resp, err := client.Do(req)
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		c.logger.Println(err.Error())
 		iRes.StatusCode = http.StatusInternalServerError
-		iRes.Message = "Unable to send index request"
+		iRes.Message = "Unable to process index request"
 		return &iRes
 	}
 
@@ -88,6 +95,5 @@ func (c Client) Index(i Indexable) *IndexResult {
 		iRes.Message = string(bodyBytes)
 	}
 
-	c.logger.Println(resp.Status + "\n")
 	return &iRes
 }
