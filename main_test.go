@@ -131,12 +131,7 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
 
 	time.Sleep(time.Second * 2)
 
-	sReq := person.SearchRequest{
-		Term: suite.testPerson.Surname,
-	}
-
-	jsonBody, _ = json.Marshal(sReq)
-	reqBody = bytes.NewReader(jsonBody)
+	reqBody = bytes.NewReader([]byte(`{"term":"` + suite.testPerson.Surname + `"}`))
 	req, _ = http.NewRequest(http.MethodPost, suite.GetUrl("/persons/search"), reqBody)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", suite.authHeader)

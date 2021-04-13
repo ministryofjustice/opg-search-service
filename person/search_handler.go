@@ -1,7 +1,6 @@
 package person
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"log"
@@ -32,20 +31,10 @@ func NewSearchHandler(logger *log.Logger) (*SearchHandler, error) {
 func (s SearchHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 
-	bodyBuf := new(bytes.Buffer)
-	_, _ = bodyBuf.ReadFrom(r.Body)
-
-	if bodyBuf.Len() == 0 {
-		s.logger.Println("request body is empty")
-		response.WriteJSONError(rw, "request", "Request body is empty", http.StatusBadRequest)
-		return
-	}
-
-	var req SearchRequest
-	err := json.Unmarshal(bodyBuf.Bytes(), &req)
+	req, err := CreateSearchRequestFromRequest(r)
 	if err != nil {
-		s.logger.Println(err.Error())
-		response.WriteJSONError(rw, "request", "Unable to unmarshal JSON request", http.StatusBadRequest)
+		s.logger.Println(err)
+		response.WriteJSONError(rw, "request", err.Error(), http.StatusBadRequest)
 		return
 	}
 
