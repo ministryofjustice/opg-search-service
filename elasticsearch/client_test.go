@@ -17,7 +17,7 @@ type MockHttpClient struct {
 	mock.Mock
 }
 
-func (m MockHttpClient) Do(req *http.Request) (*http.Response, error) {
+func (m *MockHttpClient) Do(req *http.Request) (*http.Response, error) {
 	args := m.Called(req)
 	return args.Get(0).(*http.Response), args.Error(1)
 }
@@ -26,19 +26,24 @@ type MockIndexable struct {
 	mock.Mock
 }
 
-func (m MockIndexable) Id() int64 {
+func (m *MockIndexable) Id() int64 {
 	args := m.Called()
 	return args.Get(0).(int64)
 }
 
-func (m MockIndexable) IndexName() string {
+func (m *MockIndexable) IndexName() string {
 	args := m.Called()
 	return args.Get(0).(string)
 }
 
-func (m MockIndexable) Json() string {
+func (m *MockIndexable) Json() string {
 	args := m.Called()
 	return args.Get(0).(string)
+}
+
+func (m *MockIndexable) IndexConfig() map[string]interface{} {
+	args := m.Called()
+	return args.Get(0).(map[string]interface{})
 }
 
 func TestClient_Index(t *testing.T) {
@@ -101,7 +106,7 @@ func TestClient_Index(t *testing.T) {
 			assert.Equal(t, http.MethodPut, req.Method)
 			assert.Equal(t, os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")+"/test-index/_doc/6", req.URL.String())
 			reqBuf := new(bytes.Buffer)
-			reqBuf.ReadFrom(req.Body)
+			_, _ = reqBuf.ReadFrom(req.Body)
 			assert.Equal(t, "{\"test\":\"test\"}", reqBuf.String())
 		}
 		mcCall.Return(
@@ -122,7 +127,7 @@ func TestClient_Index(t *testing.T) {
 
 func TestClient_Index_MalformedEndpoint(t *testing.T) {
 	oldESEndpoint := os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")
-	os.Setenv("AWS_ELASTICSEARCH_ENDPOINT", ":-:/-=")
+	_ = os.Setenv("AWS_ELASTICSEARCH_ENDPOINT", ":-:/-=")
 
 	mc := new(MockHttpClient)
 
@@ -145,5 +150,5 @@ func TestClient_Index_MalformedEndpoint(t *testing.T) {
 	assert.Equal(t, http.StatusInternalServerError, ir.StatusCode)
 	assert.Equal(t, "Unable to create index request", ir.Message)
 
-	os.Setenv("AWS_ELASTICSEARCH_ENDPOINT", oldESEndpoint)
+	_ = os.Setenv("AWS_ELASTICSEARCH_ENDPOINT", oldESEndpoint)
 }
