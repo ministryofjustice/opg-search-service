@@ -105,3 +105,126 @@ func (p Person) Validate() []response.Error {
 
 	return errs
 }
+
+func (p Person) IndexConfig() map[string]interface{} {
+	return map[string]interface{}{
+		"settings": map[string]interface{}{
+			"number_of_shards":   1,
+			"number_of_replicas": 1,
+			"refresh_interval":   "1s",
+			"analysis": map[string]interface{}{
+				"analyzer": map[string]interface{}{
+					"quick_search": map[string]interface{}{
+						"type":      "custom",
+						"tokenizer": "whitespace",
+						"filter": []string{
+							"asciifolding",
+							"lowercase",
+						},
+					},
+				},
+			},
+		},
+		"mappings": map[string]interface{}{
+			"properties": map[string]interface{}{
+				"searchable": map[string]interface{}{
+					"type":     "text",
+					"analyzer": "quick_search",
+				},
+				"uId": map[string]interface{}{
+					"type":    "keyword",
+					"copy_to": "searchable",
+				},
+				"normalizedUid": map[string]interface{}{
+					"type":    "text",
+					"index":   false,
+					"copy_to": "searchable",
+				},
+				"caseRecNumber": map[string]interface{}{
+					"type":    "keyword",
+					"copy_to": "searchable",
+				},
+				"personType": map[string]interface{}{
+					"type": "keyword",
+				},
+				"dob": map[string]interface{}{
+					"type":     "text",
+					"analyzer": "whitespace",
+					"copy_to":  "searchable",
+					"boost":    4.0,
+				},
+				"email": map[string]interface{}{
+					"type":  "text",
+					"boost": 4.0,
+				},
+				"firstname": map[string]interface{}{
+					"type":    "text",
+					"copy_to": "searchable",
+					"boost":   4.0,
+				},
+				"middlenames": map[string]interface{}{
+					"type":    "text",
+					"copy_to": "searchable",
+					"boost":   4.0,
+				},
+				"surname": map[string]interface{}{
+					"type":    "keyword",
+					"copy_to": "searchable",
+					"boost":   4.0,
+				},
+				"companyName": map[string]interface{}{
+					"type":    "text",
+					"copy_to": "searchable",
+					"boost":   4.0,
+				},
+				"className": map[string]interface{}{
+					"type":    "text",
+					"copy_to": "searchable",
+					"boost":   4.0,
+				},
+				"phoneNumbers": map[string]interface{}{
+					"properties": map[string]interface{}{
+						"phoneNumber": map[string]interface{}{
+							"type":    "keyword",
+							"copy_to": "searchable",
+						},
+					},
+				},
+				"addresses": map[string]interface{}{
+					"properties": map[string]interface{}{
+						"addressLines": map[string]interface{}{
+							"type":    "text",
+							"copy_to": "searchable",
+							"boost":   4.0,
+						},
+						"postcode": map[string]interface{}{
+							"type":    "keyword",
+							"copy_to": "searchable",
+						},
+					},
+				},
+				"cases": map[string]interface{}{
+					"properties": map[string]interface{}{
+						"uId": map[string]interface{}{
+							"type":    "keyword",
+							"copy_to": "searchable",
+						},
+						"normalizedUid": map[string]interface{}{
+							"type":    "text",
+							"index":   false,
+							"copy_to": "searchable",
+						},
+						"caseRecNumber": map[string]interface{}{
+							"type":    "keyword",
+							"copy_to": "searchable",
+						},
+						"batchId": map[string]interface{}{
+							"type":    "keyword",
+							"copy_to": "searchable",
+						},
+					},
+				},
+			},
+		},
+	}
+}
