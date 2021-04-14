@@ -105,13 +105,7 @@ func (s SearchHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		resp.Results = append(resp.Results, p)
 	}
 
-	jsonResp, err := json.Marshal(resp)
-	if err != nil {
-		s.logger.Println(err.Error())
-		response.WriteJSONError(rw, "response", "Unable to encode search response into json", http.StatusInternalServerError)
-		return
-	}
-
+	jsonResp, _ := json.Marshal(resp)
 	rw.WriteHeader(http.StatusOK)
 	_, _ = rw.Write(jsonResp)
 
