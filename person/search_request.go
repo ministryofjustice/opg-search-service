@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"regexp"
+	"strings"
 )
 
 type searchRequest struct {
@@ -32,15 +33,19 @@ func CreateSearchRequestFromRequest(r *http.Request) (*searchRequest, error) {
 
 	req.sanitise()
 
+	if req.Term == "" {
+		return nil, errors.New("search term is required and cannot be empty")
+	}
+
 	return &req, nil
 }
 
 func (sr *searchRequest) sanitise() {
-	re := regexp.MustCompile(`[^’\p{L}\-.@ ]`)
+	re := regexp.MustCompile(`[^’\p{L}\d\-.@ ]`)
 	log.Println(re.ReplaceAllString(sr.Term, ""))
-	sr.Term = re.ReplaceAllString(sr.Term, "")
+	sr.Term = strings.TrimSpace(re.ReplaceAllString(sr.Term, ""))
 
 	for i, val := range sr.PersonTypes {
-		sr.PersonTypes[i] = re.ReplaceAllString(val, "")
+		sr.PersonTypes[i] = strings.TrimSpace(re.ReplaceAllString(val, ""))
 	}
 }

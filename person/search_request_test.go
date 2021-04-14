@@ -35,6 +35,12 @@ func TestCreateSearchRequestFromRequest(t *testing.T) {
 			nil,
 		},
 		{
+			"white space is trimmed and search term validated",
+			`{"term":"  "}`,
+			errors.New("search term is required and cannot be empty"),
+			nil,
+		},
+		{
 			"created request is sanitised",
 			`{"term":"René D’!Eath-Smi/the()","size":1,"from":2,"person_types":["tall","short"]}`,
 			nil,
