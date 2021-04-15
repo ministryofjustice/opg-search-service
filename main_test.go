@@ -129,6 +129,7 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
 
 	suite.Equal(expectedResp, iResp, "Unexpected index result")
 
+	// wait for ES to update the index and make it searchable
 	time.Sleep(time.Second * 2)
 
 	reqBody = bytes.NewReader([]byte(`{"term":"` + suite.testPerson.Surname + `"}`))

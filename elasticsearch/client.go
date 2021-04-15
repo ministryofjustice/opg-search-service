@@ -139,13 +139,13 @@ func (c Client) Search(requestBody map[string]interface{}, dataType Indexable) (
 		return nil, errors.New(fmt.Sprintf(`search request failed with status code %d and response: "%s"`, resp.StatusCode, buf.String()))
 	}
 
-	var r map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
+	var esResponse map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&esResponse); err != nil {
 		return nil, errors.New(fmt.Sprintf("error parsing the response body: %s", err))
 	}
 
 	results := make([]string, 0)
-	for _, hit := range r["hits"].(map[string]interface{})["hits"].([]interface{}) {
+	for _, hit := range esResponse["hits"].(map[string]interface{})["hits"].([]interface{}) {
 		buf.Reset()
 		_ = json.NewEncoder(&buf).Encode(hit.(map[string]interface{})["_source"])
 		results = append(results, strings.TrimSpace(buf.String()))
