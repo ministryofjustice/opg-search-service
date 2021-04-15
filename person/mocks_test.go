@@ -14,9 +14,9 @@ func (m *MockESClient) Index(i elasticsearch.Indexable) *elasticsearch.IndexResu
 	return args.Get(0).(*elasticsearch.IndexResult)
 }
 
-func (m *MockESClient) Search(requestBody map[string]interface{}, dataType elasticsearch.Indexable) ([]string, error) {
+func (m *MockESClient) Search(requestBody map[string]interface{}, dataType elasticsearch.Indexable) (*[]string, error) {
 	args := m.Called(requestBody, dataType)
-	return args.Get(0).([]string), args.Error(1)
+	return args.Get(0).(*[]string), args.Error(1)
 }
 
 func (m *MockESClient) CreateIndex(i elasticsearch.Indexable) (bool, error) {

@@ -122,7 +122,7 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
 			{
 				Id:         3,
 				StatusCode: 201,
-				Message:    "Index created",
+				Message:    "Document created",
 			},
 		},
 	}

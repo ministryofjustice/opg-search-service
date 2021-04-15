@@ -22,7 +22,7 @@ type HTTPClient interface {
 
 type ClientInterface interface {
 	Index(i Indexable) *IndexResult
-	Search(requestBody map[string]interface{}, dataType Indexable) ([]string, error)
+	Search(requestBody map[string]interface{}, dataType Indexable) (*[]string, error)
 	CreateIndex(i Indexable) (bool, error)
 }
 
@@ -73,7 +73,7 @@ func (c Client) Index(i Indexable) *IndexResult {
 	if err != nil {
 		c.logger.Println(err.Error())
 		iRes.StatusCode = http.StatusInternalServerError
-		iRes.Message = "Unable to create index request"
+		iRes.Message = "Unable to create document index request"
 		return &iRes
 	}
 
@@ -87,7 +87,7 @@ func (c Client) Index(i Indexable) *IndexResult {
 	if err != nil {
 		c.logger.Println(err.Error())
 		iRes.StatusCode = http.StatusInternalServerError
-		iRes.Message = "Unable to process index request"
+		iRes.Message = "Unable to process document index request"
 		return &iRes
 	}
 
@@ -95,9 +95,9 @@ func (c Client) Index(i Indexable) *IndexResult {
 
 	switch iRes.StatusCode {
 	case http.StatusOK:
-		iRes.Message = "Index updated"
+		iRes.Message = "Document updated"
 	case http.StatusCreated:
-		iRes.Message = "Index created"
+		iRes.Message = "Document created"
 	default:
 		bodyBytes, _ := ioutil.ReadAll(resp.Body)
 		iRes.Message = string(bodyBytes)
@@ -107,8 +107,8 @@ func (c Client) Index(i Indexable) *IndexResult {
 }
 
 // returns an array of JSON encoded results
-func (c Client) Search(requestBody map[string]interface{}, i Indexable) ([]string, error) {
-	endpoint := c.domain + "/" + i.IndexName() + "/_search"
+func (c Client) Search(requestBody map[string]interface{}, dataType Indexable) (*[]string, error) {
+	endpoint := c.domain + "/" + dataType.IndexName() + "/_search"
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(requestBody); err != nil {
@@ -136,22 +136,22 @@ func (c Client) Search(requestBody map[string]interface{}, i Indexable) ([]strin
 	if resp.StatusCode != http.StatusOK {
 		buf.Reset()
 		_, _ = buf.ReadFrom(resp.Body)
-		return nil, errors.New(fmt.Sprintf("search request failed with status code %d and response: `%s`", resp.StatusCode, buf.String()))
+		return nil, errors.New(fmt.Sprintf(`search request failed with status code %d and response: "%s"`, resp.StatusCode, buf.String()))
 	}
 
 	var r map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
-		return nil, errors.New(fmt.Sprintf("Error parsing the response body: %s", err))
+		return nil, errors.New(fmt.Sprintf("error parsing the response body: %s", err))
 	}
 
-	var results []string
+	results := make([]string, 0)
 	for _, hit := range r["hits"].(map[string]interface{})["hits"].([]interface{}) {
 		buf.Reset()
 		_ = json.NewEncoder(&buf).Encode(hit.(map[string]interface{})["_source"])
-		results = append(results, buf.String())
+		results = append(results, strings.TrimSpace(buf.String()))
 	}
 
-	return results, nil
+	return &results, nil
 }
 
 func (c Client) CreateIndex(i Indexable) (bool, error) {
@@ -185,7 +185,7 @@ func (c Client) CreateIndex(i Indexable) (bool, error) {
 	if resp.StatusCode != http.StatusOK {
 		buf.Reset()
 		_, _ = buf.ReadFrom(resp.Body)
-		return false, errors.New(fmt.Sprintf("index creation failed with status code %d and response: `%s`", resp.StatusCode, buf.String()))
+		return false, errors.New(fmt.Sprintf(`index creation failed with status code %d and response: "%s"`, resp.StatusCode, buf.String()))
 	}
 
 	return true, nil

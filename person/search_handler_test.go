@@ -105,7 +105,7 @@ func (suite *SearchHandlerTestSuite) Test_ESReturnsUnexpectedError() {
 	reqBody := `{"term":"test"}`
 
 	esCall := suite.esClient.On("Search", mock.Anything, mock.Anything)
-	esCall.Return([]string{}, errors.New("test ES error"))
+	esCall.Return(&[]string{}, errors.New("test ES error"))
 
 	suite.ServeRequest(http.MethodPost, "/persons/search", reqBody)
 
@@ -120,7 +120,7 @@ func (suite *SearchHandlerTestSuite) Test_ESReturnsUnexpectedPersonStructure() {
 	esResults := []string{
 		`{"uId":10,"normalizedUid":"10"}`,
 	}
-	esCall.Return(esResults, nil)
+	esCall.Return(&esResults, nil)
 
 	suite.ServeRequest(http.MethodPost, "/persons/search", reqBody)
 
@@ -184,7 +184,7 @@ func (suite *SearchHandlerTestSuite) Test_SearchWithAllParameters() {
 		`{"uId":"10","normalizedUid":10,"firstname":"Test1","surname":"Test1"}`,
 		`{"uId":"20","normalizedUid":20,"firstname":"Test2","surname":"Test2"}`,
 	}
-	esCall.Return(esResults, nil)
+	esCall.Return(&esResults, nil)
 
 	suite.ServeRequest(http.MethodPost, "/persons/search", reqBody)
 

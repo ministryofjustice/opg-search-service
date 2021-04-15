@@ -95,7 +95,7 @@ func (s SearchHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	resp := response.SearchResponse{
 		Results: make([]elasticsearch.Indexable, 0),
 	}
-	for _, result := range results {
+	for _, result := range *results {
 		p := new(Person)
 		if err := json.Unmarshal([]byte(result), p); err != nil {
 			s.logger.Println(err.Error())
