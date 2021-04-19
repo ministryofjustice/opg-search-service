@@ -129,32 +129,40 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
 
 	suite.Equal(expectedResp, iResp, "Unexpected index result")
 
-	// wait for ES to update the index and make it searchable
-	time.Sleep(time.Second * 2)
-
-	reqBody = bytes.NewReader([]byte(`{"term":"` + suite.testPerson.Surname + `"}`))
-	req, _ = http.NewRequest(http.MethodPost, suite.GetUrl("/persons/search"), reqBody)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", suite.authHeader)
-
-	resp, err = client.Do(req)
-	if err != nil {
-		suite.Fail("Error searching for a person", err)
-	}
-	defer resp.Body.Close()
-
-	suite.Equal(http.StatusOK, resp.StatusCode)
-
-	buf := new(bytes.Buffer)
-	_, _ = buf.ReadFrom(resp.Body)
-
 	expectedSearchResp, _ := json.Marshal(response.SearchResponse{
 		Results: []elasticsearch.Indexable{
 			suite.testPerson,
 		},
 	})
 
-	suite.Equal(expectedSearchResp, buf.Bytes(), "Unexpected search result")
+	reqBody = bytes.NewReader([]byte(`{"term":"` + suite.testPerson.Surname + `"}`))
+	req, _ = http.NewRequest(http.MethodPost, suite.GetUrl("/persons/search"), reqBody)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", suite.authHeader)
+
+	var respBody string
+
+	// wait up to 2s for the indexed record to become searchable
+	for i := 0; i < 20; i++ {
+		resp, err = client.Do(req)
+		if err != nil {
+			suite.Fail("Error searching for a person", err)
+		}
+
+		suite.Equal(http.StatusOK, resp.StatusCode)
+
+		buf := new(bytes.Buffer)
+		_, _ = buf.ReadFrom(resp.Body)
+		respBody = buf.String()
+
+		if string(expectedSearchResp) == respBody {
+			break
+		}
+
+		time.Sleep(time.Millisecond * 100)
+	}
+
+	suite.Equal(string(expectedSearchResp), respBody, "Unexpected search result")
 }
 
 func TestEndToEnd(t *testing.T) {
