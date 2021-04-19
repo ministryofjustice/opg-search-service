@@ -57,6 +57,11 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 	suite.Nil(err)
 	suite.Equal(http.StatusOK, resp.StatusCode)
 
+	// create indices
+	ok, err := suite.esClient.CreateIndex(person.Person{})
+	suite.True(ok, "Could not create Person index")
+	suite.Nil(err)
+
 	// wait up to 5 seconds for the app to start
 	retries := 5
 	for i := 1; i <= retries; i++ {
@@ -82,7 +87,7 @@ func (suite *EndToEndTestSuite) TestHealthCheck() {
 	suite.Equal(http.StatusOK, resp.StatusCode)
 }
 
-func (suite *EndToEndTestSuite) TestIndexPerson() {
+func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
 	client := new(http.Client)
 
 	iReq := person.IndexRequest{
@@ -109,7 +114,7 @@ func (suite *EndToEndTestSuite) TestIndexPerson() {
 
 	err = json.NewDecoder(resp.Body).Decode(&iResp)
 	if err != nil {
-		suite.Fail("Unable to decode JSON response", resp.Body)
+		suite.Fail("Unable to decode JSON index response", resp.Body)
 	}
 
 	expectedResp := response.IndexResponse{
@@ -117,12 +122,47 @@ func (suite *EndToEndTestSuite) TestIndexPerson() {
 			{
 				Id:         3,
 				StatusCode: 201,
-				Message:    "Index created",
+				Message:    "Document created",
 			},
 		},
 	}
 
 	suite.Equal(expectedResp, iResp, "Unexpected index result")
+
+	expectedSearchResp, _ := json.Marshal(response.SearchResponse{
+		Results: []elasticsearch.Indexable{
+			suite.testPerson,
+		},
+	})
+
+	reqBody = bytes.NewReader([]byte(`{"term":"` + suite.testPerson.Surname + `"}`))
+	req, _ = http.NewRequest(http.MethodPost, suite.GetUrl("/persons/search"), reqBody)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", suite.authHeader)
+
+	var respBody string
+
+	// wait up to 2s for the indexed record to become searchable
+	for i := 0; i < 20; i++ {
+		resp, err = client.Do(req)
+		if err != nil {
+			suite.Fail("Error searching for a person", err)
+		}
+
+		suite.Equal(http.StatusOK, resp.StatusCode)
+
+		buf := new(bytes.Buffer)
+		_, _ = buf.ReadFrom(resp.Body)
+		respBody = buf.String()
+
+		if string(expectedSearchResp) == respBody {
+			break
+		}
+
+		time.Sleep(time.Millisecond * 100)
+	}
+
+	suite.Equal(string(expectedSearchResp), respBody, "Unexpected search result")
 }
 
 func TestEndToEnd(t *testing.T) {

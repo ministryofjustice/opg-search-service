@@ -250,6 +250,12 @@ func main() {
 	//     description: Unexpected error occurred
 	postRouter.Handle("/persons", iph)
 
+	sph, err := person.NewSearchHandler(l)
+	if err != nil {
+		l.Fatal(err)
+	}
+	postRouter.Handle("/persons/search", sph)
+
 	s := &http.Server{
 		Addr:         ":8000",           // configure the bind address
 		Handler:      sm,                // set the default handler

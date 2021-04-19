@@ -88,3 +88,9 @@ func TestPerson_Validate(t *testing.T) {
 		assert.Equal(t, test.expectedErrs, errs, test.scenario)
 	}
 }
+
+func TestPerson_IndexConfig(t *testing.T) {
+	ic := Person{}.IndexConfig()
+	assert.IsType(t, map[string]interface{}{}, ic)
+	assert.NotEmpty(t, ic)
+}

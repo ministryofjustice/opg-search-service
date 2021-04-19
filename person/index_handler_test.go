@@ -16,15 +16,6 @@ import (
 	"testing"
 )
 
-type MockESClient struct {
-	mock.Mock
-}
-
-func (m MockESClient) Index(i elasticsearch.Indexable) *elasticsearch.IndexResult {
-	args := m.Called(i)
-	return args.Get(0).(*elasticsearch.IndexResult)
-}
-
 type IndexHandlerTestSuite struct {
 	suite.Suite
 	logger   *log.Logger
@@ -64,7 +55,7 @@ func (suite *IndexHandlerTestSuite) RespBody() string {
 	}
 	res := suite.recorder.Result()
 	bodyBuf := new(bytes.Buffer)
-	bodyBuf.ReadFrom(res.Body)
+	_, _ = bodyBuf.ReadFrom(res.Body)
 	respBody := bodyBuf.String()
 
 	suite.respBody = &respBody
