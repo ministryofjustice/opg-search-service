@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"errors"
-	"fmt"
 	"github.com/stretchr/testify/mock"
 	"net/http"
 	"net/http/httptest"
@@ -103,8 +102,6 @@ func TestJwtVerify(t *testing.T) {
 		handler := JwtVerify(mockCache)(testHandler)
 		handler.ServeHTTP(rw, req)
 		res := rw.Result()
-		fmt.Println(fmt.Sprintf("%#v", res.Body))
-
 		assert.Equal(t, test.expectedCode, res.StatusCode, test.scenario)
 	}
 }
