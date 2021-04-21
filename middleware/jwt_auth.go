@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -36,11 +37,11 @@ func JwtVerify(secretsCache Cacheable) func(next http.Handler) http.Handler {
 
 			header := r.Header.Get("Authorization")
 
-			token, authErr := verifyToken(header, jwtSecret)
+			token, verifyErr := verifyToken(header, jwtSecret)
 
-			if authErr != nil {
-				log.Println("Error in token verification :", authErr.Description)
-				response.WriteJSONError(rw, "Authorisation Error", authErr.Error, http.StatusUnauthorized)
+			if verifyErr != nil {
+				log.Println("Error in token verification :", verifyErr.Error())
+				response.WriteJSONError(rw, "Authorisation Error", verifyErr.Error(), http.StatusUnauthorized)
 			} else {
 				claims := token.Claims.(jwt.MapClaims)
 				email := claims["session-data"].(string)
@@ -60,9 +61,9 @@ func JwtVerify(secretsCache Cacheable) func(next http.Handler) http.Handler {
 	}
 }
 
-func verifyToken(header string, secret string) (*jwt.Token, *authorisationError) {
+func verifyToken(header string, secret string) (*jwt.Token, error) {
 	if header == "" {
-		return nil, &authorisationError{Error: "missing_token", Description: "missing authentication token"}
+		return nil, errors.New("missing authentication token")
 	}
 
 	header = strings.Split(header, "Bearer ")[1]
@@ -75,11 +76,7 @@ func verifyToken(header string, secret string) (*jwt.Token, *authorisationError)
 	})
 
 	if parseErr != nil {
-		return nil, &authorisationError{Error: "error_with_token", Description: parseErr.Error()}
-	}
-
-	if !token.Valid {
-		return nil, &authorisationError{Error: "error_with_token", Description: "invalid authentication token"}
+		return nil, errors.New(parseErr.Error())
 	}
 
 	return token, nil

@@ -41,7 +41,7 @@ func TestJwtVerify(t *testing.T) {
 		},
 		{
 			"Invalid token",
-			"NiJ9.eyJpYXQiOjE1ODcwNTIzMTcsImV4cCI6MTU4NzA1MjkxNywic2Vzc2lvbi1kYXRhIjoiVGVzdC5NY1Rlc3RGYWNlQG1haWwuY29tIn0.f0oM4fSH_b1Xi5zEF0VK-t5uhpVidk5HY1O0EGR4SQQ",
+			"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1ODcwNTIzMTcsImV4cCI6MTU4NzA1MjMxNywic2Vzc2lvbi1kYXRhIjoiVGVzdC5NY1Rlc3RGYWNlQG1haWwuY29tIn0.Db9h9JqwfdlS-LksLLqmdNYH8bQBxGTyFFL3086AxSE",
 			mockValue{"MyTestSecret", nil},
 			mockValue{"ufUvZWyqrCikO1HPcPfrz7qQ6ENV84p0", nil},
 			401,

@@ -15,8 +15,6 @@ services:
       DEFAULT_REGION: eu-west-1
       HOSTNAME_EXTERNAL: localstack
       SERVICES: es, secretsmanager
-    ports:
-      - 4571:4571
     volumes:
       - "./scripts/localstack:/docker-entrypoint-initaws.d"
   swagger-ui:
