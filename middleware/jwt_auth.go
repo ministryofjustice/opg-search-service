@@ -4,11 +4,11 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
-	"os"
+	"opg-search-service/response"
 	"strings"
 
 	"github.com/dgrijalva/jwt-go"
@@ -21,52 +21,62 @@ type authorisationError struct {
 
 type HashedEmail struct{}
 
-func JwtVerify(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		jwtSecret := os.Getenv("JWT_SECRET")
-		salt := os.Getenv("USER_HASH_SALT")
-
-		header := r.Header.Get("Authorization")
-
-		token, authErr := verifyToken(header, jwtSecret)
-
-		if authErr != nil {
-			rw.WriteHeader(http.StatusUnauthorized)
-			if err := json.NewEncoder(rw).Encode(authErr); err != nil {
-				log.Println("handler/middleware failed to write response:", err)
-			}
-		} else {
-			claims := token.Claims.(jwt.MapClaims)
-			email := claims["session-data"].(string)
-			hashedEmail := hashEmail(email, salt)
-			log.Println("JWT Token is valid for user ", hashedEmail)
-
-			ctx := context.WithValue(r.Context(), HashedEmail{}, hashedEmail)
-			next.ServeHTTP(rw, r.WithContext(ctx))
-		}
-	})
+type Cacheable interface {
+	GetSecretString(key string) (string, error)
 }
 
-func verifyToken(header string, secret string) (*jwt.Token, *authorisationError) {
+func JwtVerify(secretsCache Cacheable) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+			jwtSecret, jwtErr := secretsCache.GetSecretString("jwt-key")
+			if jwtErr != nil {
+				log.Println("Error in fetching JWT secret from cache:", jwtErr.Error())
+				response.WriteJSONError(rw, "missing_secret_key", jwtErr.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			header := r.Header.Get("Authorization")
+
+			token, verifyErr := verifyToken(header, jwtSecret)
+
+			if verifyErr != nil {
+				log.Println("Error in token verification :", verifyErr.Error())
+				response.WriteJSONError(rw, "Authorisation Error", verifyErr.Error(), http.StatusUnauthorized)
+			} else {
+				claims := token.Claims.(jwt.MapClaims)
+				email := claims["session-data"].(string)
+				salt, saltErr := secretsCache.GetSecretString("user-hash-salt")
+				if saltErr != nil {
+					log.Println("Error in fetching hash salt from cache:", saltErr.Error())
+					response.WriteJSONError(rw, "missing_secret_salt", saltErr.Error(), http.StatusInternalServerError)
+					return
+				}
+				hashedEmail := hashEmail(email, salt)
+				log.Println("JWT Token is valid for user ", hashedEmail)
+
+				ctx := context.WithValue(r.Context(), HashedEmail{}, hashedEmail)
+				next.ServeHTTP(rw, r.WithContext(ctx))
+			}
+		})
+	}
+}
+
+func verifyToken(header string, secret string) (*jwt.Token, error) {
 	if header == "" {
-		return nil, &authorisationError{Error: "missing_token", Description: "missing authentication token"}
+		return nil, errors.New("missing authentication token")
 	}
 
 	header = strings.Split(header, "Bearer ")[1]
 
-	token, err := jwt.Parse(header, func(token *jwt.Token) (i interface{}, err error) {
+	token, parseErr := jwt.Parse(header, func(token *jwt.Token) (i interface{}, err error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
 		return []byte(secret), nil
 	})
 
-	if err != nil {
-		return nil, &authorisationError{Error: "error_with_token", Description: err.Error()}
-	}
-
-	if !token.Valid {
-		return nil, &authorisationError{Error: "error_with_token", Description: "invalid authentication token"}
+	if parseErr != nil {
+		return nil, errors.New(parseErr.Error())
 	}
 
 	return token, nil

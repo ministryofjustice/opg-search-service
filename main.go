@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"opg-search-service/cache"
 	"opg-search-service/middleware"
 	"opg-search-service/person"
 	"os"
@@ -35,12 +36,13 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 	})
 
+	secretsCache := cache.New()
+
 	// Create a sub-router for protected handlers
 	postRouter := sm.Methods(http.MethodPost).Subrouter()
-	postRouter.Use(middleware.JwtVerify)
+	postRouter.Use(middleware.JwtVerify(secretsCache))
 
 	// Register protected handlers
-
 	iph, err := person.NewIndexHandler(l)
 	if err != nil {
 		l.Fatal(err)

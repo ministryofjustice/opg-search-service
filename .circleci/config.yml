@@ -55,11 +55,13 @@ jobs:
           GOTESTSUM_FORMAT: short-verbose
           AWS_ACCESS_KEY_ID: localstack
           AWS_SECRET_ACCESS_KEY: localstack
+          DEFAULT_REGION: eu-west-1
           AWS_ELASTICSEARCH_ENDPOINT: http://localhost:4571
+          AWS_SECRETS_MANAGER_ENDPOINT: http://localhost:4566
       - image: localstack/localstack-full:0.12.8
         environment:
           DEFAULT_REGION: eu-west-1
-          SERVICES: es
+          SERVICES: es,secretsmanager
     steps:
       - checkout
       - run:

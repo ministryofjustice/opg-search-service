@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/stretchr/testify/suite"
 	"log"
 	"net"
 	"net/http"
@@ -13,8 +14,6 @@ import (
 	"os"
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/suite"
 )
 
 type EndToEndTestSuite struct {
@@ -27,9 +26,10 @@ type EndToEndTestSuite struct {
 func (suite *EndToEndTestSuite) SetupSuite() {
 	os.Setenv("JWT_SECRET", "MyTestSecret")
 	os.Setenv("USER_HASH_SALT", "ufUvZWyqrCikO1HPcPfrz7qQ6ENV84p0")
+	os.Setenv("ENVIRONMENT", "local")
 
 	logBuf := new(bytes.Buffer)
-	logger := log.New(logBuf, "opg-file-service ", log.LstdFlags)
+	logger := log.New(logBuf, "opg-search-service ", log.LstdFlags)
 	httpClient := &http.Client{}
 	suite.esClient, _ = elasticsearch.NewClient(httpClient, logger)
 
