@@ -107,11 +107,11 @@ func TestApplyAwsConfig(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		oldEndpoint := os.Getenv("SECRETS_MANAGER_ENDPOINT")
+		oldEndpoint := os.Getenv("AWS_SECRETS_MANAGER_ENDPOINT")
 		oldRegion := os.Getenv("AWS_REGION")
 		oldIamRole := os.Getenv("AWS_IAM_ROLE")
 
-		_ = os.Setenv("SECRETS_MANAGER_ENDPOINT", test.endpoint)
+		_ = os.Setenv("AWS_SECRETS_MANAGER_ENDPOINT", test.endpoint)
 		if test.region == "" {
 			_ = os.Unsetenv("AWS_REGION")
 		} else {
@@ -132,7 +132,7 @@ func TestApplyAwsConfig(t *testing.T) {
 		assert.Equal(t, "https://"+test.endpoint, cl.Endpoint, test.scenario)
 		assert.Equal(t, test.wantRegion, *cl.Config.Region, test.scenario)
 
-		_ = os.Setenv("SECRETS_MANAGER_ENDPOINT", oldEndpoint)
+		_ = os.Setenv("AWS_SECRETS_MANAGER_ENDPOINT", oldEndpoint)
 		_ = os.Setenv("AWS_REGION", oldRegion)
 
 		if oldIamRole == "" {

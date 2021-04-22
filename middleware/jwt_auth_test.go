@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type mockSecretsCache struct{
+type mockSecretsCache struct {
 	mock.Mock
 }
 

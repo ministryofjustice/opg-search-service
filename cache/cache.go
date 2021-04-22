@@ -37,7 +37,7 @@ func applyAwsConfig (c *secretcache.Cache) {
 		sess.Config.Credentials = c
 	}
 
-	endpoint := os.Getenv("SECRETS_MANAGER_ENDPOINT")
+	endpoint := os.Getenv("AWS_SECRETS_MANAGER_ENDPOINT")
 	sess.Config.Endpoint = &endpoint
 	c.Client = secretsmanager.New(sess)
 }
