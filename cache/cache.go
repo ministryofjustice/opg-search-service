@@ -1,7 +1,6 @@
 package cache
 
 import (
-	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -13,7 +12,11 @@ import (
 
 type SecretsCache struct {
 	env string
-	cache *secretcache.Cache
+	cache AwsSecretsCache
+}
+
+type AwsSecretsCache interface {
+	GetSecretString(secretId string) (string, error)
 }
 
 func applyAwsConfig (c *secretcache.Cache) {
@@ -26,7 +29,8 @@ func applyAwsConfig (c *secretcache.Cache) {
 
 	sess, err := session.NewSession(&aws.Config{Region: &region})
 	if err != nil {
-		log.Println("session failed to be created", err)
+		log.Fatal("Session failed to be created", err)
+		//errors.New("Session failed to be created" + err.Error())
 	}
 
 	if iamRole, ok := os.LookupEnv("AWS_IAM_ROLE"); ok {
@@ -46,8 +50,5 @@ func New() *SecretsCache {
 }
 
 func (c *SecretsCache) GetSecretString(key string) (string, error) {
-	resp, err:= c.cache.GetSecretString(c.env + "/" + key)
-	fmt.Println(fmt.Sprintf("%#v", resp))
-	fmt.Println(fmt.Sprintf("%#v", err))
 	return c.cache.GetSecretString(c.env + "/" + key)
 }
