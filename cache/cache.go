@@ -29,8 +29,7 @@ func applyAwsConfig (c *secretcache.Cache) {
 
 	sess, err := session.NewSession(&aws.Config{Region: &region})
 	if err != nil {
-		log.Fatal("Session failed to be created", err)
-		//errors.New("Session failed to be created" + err.Error())
+		log.Fatal("session failed to be created", err)
 	}
 
 	if iamRole, ok := os.LookupEnv("AWS_IAM_ROLE"); ok {

@@ -83,7 +83,6 @@ func TestApplyAwsConfig(t *testing.T) {
 		region     string
 		wantRegion string
 		role       string
-		wantErr    bool
 	}{
 		{
 			scenario:   "Blank AWS region",
