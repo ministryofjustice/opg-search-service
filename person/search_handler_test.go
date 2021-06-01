@@ -22,7 +22,7 @@ import (
 type SearchHandlerTestSuite struct {
 	suite.Suite
 	logger   *log.Logger
-	esClient *MockESClient
+	esClient *elasticsearch.MockESClient
 	handler  *SearchHandler
 	router   *mux.Router
 	recorder *httptest.ResponseRecorder
@@ -32,7 +32,7 @@ type SearchHandlerTestSuite struct {
 func (suite *SearchHandlerTestSuite) SetupTest() {
 	buf := new(bytes.Buffer)
 	suite.logger = log.New(buf, "test", log.LstdFlags)
-	suite.esClient = new(MockESClient)
+	suite.esClient = new(elasticsearch.MockESClient)
 	suite.handler = &SearchHandler{
 		logger: suite.logger,
 		es:     suite.esClient,

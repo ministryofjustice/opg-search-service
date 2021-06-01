@@ -19,7 +19,7 @@ import (
 type IndexHandlerTestSuite struct {
 	suite.Suite
 	logger   *log.Logger
-	esClient *MockESClient
+	esClient *elasticsearch.MockESClient
 	handler  *IndexHandler
 	router   *mux.Router
 	recorder *httptest.ResponseRecorder
@@ -29,7 +29,7 @@ type IndexHandlerTestSuite struct {
 func (suite *IndexHandlerTestSuite) SetupTest() {
 	buf := new(bytes.Buffer)
 	suite.logger = log.New(buf, "test", log.LstdFlags)
-	suite.esClient = new(MockESClient)
+	suite.esClient = new(elasticsearch.MockESClient)
 	suite.handler = &IndexHandler{
 		logger: suite.logger,
 		es:     suite.esClient,
