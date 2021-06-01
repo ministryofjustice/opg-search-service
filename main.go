@@ -2,24 +2,27 @@ package main
 
 import (
 	"context"
+	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"opg-search-service/cache"
+	"opg-search-service/cli"
 	"opg-search-service/middleware"
 	"opg-search-service/person"
 	"os"
 	"os/signal"
 	"time"
-
-	"github.com/gorilla/mux"
-	"github.com/ministryofjustice/opg-go-healthcheck/healthcheck"
 )
 
 func main() {
-	healthcheck.Register("http://localhost:8000" + os.Getenv("PATH_PREFIX") + "/health-check")
-
 	// Create a Logger
 	l := log.New(os.Stdout, "opg-search-service ", log.LstdFlags)
+
+	// Register CLI commands
+	cli.Commands(l).Register(
+		cli.NewHealthCheck(l),
+		cli.NewCreateIndices(l),
+	)
 
 	// Create new serveMux
 	sm := mux.NewRouter().PathPrefix(os.Getenv("PATH_PREFIX")).Subrouter()
