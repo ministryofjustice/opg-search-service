@@ -57,3 +57,8 @@ Another gotcha... Make sure annotations are written with 2 space tabs in order f
 | AWS_SECRETS_MANAGER_ENDPOINT  |                                   | Used for accessing the Secrets Manager endpoint locally e.g. http://localstack:4566 |
 | ENVIRONMENT                   |                                   | Used when creating a new secrets cache object locally                               |
 | PATH_PREFIX                   |                                   | Path prefix where all requested will be routed                                      |
+
+## Console commands
+
+- `docker-compose run --rm search-service -hc` - Container health check. Exit code 0 on success and 1 on error.
+- `docker-compose run --rm search-service -create-indices` - Creates indices in ElasticSearch
