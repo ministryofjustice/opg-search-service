@@ -51,6 +51,8 @@ func TestCreateIndices_ShouldRun(t *testing.T) {
 }
 
 func TestCreateIndices_Run(t *testing.T) {
+	const ESErrorMessage = "some ES error"
+
 	tests := []struct {
 		scenario     string
 		esError      error
@@ -69,10 +71,10 @@ func TestCreateIndices_Run(t *testing.T) {
 		},
 		{
 			scenario:     "Error when creating index",
-			esError:      errors.New("some ES error"),
+			esError:      errors.New(ESErrorMessage),
 			esExists:     false,
 			esExistsErr:  nil,
-			wantInLog:    "some ES error",
+			wantInLog:    ESErrorMessage,
 			wantExitCode: 1,
 		},
 		{
@@ -87,8 +89,8 @@ func TestCreateIndices_Run(t *testing.T) {
 			scenario:     "Error when checking if index exists",
 			esError:      nil,
 			esExists:     false,
-			esExistsErr:  errors.New("some ES error"),
-			wantInLog:    "some ES error",
+			esExistsErr:  errors.New(ESErrorMessage),
+			wantInLog:    ESErrorMessage,
 			wantExitCode: 1,
 		},
 	}

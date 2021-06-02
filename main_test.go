@@ -37,7 +37,7 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 
 	// define fixtures
 	var ids []int64
-	for i := 0; i < 20; i++ {
+	for i := 0; i < 2; i++ {
 		ids = append(ids, int64(i))
 		suite.testPeople = append(suite.testPeople, person.Person{
 			UID:           fmt.Sprintf("%d", i),
@@ -144,11 +144,11 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
 
 	expectedSearchResp, _ := json.Marshal(response.SearchResponse{
 		Results: []elasticsearch.Indexable{
-			&suite.testPeople[10],
+			&suite.testPeople[1],
 		},
 	})
 
-	reqBody := bytes.NewReader([]byte(`{"term":"` + suite.testPeople[10].Surname + `"}`))
+	reqBody := bytes.NewReader([]byte(`{"term":"` + suite.testPeople[1].Surname + `"}`))
 	req, _ := http.NewRequest(http.MethodPost, suite.GetUrl("/persons/search"), reqBody)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", suite.authHeader)
