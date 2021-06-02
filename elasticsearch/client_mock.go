@@ -20,3 +20,8 @@ func (m *MockESClient) CreateIndex(i Indexable) (bool, error) {
 	args := m.Called(i)
 	return args.Get(0).(bool), args.Error(1)
 }
+
+func (m *MockESClient) IndexExists(i Indexable) (bool, error) {
+	args := m.Called(i)
+	return args.Get(0).(bool), args.Error(1)
+}
