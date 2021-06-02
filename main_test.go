@@ -18,7 +18,7 @@ import (
 
 type EndToEndTestSuite struct {
 	suite.Suite
-	testPerson *person.Person
+	testPeople []person.Person
 	esClient   elasticsearch.ClientInterface
 	authHeader string
 }
@@ -36,12 +36,15 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 	suite.authHeader = "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1ODcwNTIzMTcsImV4cCI6OTk5OTk5OTk5OSwic2Vzc2lvbi1kYXRhIjoiVGVzdC5NY1Rlc3RGYWNlQG1haWwuY29tIn0.8HtN6aTAnE2YFI9rJD8drzqgrXPkyUbwRRJymcPSmHk"
 
 	// define fixtures
-	id := int64(3)
-	suite.testPerson = &person.Person{
-		UID:           "3",
-		Normalizeduid: &id,
-		Firstname:     "John",
-		Surname:       "Doe",
+	var ids []int64
+	for i := 0; i < 20; i++ {
+		ids = append(ids, int64(i))
+		suite.testPeople = append(suite.testPeople, person.Person{
+			UID:           fmt.Sprintf("%d", i),
+			Normalizeduid: &ids[i],
+			Firstname:     fmt.Sprintf("John%d", i),
+			Surname:       fmt.Sprintf("Doe%d", i),
+		})
 	}
 
 	// wait for ES service to stand up
@@ -57,9 +60,17 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 	suite.Nil(err)
 	suite.Equal(http.StatusOK, resp.StatusCode)
 
+	exists, err := suite.esClient.IndexExists(person.Person{})
+	suite.False(exists, "Person index should not exist at this point")
+	suite.Nil(err)
+
 	// create indices
 	ok, err := suite.esClient.CreateIndex(person.Person{})
 	suite.True(ok, "Could not create Person index")
+	suite.Nil(err)
+
+	exists, err = suite.esClient.IndexExists(person.Person{})
+	suite.True(exists, "Person index should exist at this point")
 	suite.Nil(err)
 
 	// wait up to 5 seconds for the app to start
@@ -90,53 +101,55 @@ func (suite *EndToEndTestSuite) TestHealthCheck() {
 func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
 	client := new(http.Client)
 
-	iReq := person.IndexRequest{
-		Persons: []person.Person{
-			*suite.testPerson,
-		},
-	}
-
-	jsonBody, _ := json.Marshal(iReq)
-	reqBody := bytes.NewReader(jsonBody)
-	req, _ := http.NewRequest(http.MethodPost, suite.GetUrl("/persons"), reqBody)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", suite.authHeader)
-
-	resp, err := client.Do(req)
-	if err != nil {
-		suite.Fail("Error indexing a person", err)
-	}
-	defer resp.Body.Close()
-
-	suite.Equal(http.StatusAccepted, resp.StatusCode)
-
-	var iResp response.IndexResponse
-
-	err = json.NewDecoder(resp.Body).Decode(&iResp)
-	if err != nil {
-		suite.Fail("Unable to decode JSON index response", resp.Body)
-	}
-
-	expectedResp := response.IndexResponse{
-		Results: []elasticsearch.IndexResult{
-			{
-				Id:         3,
-				StatusCode: 201,
-				Message:    "Document created",
+	for _, testPerson := range suite.testPeople {
+		iReq := person.IndexRequest{
+			Persons: []person.Person{
+				testPerson,
 			},
-		},
-	}
+		}
 
-	suite.Equal(expectedResp, iResp, "Unexpected index result")
+		jsonBody, _ := json.Marshal(iReq)
+		reqBody := bytes.NewReader(jsonBody)
+		req, _ := http.NewRequest(http.MethodPost, suite.GetUrl("/persons"), reqBody)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", suite.authHeader)
+
+		resp, err := client.Do(req)
+		if err != nil {
+			suite.Fail("Error indexing person", err)
+		}
+		defer resp.Body.Close()
+
+		suite.Equal(http.StatusAccepted, resp.StatusCode)
+
+		var iResp response.IndexResponse
+
+		err = json.NewDecoder(resp.Body).Decode(&iResp)
+		if err != nil {
+			suite.Fail("Unable to decode JSON index response", resp.Body)
+		}
+
+		expectedResp := response.IndexResponse{
+			Results: []elasticsearch.IndexResult{
+				{
+					Id:         testPerson.Id(),
+					StatusCode: 201,
+					Message:    "Document created",
+				},
+			},
+		}
+
+		suite.Equal(expectedResp, iResp, "Unexpected index result")
+	}
 
 	expectedSearchResp, _ := json.Marshal(response.SearchResponse{
 		Results: []elasticsearch.Indexable{
-			suite.testPerson,
+			&suite.testPeople[10],
 		},
 	})
 
-	reqBody = bytes.NewReader([]byte(`{"term":"` + suite.testPerson.Surname + `"}`))
-	req, _ = http.NewRequest(http.MethodPost, suite.GetUrl("/persons/search"), reqBody)
+	reqBody := bytes.NewReader([]byte(`{"term":"` + suite.testPeople[10].Surname + `"}`))
+	req, _ := http.NewRequest(http.MethodPost, suite.GetUrl("/persons/search"), reqBody)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", suite.authHeader)
 
@@ -144,7 +157,7 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
 
 	// wait up to 2s for the indexed record to become searchable
 	for i := 0; i < 20; i++ {
-		resp, err = client.Do(req)
+		resp, err := client.Do(req)
 		if err != nil {
 			suite.Fail("Error searching for a person", err)
 		}
