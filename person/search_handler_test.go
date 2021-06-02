@@ -118,7 +118,7 @@ func (suite *SearchHandlerTestSuite) Test_ESReturnsUnexpectedPersonStructure() {
 
 	esCall := suite.esClient.On("Search", mock.Anything, mock.Anything)
 	esResults := []string{
-		`{"uId":10,"normalizedUid":"10"}`,
+		`{"id":"10"}`,
 	}
 	esCall.Return(&esResults, nil)
 
@@ -181,8 +181,8 @@ func (suite *SearchHandlerTestSuite) Test_SearchWithAllParameters() {
 		suite.IsType(Person{}, dataType)
 	}
 	esResults := []string{
-		`{"uId":"10","normalizedUid":10,"firstname":"Test1","surname":"Test1"}`,
-		`{"uId":"20","normalizedUid":20,"firstname":"Test2","surname":"Test2"}`,
+		`{"id":10,"firstname":"Test1","surname":"Test1"}`,
+		`{"id":20,"firstname":"Test2","surname":"Test2"}`,
 	}
 	esCall.Return(&esResults, nil)
 
@@ -192,16 +192,14 @@ func (suite *SearchHandlerTestSuite) Test_SearchWithAllParameters() {
 	id2 := int64(20)
 	expectedResponse := response.SearchResponse{Results: []elasticsearch.Indexable{
 		Person{
-			UID:           "10",
-			Normalizeduid: &id1,
-			Firstname:     "Test1",
-			Surname:       "Test1",
+			ID:        &id1,
+			Firstname: "Test1",
+			Surname:   "Test1",
 		},
 		Person{
-			UID:           "20",
-			Normalizeduid: &id2,
-			Firstname:     "Test2",
-			Surname:       "Test2",
+			ID:        &id2,
+			Firstname: "Test2",
+			Surname:   "Test2",
 		},
 	}}
 	expectedJsonResponse, _ := json.Marshal(expectedResponse)

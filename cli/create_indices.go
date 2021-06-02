@@ -38,7 +38,20 @@ func (c *createIndices) ShouldRun() bool {
 }
 
 func (c *createIndices) Run() {
-	_, err := c.esClient.CreateIndex(person.Person{})
+	exists, err := c.esClient.IndexExists(person.Person{})
+	if err != nil {
+		c.logger.Println(err)
+		c.exit(1)
+		return
+	}
+
+	if exists {
+		c.logger.Println("Person index already exists")
+		c.exit(0)
+		return
+	}
+
+	_, err = c.esClient.CreateIndex(person.Person{})
 	if err != nil {
 		c.logger.Println(err)
 		c.exit(1)

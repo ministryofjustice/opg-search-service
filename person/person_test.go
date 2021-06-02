@@ -23,7 +23,7 @@ func TestPerson_Id(t *testing.T) {
 		{
 			scenario: "Person with ID",
 			person: Person{
-				Normalizeduid: &testId,
+				ID: &testId,
 			},
 			expectedId: int64(13),
 		},
@@ -56,7 +56,7 @@ func TestPerson_Validate(t *testing.T) {
 		{
 			"valid person",
 			Person{
-				Normalizeduid: &testId,
+				ID: &testId,
 			},
 			noErrs,
 		},
@@ -65,7 +65,7 @@ func TestPerson_Validate(t *testing.T) {
 			Person{},
 			[]response.Error{
 				{
-					Name:        "normalizedUid",
+					Name:        "id",
 					Description: "field is empty",
 				},
 			},
@@ -73,11 +73,11 @@ func TestPerson_Validate(t *testing.T) {
 		{
 			"invalid person id",
 			Person{
-				Normalizeduid: nil,
+				ID: nil,
 			},
 			[]response.Error{
 				{
-					Name:        "normalizedUid",
+					Name:        "id",
 					Description: "field is empty",
 				},
 			},

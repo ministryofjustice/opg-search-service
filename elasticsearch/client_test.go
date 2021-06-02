@@ -414,3 +414,69 @@ func TestClient_Search_InvalidESRequestBody(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "json: unsupported type: func()")
 }
+
+func TestClient_IndexExists(t *testing.T) {
+	tests := []struct {
+		scenario        string
+		esResponseError error
+		esResponseCode  int
+		wantExists      bool
+		wantError       error
+	}{
+		{
+			scenario:        "Index exists",
+			esResponseError: nil,
+			esResponseCode:  200,
+			wantExists:      true,
+			wantError:       nil,
+		},
+		{
+			scenario:        "Index does not exist",
+			esResponseError: nil,
+			esResponseCode:  404,
+			wantExists:      false,
+			wantError:       nil,
+		},
+		{
+			scenario:        "Unexpected failure",
+			esResponseError: errors.New("some ES error"),
+			esResponseCode:  500,
+			wantExists:      false,
+			wantError:       errors.New("some ES error"),
+		},
+	}
+
+	for _, test := range tests {
+		mc := new(MockHttpClient)
+
+		lBuf := new(bytes.Buffer)
+		l := log.New(lBuf, "", log.LstdFlags)
+
+		c, err := NewClient(mc, l)
+
+		assert.IsType(t, &Client{}, c, test.scenario)
+		assert.Nil(t, err, test.scenario)
+
+		mi := new(MockIndexable)
+		mi.On("IndexName").Return("test-index").Times(2)
+
+		mcCall := mc.On("Do", mock.AnythingOfType("*http.Request"))
+		mcCall.RunFn = func(args mock.Arguments) {
+			req := args[0].(*http.Request)
+			assert.Equal(t, http.MethodHead, req.Method)
+			assert.Equal(t, os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")+"/test-index", req.URL.String())
+		}
+		mcCall.Return(
+			&http.Response{
+				StatusCode: test.esResponseCode,
+			},
+			test.esResponseError,
+		)
+
+		exists, err := c.IndexExists(mi)
+
+		assert.Contains(t, lBuf.String(), "Checking index 'test-index' exists", test.scenario)
+		assert.Equal(t, test.wantExists, exists, test.scenario)
+		assert.Equal(t, test.wantError, err, test.scenario)
+	}
+}

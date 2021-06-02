@@ -24,6 +24,7 @@ type ClientInterface interface {
 	Index(i Indexable) *IndexResult
 	Search(requestBody map[string]interface{}, dataType Indexable) (*[]string, error)
 	CreateIndex(i Indexable) (bool, error)
+	IndexExists(i Indexable) (bool, error)
 }
 
 type Indexable interface {
@@ -152,6 +153,36 @@ func (c Client) Search(requestBody map[string]interface{}, dataType Indexable) (
 	}
 
 	return &results, nil
+}
+
+func (c Client) IndexExists(i Indexable) (bool, error) {
+	c.logger.Printf("Checking index '%s' exists", i.IndexName())
+
+	endpoint := c.domain + "/" + i.IndexName()
+
+	// Form the HTTP request
+	body := bytes.NewReader([]byte(""))
+	req, err := http.NewRequest(http.MethodHead, endpoint, body)
+	if err != nil {
+		return false, err
+	}
+
+	// Sign the request, send it, and print the response
+	_, _ = c.signer.Sign(req, body, c.service, c.region, time.Now())
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return false, err
+	}
+
+	switch resp.StatusCode {
+	case http.StatusOK:
+		return true, nil
+	case http.StatusNotFound:
+		return false, nil
+	}
+
+	return false, errors.New(fmt.Sprintf(`index check failed with status code %d`, resp.StatusCode))
 }
 
 func (c Client) CreateIndex(i Indexable) (bool, error) {
