@@ -70,11 +70,18 @@ func main() {
 	//         items:
 	//           type: object
 	//           properties:
+	//             id:
+	//               type: integer
+	//               format: int64
 	//             uId:
 	//               type: string
 	//             normalizedUid:
 	//               type: integer
 	//               format: int64
+	//             sageId:
+	//               type: string
+	//             caseRecNumber:
+	//               type: string
 	//             workPhoneNumber:
 	//               type: object
 	//               properties:
@@ -126,6 +133,8 @@ func main() {
 	//             middlenames:
 	//               type: string
 	//             surname:
+	//               type: string
+	//             companyName:
 	//               type: string
 	//             addressLine1:
 	//               type: string

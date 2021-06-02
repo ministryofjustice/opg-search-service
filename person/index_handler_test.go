@@ -87,18 +87,18 @@ func (suite *IndexHandlerTestSuite) Test_InvalidIndexRequestBody() {
 	suite.ServeRequest(http.MethodPost, "/persons", reqBody)
 
 	suite.Equal(http.StatusBadRequest, suite.RespCode())
-	suite.Contains(suite.RespBody(), `{"message":"Some fields have failed validation","errors":[{"name":"normalizedUid","description":"field is empty"}]}`)
+	suite.Contains(suite.RespBody(), `{"message":"Some fields have failed validation","errors":[{"name":"id","description":"field is empty"}]}`)
 }
 
 func (suite *IndexHandlerTestSuite) Test_IndexSingle() {
-	reqBody := `{"persons":[{"normalizedUid":13}]}`
+	reqBody := `{"persons":[{"id":13}]}`
 
 	id := int64(13)
 	esCall := suite.esClient.On("Index", mock.AnythingOfType("Person"))
 	esCall.RunFn = func(args mock.Arguments) {
 		i := args[0].(Person)
 		suite.Equal(Person{
-			Normalizeduid: &id,
+			ID: &id,
 		}, i)
 	}
 	esCall.Return(&elasticsearch.IndexResult{
@@ -114,7 +114,7 @@ func (suite *IndexHandlerTestSuite) Test_IndexSingle() {
 }
 
 func (suite *IndexHandlerTestSuite) Test_IndexMultiple() {
-	reqBody := `{"persons":[{"normalizedUid":13},{"normalizedUid":14}]}`
+	reqBody := `{"persons":[{"id":13},{"id":14}]}`
 
 	ids := [2]int64{13, 14}
 
@@ -122,7 +122,7 @@ func (suite *IndexHandlerTestSuite) Test_IndexMultiple() {
 	esCall.RunFn = func(args mock.Arguments) {
 		i := args[0].(Person)
 		suite.Equal(Person{
-			Normalizeduid: &ids[0],
+			ID: &ids[0],
 		}, i)
 	}
 	esCall.Return(&elasticsearch.IndexResult{
@@ -135,7 +135,7 @@ func (suite *IndexHandlerTestSuite) Test_IndexMultiple() {
 	esCall.RunFn = func(args mock.Arguments) {
 		i := args[0].(Person)
 		suite.Equal(Person{
-			Normalizeduid: &ids[1],
+			ID: &ids[1],
 		}, i)
 	}
 	esCall.Return(&elasticsearch.IndexResult{

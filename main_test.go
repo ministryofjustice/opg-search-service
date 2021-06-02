@@ -40,10 +40,9 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 	for i := 0; i < 2; i++ {
 		ids = append(ids, int64(i))
 		suite.testPeople = append(suite.testPeople, person.Person{
-			UID:           fmt.Sprintf("%d", i),
-			Normalizeduid: &ids[i],
-			Firstname:     fmt.Sprintf("John%d", i),
-			Surname:       fmt.Sprintf("Doe%d", i),
+			ID:        &ids[i],
+			Firstname: fmt.Sprintf("John%d", i),
+			Surname:   fmt.Sprintf("Doe%d", i),
 		})
 	}
 
