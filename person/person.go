@@ -6,8 +6,11 @@ import (
 )
 
 type Person struct {
+	ID              *int64 `json:"id"`
 	UID             string `json:"uId"`
-	Normalizeduid   *int64 `json:"normalizedUid"`
+	Normalizeduid   int64  `json:"normalizedUid"`
+	SageID          string `json:"sageId"`
+	CaseRecNumber   string `json:"caseRecNumber"`
 	Workphonenumber struct {
 		ID          int    `json:"id"`
 		Phonenumber string `json:"phoneNumber"`
@@ -34,6 +37,7 @@ type Person struct {
 	Firstname         string `json:"firstname"`
 	Middlenames       string `json:"middlenames"`
 	Surname           string `json:"surname"`
+	CompanyName       string `json:"companyName"`
 	Addressline1      string `json:"addressLine1"`
 	Addressline2      string `json:"addressLine2"`
 	Addressline3      string `json:"addressLine3"`
@@ -78,8 +82,8 @@ type Person struct {
 
 func (p Person) Id() int64 {
 	val := int64(0)
-	if p.Normalizeduid != nil {
-		val = *p.Normalizeduid
+	if p.ID != nil {
+		val = *p.ID
 	}
 	return val
 }
@@ -96,9 +100,9 @@ func (p Person) Json() string {
 func (p Person) Validate() []response.Error {
 	var errs []response.Error
 
-	if p.Normalizeduid == nil {
+	if p.ID == nil {
 		errs = append(errs, response.Error{
-			Name:        "normalizedUid",
+			Name:        "id",
 			Description: "field is empty",
 		})
 	}

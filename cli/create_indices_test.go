@@ -51,22 +51,46 @@ func TestCreateIndices_ShouldRun(t *testing.T) {
 }
 
 func TestCreateIndices_Run(t *testing.T) {
+	const ESErrorMessage = "some ES error"
+
 	tests := []struct {
 		scenario     string
 		esError      error
+		esExists     bool
+		esExistsErr  error
 		wantInLog    string
 		wantExitCode int
 	}{
 		{
 			scenario:     "Index created successfully",
 			esError:      nil,
+			esExists:     false,
+			esExistsErr:  nil,
 			wantInLog:    "Person index created successfully",
 			wantExitCode: 0,
 		},
 		{
 			scenario:     "Error when creating index",
-			esError:      errors.New("some ES error"),
-			wantInLog:    "some ES error",
+			esError:      errors.New(ESErrorMessage),
+			esExists:     false,
+			esExistsErr:  nil,
+			wantInLog:    ESErrorMessage,
+			wantExitCode: 1,
+		},
+		{
+			scenario:     "Index already exists",
+			esError:      nil,
+			esExists:     true,
+			esExistsErr:  nil,
+			wantInLog:    "Person index already exists",
+			wantExitCode: 0,
+		},
+		{
+			scenario:     "Error when checking if index exists",
+			esError:      nil,
+			esExists:     false,
+			esExistsErr:  errors.New(ESErrorMessage),
+			wantInLog:    ESErrorMessage,
 			wantExitCode: 1,
 		},
 	}
@@ -75,6 +99,7 @@ func TestCreateIndices_Run(t *testing.T) {
 		l := log.New(lBuf, "", log.LstdFlags)
 
 		esClient := new(elasticsearch.MockESClient)
+		esClient.On("IndexExists", person.Person{}).Times(1).Return(test.esExists, test.esExistsErr)
 		esClient.On("CreateIndex", person.Person{}).Times(1).Return(test.esError == nil, test.esError)
 
 		exitCode := 666

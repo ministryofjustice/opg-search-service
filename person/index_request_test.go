@@ -19,7 +19,7 @@ func TestIndexRequest_Validate(t *testing.T) {
 			"valid request",
 			IndexRequest{
 				Persons: []Person{
-					{Normalizeduid: &testId},
+					{ID: &testId},
 				},
 			},
 			noErrs,
@@ -55,7 +55,7 @@ func TestIndexRequest_Validate(t *testing.T) {
 			},
 			[]response.Error{
 				{
-					Name:        "normalizedUid",
+					Name:        "id",
 					Description: "field is empty",
 				},
 			},
