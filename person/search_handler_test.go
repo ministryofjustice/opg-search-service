@@ -114,25 +114,6 @@ func (suite *SearchHandlerTestSuite) Test_ESReturnsUnexpectedError() {
 	suite.Contains(suite.RespBody(), `"errors":[{"name":"request","description":"Person search caused an unexpected error"}]`)
 }
 
-func (suite *SearchHandlerTestSuite) Test_ESReturnsUnexpectedPersonStructure() {
-	reqBody := `{"term":"test"}`
-
-	esCall := suite.esClient.On("Search", mock.Anything, mock.Anything)
-
-	result := &elasticsearch.SearchResult{
-		Hits: [][]byte{
-			[]byte(`{"id":"10"}`),
-		},
-		Aggregations: map[string]map[string]int{},
-	}
-	esCall.Return(result, nil)
-
-	suite.ServeRequest(http.MethodPost, "/persons/search", reqBody)
-
-	suite.Equal(http.StatusInternalServerError, suite.RespCode())
-	suite.Contains(suite.RespBody(), `"errors":[{"name":"request","description":"Error marshalling response data into Person object"}]`)
-}
-
 func (suite *SearchHandlerTestSuite) Test_SearchWithAllParameters() {
 	reqBody := `{"term":"testTerm","from":10,"size":20,"person_types":["type1","type2"]}`
 
@@ -187,7 +168,7 @@ func (suite *SearchHandlerTestSuite) Test_SearchWithAllParameters() {
 	}
 
 	result := &elasticsearch.SearchResult{
-		Hits: [][]byte{
+		Hits: []json.RawMessage{
 			[]byte(`{"id":10,"firstname":"Test1","surname":"Test1"}`),
 			[]byte(`{"id":20,"firstname":"Test2","surname":"Test2"}`),
 		},
@@ -205,21 +186,8 @@ func (suite *SearchHandlerTestSuite) Test_SearchWithAllParameters() {
 
 	suite.ServeRequest(http.MethodPost, "/persons/search", reqBody)
 
-	id1 := int64(10)
-	id2 := int64(20)
 	expectedResponse := response.SearchResponse{
-		Results: []elasticsearch.Indexable{
-			Person{
-				ID:        &id1,
-				Firstname: "Test1",
-				Surname:   "Test1",
-			},
-			Person{
-				ID:        &id2,
-				Firstname: "Test2",
-				Surname:   "Test2",
-			},
-		},
+		Results:      result.Hits,
 		Aggregations: result.Aggregations,
 		Total: response.Total{
 			Count: 2,

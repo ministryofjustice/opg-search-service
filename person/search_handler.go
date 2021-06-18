@@ -93,21 +93,12 @@ func (s SearchHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := response.SearchResponse{
-		Results:      make([]elasticsearch.Indexable, 0),
 		Aggregations: result.Aggregations,
+		Results:      result.Hits,
 		Total: response.Total{
 			Count: result.Total,
 			Exact: result.TotalExact,
 		},
-	}
-	for _, result := range result.Hits {
-		p := new(Person)
-		if err := json.Unmarshal(result, p); err != nil {
-			s.logger.Println(err.Error())
-			response.WriteJSONError(rw, "request", "Error marshalling response data into Person object", http.StatusInternalServerError)
-			return
-		}
-		resp.Results = append(resp.Results, p)
 	}
 
 	jsonResp, _ := json.Marshal(resp)

@@ -1,9 +1,11 @@
 package response
 
-import "opg-search-service/elasticsearch"
+import (
+	"encoding/json"
+)
 
 type SearchResponse struct {
-	Results      []elasticsearch.Indexable `json:"results"`
+	Results      []json.RawMessage         `json:"results"`
 	Aggregations map[string]map[string]int `json:"aggregations"`
 	Total        Total                     `json:"total"`
 }

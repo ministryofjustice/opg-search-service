@@ -143,10 +143,10 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
 		suite.Equal(expectedResp, iResp, "Unexpected index result")
 	}
 
+	hit, _ := json.Marshal(suite.testPeople[1])
+
 	expectedSearchResp, _ := json.Marshal(response.SearchResponse{
-		Results: []elasticsearch.Indexable{
-			&suite.testPeople[1],
-		},
+		Results: []json.RawMessage{hit},
 		Aggregations: map[string]map[string]int{
 			"personType": {
 				"Type1": 1,

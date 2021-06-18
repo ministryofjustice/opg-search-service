@@ -63,7 +63,7 @@ type elasticSearchResponse struct {
 }
 
 type SearchResult struct {
-	Hits         [][]byte
+	Hits         []json.RawMessage
 	Aggregations map[string]map[string]int
 	Total        int
 	TotalExact   bool
@@ -171,9 +171,9 @@ func (c Client) Search(requestBody map[string]interface{}, dataType Indexable) (
 		return nil, fmt.Errorf("error parsing the response body: %w", err)
 	}
 
-	var results [][]byte
-	for _, hit := range esResponse.Hits.Hits {
-		results = append(results, bytes.TrimSpace(hit.Source))
+	hits := make([]json.RawMessage, len(esResponse.Hits.Hits))
+	for i, hit := range esResponse.Hits.Hits {
+		hits[i] = hit.Source
 	}
 
 	aggregations := map[string]map[string]int{}
@@ -188,7 +188,7 @@ func (c Client) Search(requestBody map[string]interface{}, dataType Indexable) (
 	}
 
 	return &SearchResult{
-		Hits:         results,
+		Hits:         hits,
 		Aggregations: aggregations,
 		Total:        esResponse.Hits.Total.Value,
 		TotalExact:   esResponse.Hits.Total.Relation == "eq",

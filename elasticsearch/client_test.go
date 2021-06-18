@@ -2,6 +2,7 @@ package elasticsearch
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"log"
@@ -292,7 +293,7 @@ func TestClient_Search(t *testing.T) {
 			esResponseMessage: `{"hits":{"hits":[{"_source":{"id":1,"name":"test1"}},{"_source":{"id":2,"name":"test1"}}]},"aggregations":{"personType":{"buckets":[{"key":"donor","doc_count":2}]}}}`,
 			expectedError:     nil,
 			expectedResult: &SearchResult{
-				Hits: [][]byte{
+				Hits: []json.RawMessage{
 					[]byte(`{"id":1,"name":"test1"}`),
 					[]byte(`{"id":2,"name":"test1"}`),
 				},
@@ -310,6 +311,7 @@ func TestClient_Search(t *testing.T) {
 			esResponseMessage: `{"hits":{"hits":[]}}`,
 			expectedError:     nil,
 			expectedResult: &SearchResult{
+				Hits:         []json.RawMessage{},
 				Aggregations: map[string]map[string]int{},
 			},
 		},
