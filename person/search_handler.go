@@ -85,7 +85,7 @@ func (s SearchHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		esReqBody["size"] = req.Size
 	}
 
-	results, err := s.es.Search(esReqBody, dataType)
+	result, err := s.es.Search(esReqBody, dataType)
 	if err != nil {
 		s.logger.Println(err.Error())
 		response.WriteJSONError(rw, "request", "Person search caused an unexpected error", http.StatusInternalServerError)
@@ -93,16 +93,12 @@ func (s SearchHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := response.SearchResponse{
-		Results: make([]elasticsearch.Indexable, 0),
-	}
-	for _, result := range *results {
-		p := new(Person)
-		if err := json.Unmarshal([]byte(result), p); err != nil {
-			s.logger.Println(err.Error())
-			response.WriteJSONError(rw, "request", "Error marshalling response data into Person object", http.StatusInternalServerError)
-			return
-		}
-		resp.Results = append(resp.Results, p)
+		Aggregations: result.Aggregations,
+		Results:      result.Hits,
+		Total: response.Total{
+			Count: result.Total,
+			Exact: result.TotalExact,
+		},
 	}
 
 	jsonResp, _ := json.Marshal(resp)

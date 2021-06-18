@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/stretchr/testify/suite"
 	"log"
 	"net"
 	"net/http"
@@ -14,6 +13,8 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/suite"
 )
 
 type EndToEndTestSuite struct {
@@ -40,9 +41,10 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 	for i := 0; i < 2; i++ {
 		ids = append(ids, int64(i))
 		suite.testPeople = append(suite.testPeople, person.Person{
-			ID:        &ids[i],
-			Firstname: fmt.Sprintf("John%d", i),
-			Surname:   fmt.Sprintf("Doe%d", i),
+			ID:         &ids[i],
+			Firstname:  fmt.Sprintf("John%d", i),
+			Surname:    fmt.Sprintf("Doe%d", i),
+			Persontype: fmt.Sprintf("Type%d", i%2),
 		})
 	}
 
@@ -141,9 +143,18 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
 		suite.Equal(expectedResp, iResp, "Unexpected index result")
 	}
 
+	hit, _ := json.Marshal(suite.testPeople[1])
+
 	expectedSearchResp, _ := json.Marshal(response.SearchResponse{
-		Results: []elasticsearch.Indexable{
-			&suite.testPeople[1],
+		Results: []json.RawMessage{hit},
+		Aggregations: map[string]map[string]int{
+			"personType": {
+				"Type1": 1,
+			},
+		},
+		Total: response.Total{
+			Count: 1,
+			Exact: true,
 		},
 	})
 
