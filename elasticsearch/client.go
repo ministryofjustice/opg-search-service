@@ -23,7 +23,7 @@ type HTTPClient interface {
 
 type ClientInterface interface {
 	Index(i Indexable) *IndexResult
-	Search(requestBody map[string]interface{}, dataType Indexable) ([][]byte, error)
+	Search(requestBody map[string]interface{}, dataType Indexable) ([][]byte, map[string]map[string]int, error)
 	CreateIndex(i Indexable) (bool, error)
 	IndexExists(i Indexable) (bool, error)
 }
@@ -47,8 +47,7 @@ type Client struct {
 type elasticSearchResponse struct {
 	Hits struct {
 		Total struct {
-			Value    int    `json:"value"`
-			Relation string `json:"eq"`
+			Value int `json:"value"`
 		} `json:"total"`
 		Hits []struct {
 			Source json.RawMessage `json:"_source"`
@@ -127,19 +126,19 @@ func (c Client) Index(i Indexable) *IndexResult {
 }
 
 // returns an array of JSON encoded results
-func (c Client) Search(requestBody map[string]interface{}, dataType Indexable) ([][]byte, error) {
+func (c Client) Search(requestBody map[string]interface{}, dataType Indexable) ([][]byte, map[string]map[string]int, error) {
 	endpoint := c.domain + "/" + dataType.IndexName() + "/_search"
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(requestBody); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	body := bytes.NewReader(buf.Bytes())
 
 	// Form the HTTP request
 	req, err := http.NewRequest(http.MethodPost, endpoint, body)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// You can probably infer Content-Type programmatically, but here, we just say that it's JSON
@@ -150,18 +149,18 @@ func (c Client) Search(requestBody map[string]interface{}, dataType Indexable) (
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
 		buf.Reset()
 		_, _ = buf.ReadFrom(resp.Body)
-		return nil, fmt.Errorf(`search request failed with status code %d and response: "%s"`, resp.StatusCode, buf.String())
+		return nil, nil, fmt.Errorf(`search request failed with status code %d and response: "%s"`, resp.StatusCode, buf.String())
 	}
 
 	var esResponse elasticSearchResponse
 	if err := json.NewDecoder(resp.Body).Decode(&esResponse); err != nil {
-		return nil, fmt.Errorf("error parsing the response body: %w", err)
+		return nil, nil, fmt.Errorf("error parsing the response body: %w", err)
 	}
 
 	var results [][]byte
@@ -169,7 +168,18 @@ func (c Client) Search(requestBody map[string]interface{}, dataType Indexable) (
 		results = append(results, bytes.TrimSpace(hit.Source))
 	}
 
-	return results, nil
+	aggregations := map[string]map[string]int{}
+	for field, v := range esResponse.Aggregations {
+		for _, bucket := range v.Buckets {
+			if m, ok := aggregations[field]; ok {
+				m[bucket.Key] = bucket.DocCount
+			} else {
+				aggregations[field] = map[string]int{bucket.Key: bucket.DocCount}
+			}
+		}
+	}
+
+	return results, aggregations, nil
 }
 
 func (c Client) IndexExists(i Indexable) (bool, error) {

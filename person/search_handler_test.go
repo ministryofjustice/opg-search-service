@@ -106,7 +106,7 @@ func (suite *SearchHandlerTestSuite) Test_ESReturnsUnexpectedError() {
 	reqBody := `{"term":"test"}`
 
 	esCall := suite.esClient.On("Search", mock.Anything, mock.Anything)
-	esCall.Return([][]byte{}, errors.New("test ES error"))
+	esCall.Return([][]byte{}, map[string]map[string]int{}, errors.New("test ES error"))
 
 	suite.ServeRequest(http.MethodPost, "/persons/search", reqBody)
 
@@ -121,7 +121,7 @@ func (suite *SearchHandlerTestSuite) Test_ESReturnsUnexpectedPersonStructure() {
 	esResults := [][]byte{
 		[]byte(`{"id":"10"}`),
 	}
-	esCall.Return(esResults, nil)
+	esCall.Return(esResults, map[string]map[string]int{}, nil)
 
 	suite.ServeRequest(http.MethodPost, "/persons/search", reqBody)
 
@@ -185,24 +185,33 @@ func (suite *SearchHandlerTestSuite) Test_SearchWithAllParameters() {
 		[]byte(`{"id":10,"firstname":"Test1","surname":"Test1"}`),
 		[]byte(`{"id":20,"firstname":"Test2","surname":"Test2"}`),
 	}
-	esCall.Return(esResults, nil)
+	aggregations := map[string]map[string]int{
+		"personType": {
+			"attorney": 1,
+			"donor":    1,
+		},
+	}
+	esCall.Return(esResults, aggregations, nil)
 
 	suite.ServeRequest(http.MethodPost, "/persons/search", reqBody)
 
 	id1 := int64(10)
 	id2 := int64(20)
-	expectedResponse := response.SearchResponse{Results: []elasticsearch.Indexable{
-		Person{
-			ID:        &id1,
-			Firstname: "Test1",
-			Surname:   "Test1",
+	expectedResponse := response.SearchResponse{
+		Results: []elasticsearch.Indexable{
+			Person{
+				ID:        &id1,
+				Firstname: "Test1",
+				Surname:   "Test1",
+			},
+			Person{
+				ID:        &id2,
+				Firstname: "Test2",
+				Surname:   "Test2",
+			},
 		},
-		Person{
-			ID:        &id2,
-			Firstname: "Test2",
-			Surname:   "Test2",
-		},
-	}}
+		Aggregations: aggregations,
+	}
 	expectedJsonResponse, _ := json.Marshal(expectedResponse)
 
 	suite.Equal(http.StatusOK, suite.RespCode())

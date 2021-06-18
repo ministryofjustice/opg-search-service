@@ -278,31 +278,38 @@ func TestClient_Search_InvalidIndexConfig(t *testing.T) {
 
 func TestClient_Search(t *testing.T) {
 	tests := []struct {
-		scenario          string
-		esResponseError   error
-		esResponseCode    int
-		esResponseMessage string
-		expectedError     error
-		expectedResults   [][]byte
+		scenario             string
+		esResponseError      error
+		esResponseCode       int
+		esResponseMessage    string
+		expectedError        error
+		expectedResults      [][]byte
+		expectedAggregations map[string]map[string]int
 	}{
 		{
 			scenario:          "Search returns matches",
 			esResponseError:   nil,
 			esResponseCode:    200,
-			esResponseMessage: `{"hits":{"hits":[{"_source":{"id":1,"name":"test1"}},{"_source":{"id":2,"name":"test1"}}]}}`,
+			esResponseMessage: `{"hits":{"hits":[{"_source":{"id":1,"name":"test1"}},{"_source":{"id":2,"name":"test1"}}]},"aggregations":{"personType":{"buckets":[{"key":"donor","doc_count":2}]}}}`,
 			expectedError:     nil,
 			expectedResults: [][]byte{
 				[]byte(`{"id":1,"name":"test1"}`),
 				[]byte(`{"id":2,"name":"test1"}`),
 			},
+			expectedAggregations: map[string]map[string]int{
+				"personType": {
+					"donor": 2,
+				},
+			},
 		},
 		{
-			scenario:          "Search does not return matches",
-			esResponseError:   nil,
-			esResponseCode:    200,
-			esResponseMessage: `{"hits":{"hits":[]}}`,
-			expectedError:     nil,
-			expectedResults:   nil,
+			scenario:             "Search does not return matches",
+			esResponseError:      nil,
+			esResponseCode:       200,
+			esResponseMessage:    `{"hits":{"hits":[]}}`,
+			expectedError:        nil,
+			expectedResults:      nil,
+			expectedAggregations: map[string]map[string]int{},
 		},
 		{
 			scenario:          "Search request unexpected failure",
@@ -331,48 +338,52 @@ func TestClient_Search(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		mc := new(MockHttpClient)
+		t.Run(test.scenario, func(t *testing.T) {
+			assert := assert.New(t)
+			mc := new(MockHttpClient)
 
-		lBuf := new(bytes.Buffer)
-		l := log.New(lBuf, "", log.LstdFlags)
+			lBuf := new(bytes.Buffer)
+			l := log.New(lBuf, "", log.LstdFlags)
 
-		c, err := NewClient(mc, l)
+			c, err := NewClient(mc, l)
 
-		assert.IsType(t, &Client{}, c, test.scenario)
-		assert.Nil(t, err, test.scenario)
+			assert.IsType(&Client{}, c)
+			assert.Nil(err)
 
-		reqBody := map[string]interface{}{
-			"term": "test",
-		}
+			reqBody := map[string]interface{}{
+				"term": "test",
+			}
 
-		mi := new(MockIndexable)
-		mi.On("IndexName").Return("test-index").Times(1)
+			mi := new(MockIndexable)
+			mi.On("IndexName").Return("test-index").Times(1)
 
-		mcCall := mc.On("Do", mock.AnythingOfType("*http.Request"))
-		mcCall.RunFn = func(args mock.Arguments) {
-			req := args[0].(*http.Request)
-			assert.Equal(t, http.MethodPost, req.Method)
-			assert.Equal(t, os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")+"/test-index/_search", req.URL.String())
-			reqBuf := new(bytes.Buffer)
-			_, _ = reqBuf.ReadFrom(req.Body)
-			assert.Equal(t, `{"term":"test"}`, strings.TrimSpace(reqBuf.String()))
-		}
-		mcCall.Return(
-			&http.Response{
-				StatusCode: test.esResponseCode,
-				Body:       ioutil.NopCloser(strings.NewReader(test.esResponseMessage)),
-			},
-			test.esResponseError,
-		)
+			mcCall := mc.On("Do", mock.AnythingOfType("*http.Request"))
+			mcCall.RunFn = func(args mock.Arguments) {
+				req := args[0].(*http.Request)
+				assert.Equal(http.MethodPost, req.Method)
+				assert.Equal(os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")+"/test-index/_search", req.URL.String())
+				reqBuf := new(bytes.Buffer)
+				_, _ = reqBuf.ReadFrom(req.Body)
+				assert.Equal(`{"term":"test"}`, strings.TrimSpace(reqBuf.String()))
+			}
+			mcCall.Return(
+				&http.Response{
+					StatusCode: test.esResponseCode,
+					Body:       ioutil.NopCloser(strings.NewReader(test.esResponseMessage)),
+				},
+				test.esResponseError,
+			)
 
-		result, err := c.Search(reqBody, mi)
+			result, aggregations, err := c.Search(reqBody, mi)
 
-		assert.Equal(t, test.expectedResults, result, test.scenario)
-		if test.expectedError == nil {
-			assert.Nil(t, err, test.scenario)
-		} else {
-			assert.Equal(t, test.expectedError.Error(), err.Error(), test.scenario)
-		}
+			assert.Equal(test.expectedResults, result)
+			assert.Equal(test.expectedAggregations, aggregations)
+			if test.expectedError == nil {
+				assert.Nil(err)
+			} else {
+				assert.Equal(test.expectedError.Error(), err.Error())
+			}
+		})
 	}
 }
 
@@ -390,9 +401,10 @@ func TestClient_Search_MalformedEndpoint(t *testing.T) {
 	mi := new(MockIndexable)
 	mi.On("IndexName").Return("test-index").Times(1)
 
-	res, err := c.Search(map[string]interface{}{}, mi)
+	res, agg, err := c.Search(map[string]interface{}{}, mi)
 
 	assert.Nil(t, res)
+	assert.Nil(t, agg)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "missing protocol scheme")
 
@@ -413,9 +425,10 @@ func TestClient_Search_InvalidESRequestBody(t *testing.T) {
 	esReqBody := map[string]interface{}{
 		"term": func() {},
 	}
-	res, err := c.Search(esReqBody, mi)
+	res, agg, err := c.Search(esReqBody, mi)
 
 	assert.Nil(t, res)
+	assert.Nil(t, agg)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "json: unsupported type: func()")
 }
