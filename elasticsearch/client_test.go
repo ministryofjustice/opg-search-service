@@ -2,15 +2,17 @@ package elasticsearch
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 type MockHttpClient struct {
@@ -282,17 +284,24 @@ func TestClient_Search(t *testing.T) {
 		esResponseCode    int
 		esResponseMessage string
 		expectedError     error
-		expectedResults   *[]string
+		expectedResult    *SearchResult
 	}{
 		{
 			scenario:          "Search returns matches",
 			esResponseError:   nil,
 			esResponseCode:    200,
-			esResponseMessage: `{"hits":{"hits":[{"_source":{"id":1,"name":"test1"}},{"_source":{"id":2,"name":"test1"}}]}}`,
+			esResponseMessage: `{"hits":{"hits":[{"_source":{"id":1,"name":"test1"}},{"_source":{"id":2,"name":"test1"}}]},"aggregations":{"personType":{"buckets":[{"key":"donor","doc_count":2}]}}}`,
 			expectedError:     nil,
-			expectedResults: &[]string{
-				`{"id":1,"name":"test1"}`,
-				`{"id":2,"name":"test1"}`,
+			expectedResult: &SearchResult{
+				Hits: []json.RawMessage{
+					[]byte(`{"id":1,"name":"test1"}`),
+					[]byte(`{"id":2,"name":"test1"}`),
+				},
+				Aggregations: map[string]map[string]int{
+					"personType": {
+						"donor": 2,
+					},
+				},
 			},
 		},
 		{
@@ -301,7 +310,10 @@ func TestClient_Search(t *testing.T) {
 			esResponseCode:    200,
 			esResponseMessage: `{"hits":{"hits":[]}}`,
 			expectedError:     nil,
-			expectedResults:   &[]string{},
+			expectedResult: &SearchResult{
+				Hits:         []json.RawMessage{},
+				Aggregations: map[string]map[string]int{},
+			},
 		},
 		{
 			scenario:          "Search request unexpected failure",
@@ -309,7 +321,7 @@ func TestClient_Search(t *testing.T) {
 			esResponseCode:    500,
 			esResponseMessage: "test message",
 			expectedError:     errors.New("some ES error"),
-			expectedResults:   nil,
+			expectedResult:    nil,
 		},
 		{
 			scenario:          "Search returns unexpected response body",
@@ -317,7 +329,7 @@ func TestClient_Search(t *testing.T) {
 			esResponseCode:    200,
 			esResponseMessage: `<xml>not a json</xml>`,
 			expectedError:     errors.New("error parsing the response body: invalid character '<' looking for beginning of value"),
-			expectedResults:   nil,
+			expectedResult:    nil,
 		},
 		{
 			scenario:          "Search request validation failure",
@@ -325,49 +337,56 @@ func TestClient_Search(t *testing.T) {
 			esResponseCode:    400,
 			esResponseMessage: "test message",
 			expectedError:     errors.New(`search request failed with status code 400 and response: "test message"`),
-			expectedResults:   nil,
+			expectedResult:    nil,
 		},
 	}
 
 	for _, test := range tests {
-		mc := new(MockHttpClient)
+		t.Run(test.scenario, func(t *testing.T) {
+			assert := assert.New(t)
+			mc := new(MockHttpClient)
 
-		lBuf := new(bytes.Buffer)
-		l := log.New(lBuf, "", log.LstdFlags)
+			lBuf := new(bytes.Buffer)
+			l := log.New(lBuf, "", log.LstdFlags)
 
-		c, err := NewClient(mc, l)
+			c, err := NewClient(mc, l)
 
-		assert.IsType(t, &Client{}, c, test.scenario)
-		assert.Nil(t, err, test.scenario)
+			assert.IsType(&Client{}, c)
+			assert.Nil(err)
 
-		reqBody := map[string]interface{}{
-			"term": "test",
-		}
+			reqBody := map[string]interface{}{
+				"term": "test",
+			}
 
-		mi := new(MockIndexable)
-		mi.On("IndexName").Return("test-index").Times(1)
+			mi := new(MockIndexable)
+			mi.On("IndexName").Return("test-index").Times(1)
 
-		mcCall := mc.On("Do", mock.AnythingOfType("*http.Request"))
-		mcCall.RunFn = func(args mock.Arguments) {
-			req := args[0].(*http.Request)
-			assert.Equal(t, http.MethodPost, req.Method)
-			assert.Equal(t, os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")+"/test-index/_search", req.URL.String())
-			reqBuf := new(bytes.Buffer)
-			_, _ = reqBuf.ReadFrom(req.Body)
-			assert.Equal(t, `{"term":"test"}`, strings.TrimSpace(reqBuf.String()))
-		}
-		mcCall.Return(
-			&http.Response{
-				StatusCode: test.esResponseCode,
-				Body:       ioutil.NopCloser(strings.NewReader(test.esResponseMessage)),
-			},
-			test.esResponseError,
-		)
+			mcCall := mc.On("Do", mock.AnythingOfType("*http.Request"))
+			mcCall.RunFn = func(args mock.Arguments) {
+				req := args[0].(*http.Request)
+				assert.Equal(http.MethodPost, req.Method)
+				assert.Equal(os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")+"/test-index/_search", req.URL.String())
+				reqBuf := new(bytes.Buffer)
+				_, _ = reqBuf.ReadFrom(req.Body)
+				assert.Equal(`{"term":"test"}`, strings.TrimSpace(reqBuf.String()))
+			}
+			mcCall.Return(
+				&http.Response{
+					StatusCode: test.esResponseCode,
+					Body:       ioutil.NopCloser(strings.NewReader(test.esResponseMessage)),
+				},
+				test.esResponseError,
+			)
 
-		result, err := c.Search(reqBody, mi)
+			result, err := c.Search(reqBody, mi)
 
-		assert.Equal(t, test.expectedResults, result, test.scenario)
-		assert.Equal(t, test.expectedError, err, test.scenario)
+			assert.Equal(test.expectedResult, result)
+			if test.expectedError == nil {
+				assert.Nil(err)
+			} else {
+				assert.Equal(test.expectedError.Error(), err.Error())
+			}
+		})
 	}
 }
 

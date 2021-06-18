@@ -5,10 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/gorilla/mux"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/suite"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -17,6 +13,11 @@ import (
 	"opg-search-service/response"
 	"strings"
 	"testing"
+
+	"github.com/gorilla/mux"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/suite"
 )
 
 type SearchHandlerTestSuite struct {
@@ -105,27 +106,12 @@ func (suite *SearchHandlerTestSuite) Test_ESReturnsUnexpectedError() {
 	reqBody := `{"term":"test"}`
 
 	esCall := suite.esClient.On("Search", mock.Anything, mock.Anything)
-	esCall.Return(&[]string{}, errors.New("test ES error"))
+	esCall.Return(&elasticsearch.SearchResult{}, errors.New("test ES error"))
 
 	suite.ServeRequest(http.MethodPost, "/persons/search", reqBody)
 
 	suite.Equal(http.StatusInternalServerError, suite.RespCode())
 	suite.Contains(suite.RespBody(), `"errors":[{"name":"request","description":"Person search caused an unexpected error"}]`)
-}
-
-func (suite *SearchHandlerTestSuite) Test_ESReturnsUnexpectedPersonStructure() {
-	reqBody := `{"term":"test"}`
-
-	esCall := suite.esClient.On("Search", mock.Anything, mock.Anything)
-	esResults := []string{
-		`{"id":"10"}`,
-	}
-	esCall.Return(&esResults, nil)
-
-	suite.ServeRequest(http.MethodPost, "/persons/search", reqBody)
-
-	suite.Equal(http.StatusInternalServerError, suite.RespCode())
-	suite.Contains(suite.RespBody(), `"errors":[{"name":"request","description":"Error marshalling response data into Person object"}]`)
 }
 
 func (suite *SearchHandlerTestSuite) Test_SearchWithAllParameters() {
@@ -180,28 +166,34 @@ func (suite *SearchHandlerTestSuite) Test_SearchWithAllParameters() {
 		suite.Equal(expectedEsReqBody, esReqBody)
 		suite.IsType(Person{}, dataType)
 	}
-	esResults := []string{
-		`{"id":10,"firstname":"Test1","surname":"Test1"}`,
-		`{"id":20,"firstname":"Test2","surname":"Test2"}`,
+
+	result := &elasticsearch.SearchResult{
+		Hits: []json.RawMessage{
+			[]byte(`{"id":10,"firstname":"Test1","surname":"Test1"}`),
+			[]byte(`{"id":20,"firstname":"Test2","surname":"Test2"}`),
+		},
+		Aggregations: map[string]map[string]int{
+			"personType": {
+				"attorney": 1,
+				"donor":    1,
+			},
+		},
+		Total:      2,
+		TotalExact: true,
 	}
-	esCall.Return(&esResults, nil)
+
+	esCall.Return(result, nil)
 
 	suite.ServeRequest(http.MethodPost, "/persons/search", reqBody)
 
-	id1 := int64(10)
-	id2 := int64(20)
-	expectedResponse := response.SearchResponse{Results: []elasticsearch.Indexable{
-		Person{
-			ID:        &id1,
-			Firstname: "Test1",
-			Surname:   "Test1",
+	expectedResponse := response.SearchResponse{
+		Results:      result.Hits,
+		Aggregations: result.Aggregations,
+		Total: response.Total{
+			Count: 2,
+			Exact: true,
 		},
-		Person{
-			ID:        &id2,
-			Firstname: "Test2",
-			Surname:   "Test2",
-		},
-	}}
+	}
 	expectedJsonResponse, _ := json.Marshal(expectedResponse)
 
 	suite.Equal(http.StatusOK, suite.RespCode())
