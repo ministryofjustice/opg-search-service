@@ -3,14 +3,15 @@ package elasticsearch
 import (
 	"bytes"
 	"errors"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 type MockHttpClient struct {
@@ -282,7 +283,7 @@ func TestClient_Search(t *testing.T) {
 		esResponseCode    int
 		esResponseMessage string
 		expectedError     error
-		expectedResults   *[]string
+		expectedResults   [][]byte
 	}{
 		{
 			scenario:          "Search returns matches",
@@ -290,9 +291,9 @@ func TestClient_Search(t *testing.T) {
 			esResponseCode:    200,
 			esResponseMessage: `{"hits":{"hits":[{"_source":{"id":1,"name":"test1"}},{"_source":{"id":2,"name":"test1"}}]}}`,
 			expectedError:     nil,
-			expectedResults: &[]string{
-				`{"id":1,"name":"test1"}`,
-				`{"id":2,"name":"test1"}`,
+			expectedResults: [][]byte{
+				[]byte(`{"id":1,"name":"test1"}`),
+				[]byte(`{"id":2,"name":"test1"}`),
 			},
 		},
 		{
@@ -301,7 +302,7 @@ func TestClient_Search(t *testing.T) {
 			esResponseCode:    200,
 			esResponseMessage: `{"hits":{"hits":[]}}`,
 			expectedError:     nil,
-			expectedResults:   &[]string{},
+			expectedResults:   nil,
 		},
 		{
 			scenario:          "Search request unexpected failure",
@@ -367,7 +368,11 @@ func TestClient_Search(t *testing.T) {
 		result, err := c.Search(reqBody, mi)
 
 		assert.Equal(t, test.expectedResults, result, test.scenario)
-		assert.Equal(t, test.expectedError, err, test.scenario)
+		if test.expectedError == nil {
+			assert.Nil(t, err, test.scenario)
+		} else {
+			assert.Equal(t, test.expectedError.Error(), err.Error(), test.scenario)
+		}
 	}
 }
 

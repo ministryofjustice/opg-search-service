@@ -11,9 +11,9 @@ func (m *MockESClient) Index(i Indexable) *IndexResult {
 	return args.Get(0).(*IndexResult)
 }
 
-func (m *MockESClient) Search(requestBody map[string]interface{}, dataType Indexable) (*[]string, error) {
+func (m *MockESClient) Search(requestBody map[string]interface{}, dataType Indexable) ([][]byte, error) {
 	args := m.Called(requestBody, dataType)
-	return args.Get(0).(*[]string), args.Error(1)
+	return args.Get(0).([][]byte), args.Error(1)
 }
 
 func (m *MockESClient) CreateIndex(i Indexable) (bool, error) {

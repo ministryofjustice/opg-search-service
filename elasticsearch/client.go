@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -14,6 +12,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 )
 
 type HTTPClient interface {
@@ -22,7 +23,7 @@ type HTTPClient interface {
 
 type ClientInterface interface {
 	Index(i Indexable) *IndexResult
-	Search(requestBody map[string]interface{}, dataType Indexable) (*[]string, error)
+	Search(requestBody map[string]interface{}, dataType Indexable) ([][]byte, error)
 	CreateIndex(i Indexable) (bool, error)
 	IndexExists(i Indexable) (bool, error)
 }
@@ -41,6 +42,24 @@ type Client struct {
 	region     string
 	service    string
 	signer     *v4.Signer
+}
+
+type elasticSearchResponse struct {
+	Hits struct {
+		Total struct {
+			Value    int    `json:"value"`
+			Relation string `json:"eq"`
+		} `json:"total"`
+		Hits []struct {
+			Source json.RawMessage `json:"_source"`
+		} `json:"hits"`
+	} `json:"hits"`
+	Aggregations map[string]struct {
+		Buckets []struct {
+			Key      string `json:"key"`
+			DocCount int    `json:"doc_count"`
+		} `json:"buckets"`
+	} `json:"aggregations"`
 }
 
 func NewClient(httpClient HTTPClient, logger *log.Logger) (ClientInterface, error) {
@@ -108,7 +127,7 @@ func (c Client) Index(i Indexable) *IndexResult {
 }
 
 // returns an array of JSON encoded results
-func (c Client) Search(requestBody map[string]interface{}, dataType Indexable) (*[]string, error) {
+func (c Client) Search(requestBody map[string]interface{}, dataType Indexable) ([][]byte, error) {
 	endpoint := c.domain + "/" + dataType.IndexName() + "/_search"
 
 	var buf bytes.Buffer
@@ -137,22 +156,20 @@ func (c Client) Search(requestBody map[string]interface{}, dataType Indexable) (
 	if resp.StatusCode != http.StatusOK {
 		buf.Reset()
 		_, _ = buf.ReadFrom(resp.Body)
-		return nil, errors.New(fmt.Sprintf(`search request failed with status code %d and response: "%s"`, resp.StatusCode, buf.String()))
+		return nil, fmt.Errorf(`search request failed with status code %d and response: "%s"`, resp.StatusCode, buf.String())
 	}
 
-	var esResponse map[string]interface{}
+	var esResponse elasticSearchResponse
 	if err := json.NewDecoder(resp.Body).Decode(&esResponse); err != nil {
-		return nil, errors.New(fmt.Sprintf("error parsing the response body: %s", err))
+		return nil, fmt.Errorf("error parsing the response body: %w", err)
 	}
 
-	results := make([]string, 0)
-	for _, hit := range esResponse["hits"].(map[string]interface{})["hits"].([]interface{}) {
-		buf.Reset()
-		_ = json.NewEncoder(&buf).Encode(hit.(map[string]interface{})["_source"])
-		results = append(results, strings.TrimSpace(buf.String()))
+	var results [][]byte
+	for _, hit := range esResponse.Hits.Hits {
+		results = append(results, bytes.TrimSpace(hit.Source))
 	}
 
-	return &results, nil
+	return results, nil
 }
 
 func (c Client) IndexExists(i Indexable) (bool, error) {

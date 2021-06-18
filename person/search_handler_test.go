@@ -5,10 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/gorilla/mux"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/suite"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -17,6 +13,11 @@ import (
 	"opg-search-service/response"
 	"strings"
 	"testing"
+
+	"github.com/gorilla/mux"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/suite"
 )
 
 type SearchHandlerTestSuite struct {
@@ -105,7 +106,7 @@ func (suite *SearchHandlerTestSuite) Test_ESReturnsUnexpectedError() {
 	reqBody := `{"term":"test"}`
 
 	esCall := suite.esClient.On("Search", mock.Anything, mock.Anything)
-	esCall.Return(&[]string{}, errors.New("test ES error"))
+	esCall.Return([][]byte{}, errors.New("test ES error"))
 
 	suite.ServeRequest(http.MethodPost, "/persons/search", reqBody)
 
@@ -117,10 +118,10 @@ func (suite *SearchHandlerTestSuite) Test_ESReturnsUnexpectedPersonStructure() {
 	reqBody := `{"term":"test"}`
 
 	esCall := suite.esClient.On("Search", mock.Anything, mock.Anything)
-	esResults := []string{
-		`{"id":"10"}`,
+	esResults := [][]byte{
+		[]byte(`{"id":"10"}`),
 	}
-	esCall.Return(&esResults, nil)
+	esCall.Return(esResults, nil)
 
 	suite.ServeRequest(http.MethodPost, "/persons/search", reqBody)
 
@@ -180,11 +181,11 @@ func (suite *SearchHandlerTestSuite) Test_SearchWithAllParameters() {
 		suite.Equal(expectedEsReqBody, esReqBody)
 		suite.IsType(Person{}, dataType)
 	}
-	esResults := []string{
-		`{"id":10,"firstname":"Test1","surname":"Test1"}`,
-		`{"id":20,"firstname":"Test2","surname":"Test2"}`,
+	esResults := [][]byte{
+		[]byte(`{"id":10,"firstname":"Test1","surname":"Test1"}`),
+		[]byte(`{"id":20,"firstname":"Test2","surname":"Test2"}`),
 	}
-	esCall.Return(&esResults, nil)
+	esCall.Return(esResults, nil)
 
 	suite.ServeRequest(http.MethodPost, "/persons/search", reqBody)
 
