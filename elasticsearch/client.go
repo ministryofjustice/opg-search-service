@@ -23,7 +23,7 @@ type HTTPClient interface {
 
 type ClientInterface interface {
 	Index(i Indexable) *IndexResult
-	Search(requestBody map[string]interface{}, dataType Indexable) ([][]byte, map[string]map[string]int, error)
+	Search(requestBody map[string]interface{}, dataType Indexable) (*SearchResult, error)
 	CreateIndex(i Indexable) (bool, error)
 	IndexExists(i Indexable) (bool, error)
 }
@@ -47,7 +47,8 @@ type Client struct {
 type elasticSearchResponse struct {
 	Hits struct {
 		Total struct {
-			Value int `json:"value"`
+			Value    int    `json:"value"`
+			Relation string `json:"relation"`
 		} `json:"total"`
 		Hits []struct {
 			Source json.RawMessage `json:"_source"`
@@ -59,6 +60,13 @@ type elasticSearchResponse struct {
 			DocCount int    `json:"doc_count"`
 		} `json:"buckets"`
 	} `json:"aggregations"`
+}
+
+type SearchResult struct {
+	Hits         [][]byte
+	Aggregations map[string]map[string]int
+	Total        int
+	TotalExact   bool
 }
 
 func NewClient(httpClient HTTPClient, logger *log.Logger) (ClientInterface, error) {
@@ -126,19 +134,19 @@ func (c Client) Index(i Indexable) *IndexResult {
 }
 
 // returns an array of JSON encoded results
-func (c Client) Search(requestBody map[string]interface{}, dataType Indexable) ([][]byte, map[string]map[string]int, error) {
+func (c Client) Search(requestBody map[string]interface{}, dataType Indexable) (*SearchResult, error) {
 	endpoint := c.domain + "/" + dataType.IndexName() + "/_search"
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(requestBody); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	body := bytes.NewReader(buf.Bytes())
 
 	// Form the HTTP request
 	req, err := http.NewRequest(http.MethodPost, endpoint, body)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	// You can probably infer Content-Type programmatically, but here, we just say that it's JSON
@@ -149,18 +157,18 @@ func (c Client) Search(requestBody map[string]interface{}, dataType Indexable) (
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
 		buf.Reset()
 		_, _ = buf.ReadFrom(resp.Body)
-		return nil, nil, fmt.Errorf(`search request failed with status code %d and response: "%s"`, resp.StatusCode, buf.String())
+		return nil, fmt.Errorf(`search request failed with status code %d and response: "%s"`, resp.StatusCode, buf.String())
 	}
 
 	var esResponse elasticSearchResponse
 	if err := json.NewDecoder(resp.Body).Decode(&esResponse); err != nil {
-		return nil, nil, fmt.Errorf("error parsing the response body: %w", err)
+		return nil, fmt.Errorf("error parsing the response body: %w", err)
 	}
 
 	var results [][]byte
@@ -179,7 +187,12 @@ func (c Client) Search(requestBody map[string]interface{}, dataType Indexable) (
 		}
 	}
 
-	return results, aggregations, nil
+	return &SearchResult{
+		Hits:         results,
+		Aggregations: aggregations,
+		Total:        esResponse.Hits.Total.Value,
+		TotalExact:   esResponse.Hits.Total.Relation == "eq",
+	}, nil
 }
 
 func (c Client) IndexExists(i Indexable) (bool, error) {

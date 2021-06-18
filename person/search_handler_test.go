@@ -106,7 +106,7 @@ func (suite *SearchHandlerTestSuite) Test_ESReturnsUnexpectedError() {
 	reqBody := `{"term":"test"}`
 
 	esCall := suite.esClient.On("Search", mock.Anything, mock.Anything)
-	esCall.Return([][]byte{}, map[string]map[string]int{}, errors.New("test ES error"))
+	esCall.Return(&elasticsearch.SearchResult{}, errors.New("test ES error"))
 
 	suite.ServeRequest(http.MethodPost, "/persons/search", reqBody)
 
@@ -118,10 +118,14 @@ func (suite *SearchHandlerTestSuite) Test_ESReturnsUnexpectedPersonStructure() {
 	reqBody := `{"term":"test"}`
 
 	esCall := suite.esClient.On("Search", mock.Anything, mock.Anything)
-	esResults := [][]byte{
-		[]byte(`{"id":"10"}`),
+
+	result := &elasticsearch.SearchResult{
+		Hits: [][]byte{
+			[]byte(`{"id":"10"}`),
+		},
+		Aggregations: map[string]map[string]int{},
 	}
-	esCall.Return(esResults, map[string]map[string]int{}, nil)
+	esCall.Return(result, nil)
 
 	suite.ServeRequest(http.MethodPost, "/persons/search", reqBody)
 
@@ -181,17 +185,23 @@ func (suite *SearchHandlerTestSuite) Test_SearchWithAllParameters() {
 		suite.Equal(expectedEsReqBody, esReqBody)
 		suite.IsType(Person{}, dataType)
 	}
-	esResults := [][]byte{
-		[]byte(`{"id":10,"firstname":"Test1","surname":"Test1"}`),
-		[]byte(`{"id":20,"firstname":"Test2","surname":"Test2"}`),
-	}
-	aggregations := map[string]map[string]int{
-		"personType": {
-			"attorney": 1,
-			"donor":    1,
+
+	result := &elasticsearch.SearchResult{
+		Hits: [][]byte{
+			[]byte(`{"id":10,"firstname":"Test1","surname":"Test1"}`),
+			[]byte(`{"id":20,"firstname":"Test2","surname":"Test2"}`),
 		},
+		Aggregations: map[string]map[string]int{
+			"personType": {
+				"attorney": 1,
+				"donor":    1,
+			},
+		},
+		Total:      2,
+		TotalExact: true,
 	}
-	esCall.Return(esResults, aggregations, nil)
+
+	esCall.Return(result, nil)
 
 	suite.ServeRequest(http.MethodPost, "/persons/search", reqBody)
 
@@ -210,7 +220,11 @@ func (suite *SearchHandlerTestSuite) Test_SearchWithAllParameters() {
 				Surname:   "Test2",
 			},
 		},
-		Aggregations: aggregations,
+		Aggregations: result.Aggregations,
+		Total: response.Total{
+			Count: 2,
+			Exact: true,
+		},
 	}
 	expectedJsonResponse, _ := json.Marshal(expectedResponse)
 

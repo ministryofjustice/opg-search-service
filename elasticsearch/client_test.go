@@ -278,13 +278,12 @@ func TestClient_Search_InvalidIndexConfig(t *testing.T) {
 
 func TestClient_Search(t *testing.T) {
 	tests := []struct {
-		scenario             string
-		esResponseError      error
-		esResponseCode       int
-		esResponseMessage    string
-		expectedError        error
-		expectedResults      [][]byte
-		expectedAggregations map[string]map[string]int
+		scenario          string
+		esResponseError   error
+		esResponseCode    int
+		esResponseMessage string
+		expectedError     error
+		expectedResult    *SearchResult
 	}{
 		{
 			scenario:          "Search returns matches",
@@ -292,24 +291,27 @@ func TestClient_Search(t *testing.T) {
 			esResponseCode:    200,
 			esResponseMessage: `{"hits":{"hits":[{"_source":{"id":1,"name":"test1"}},{"_source":{"id":2,"name":"test1"}}]},"aggregations":{"personType":{"buckets":[{"key":"donor","doc_count":2}]}}}`,
 			expectedError:     nil,
-			expectedResults: [][]byte{
-				[]byte(`{"id":1,"name":"test1"}`),
-				[]byte(`{"id":2,"name":"test1"}`),
-			},
-			expectedAggregations: map[string]map[string]int{
-				"personType": {
-					"donor": 2,
+			expectedResult: &SearchResult{
+				Hits: [][]byte{
+					[]byte(`{"id":1,"name":"test1"}`),
+					[]byte(`{"id":2,"name":"test1"}`),
+				},
+				Aggregations: map[string]map[string]int{
+					"personType": {
+						"donor": 2,
+					},
 				},
 			},
 		},
 		{
-			scenario:             "Search does not return matches",
-			esResponseError:      nil,
-			esResponseCode:       200,
-			esResponseMessage:    `{"hits":{"hits":[]}}`,
-			expectedError:        nil,
-			expectedResults:      nil,
-			expectedAggregations: map[string]map[string]int{},
+			scenario:          "Search does not return matches",
+			esResponseError:   nil,
+			esResponseCode:    200,
+			esResponseMessage: `{"hits":{"hits":[]}}`,
+			expectedError:     nil,
+			expectedResult: &SearchResult{
+				Aggregations: map[string]map[string]int{},
+			},
 		},
 		{
 			scenario:          "Search request unexpected failure",
@@ -317,7 +319,7 @@ func TestClient_Search(t *testing.T) {
 			esResponseCode:    500,
 			esResponseMessage: "test message",
 			expectedError:     errors.New("some ES error"),
-			expectedResults:   nil,
+			expectedResult:    nil,
 		},
 		{
 			scenario:          "Search returns unexpected response body",
@@ -325,7 +327,7 @@ func TestClient_Search(t *testing.T) {
 			esResponseCode:    200,
 			esResponseMessage: `<xml>not a json</xml>`,
 			expectedError:     errors.New("error parsing the response body: invalid character '<' looking for beginning of value"),
-			expectedResults:   nil,
+			expectedResult:    nil,
 		},
 		{
 			scenario:          "Search request validation failure",
@@ -333,7 +335,7 @@ func TestClient_Search(t *testing.T) {
 			esResponseCode:    400,
 			esResponseMessage: "test message",
 			expectedError:     errors.New(`search request failed with status code 400 and response: "test message"`),
-			expectedResults:   nil,
+			expectedResult:    nil,
 		},
 	}
 
@@ -374,10 +376,9 @@ func TestClient_Search(t *testing.T) {
 				test.esResponseError,
 			)
 
-			result, aggregations, err := c.Search(reqBody, mi)
+			result, err := c.Search(reqBody, mi)
 
-			assert.Equal(test.expectedResults, result)
-			assert.Equal(test.expectedAggregations, aggregations)
+			assert.Equal(test.expectedResult, result)
 			if test.expectedError == nil {
 				assert.Nil(err)
 			} else {
@@ -401,10 +402,9 @@ func TestClient_Search_MalformedEndpoint(t *testing.T) {
 	mi := new(MockIndexable)
 	mi.On("IndexName").Return("test-index").Times(1)
 
-	res, agg, err := c.Search(map[string]interface{}{}, mi)
+	res, err := c.Search(map[string]interface{}{}, mi)
 
 	assert.Nil(t, res)
-	assert.Nil(t, agg)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "missing protocol scheme")
 
@@ -425,10 +425,9 @@ func TestClient_Search_InvalidESRequestBody(t *testing.T) {
 	esReqBody := map[string]interface{}{
 		"term": func() {},
 	}
-	res, agg, err := c.Search(esReqBody, mi)
+	res, err := c.Search(esReqBody, mi)
 
 	assert.Nil(t, res)
-	assert.Nil(t, agg)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "json: unsupported type: func()")
 }

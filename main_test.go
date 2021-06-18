@@ -152,6 +152,10 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
 				"Type1": 1,
 			},
 		},
+		Total: response.Total{
+			Count: 1,
+			Exact: true,
+		},
 	})
 
 	reqBody := bytes.NewReader([]byte(`{"term":"` + suite.testPeople[1].Surname + `"}`))
