@@ -254,6 +254,85 @@ func TestClient_CreateIndex_MalformedEndpoint(t *testing.T) {
 	_ = os.Setenv("AWS_ELASTICSEARCH_ENDPOINT", oldESEndpoint)
 }
 
+func TestClient_DeleteIndex(t *testing.T) {
+	tests := []struct {
+		scenario        string
+		esResponseError error
+		esResponseCode  int
+		expectedError   error
+	}{
+		{
+			scenario:        "Index deleted successfully",
+			esResponseError: nil,
+			esResponseCode:  200,
+			expectedError:   nil,
+		},
+		{
+			scenario:        "Delete index request unexpected failure",
+			esResponseError: errors.New("some ES error"),
+			esResponseCode:  500,
+			expectedError:   errors.New("some ES error"),
+		},
+	}
+
+	for _, test := range tests {
+		mc := new(MockHttpClient)
+
+		lBuf := new(bytes.Buffer)
+		l := log.New(lBuf, "", log.LstdFlags)
+
+		c, err := NewClient(mc, l)
+
+		assert.IsType(t, &Client{}, c, test.scenario)
+		assert.Nil(t, err, test.scenario)
+
+		mi := new(MockIndexable)
+		mi.On("IndexName").Return("test-index").Times(2)
+		mi.On("IndexConfig").Return(map[string]interface{}{"test": "test"}).Times(1)
+
+		mcCall := mc.On("Do", mock.AnythingOfType("*http.Request"))
+		mcCall.RunFn = func(args mock.Arguments) {
+			req := args[0].(*http.Request)
+			assert.Equal(t, http.MethodDelete, req.Method)
+			assert.Equal(t, os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")+"/test-index", req.URL.String())
+		}
+		mcCall.Return(
+			&http.Response{
+				StatusCode: test.esResponseCode,
+			},
+			test.esResponseError,
+		)
+
+		err = c.DeleteIndex(mi)
+
+		assert.Contains(t, lBuf.String(), "Deleting index 'test-index' for *elasticsearch.MockIndexable", test.scenario)
+		assert.Equal(t, test.expectedError, err, test.scenario)
+	}
+}
+
+func TestClient_DeleteIndex_MalformedEndpoint(t *testing.T) {
+	oldESEndpoint := os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")
+	_ = os.Setenv("AWS_ELASTICSEARCH_ENDPOINT", ":-:/-=")
+
+	mc := new(MockHttpClient)
+
+	lBuf := new(bytes.Buffer)
+	l := log.New(lBuf, "", log.LstdFlags)
+
+	c, _ := NewClient(mc, l)
+
+	mi := new(MockIndexable)
+	mi.On("IndexName").Return("test-index").Times(2)
+	mi.On("IndexConfig").Return(map[string]interface{}{"test": "test"}).Times(1)
+
+	err := c.DeleteIndex(mi)
+
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "missing protocol scheme")
+
+	_ = os.Setenv("AWS_ELASTICSEARCH_ENDPOINT", oldESEndpoint)
+}
+
 func TestClient_Search_InvalidIndexConfig(t *testing.T) {
 	mc := new(MockHttpClient)
 
