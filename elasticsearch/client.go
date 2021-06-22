@@ -280,10 +280,8 @@ func (c Client) DeleteIndex(i Indexable) error {
 		return err
 	}
 
-	// You can probably infer Content-Type programmatically, but here, we just say that it's JSON
 	req.Header.Add("Content-Type", "application/json")
 
-	// Sign the request, send it, and print the response
 	_, _ = c.signer.Sign(req, body, c.service, c.region, time.Now())
 
 	_, err = c.httpClient.Do(req)
