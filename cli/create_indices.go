@@ -12,6 +12,7 @@ import (
 type createIndices struct {
 	logger    *log.Logger
 	shouldRun *bool
+	force     *bool
 	esClient  elasticsearch.ClientInterface
 	exit      func(code int)
 }
@@ -31,6 +32,7 @@ func NewCreateIndices(logger *log.Logger) *createIndices {
 
 func (c *createIndices) DefineFlags() {
 	c.shouldRun = flag.Bool("create-indices", false, "create elasticsearch indices")
+	c.force = flag.Bool("force", false, "force changes")
 }
 
 func (c *createIndices) ShouldRun() bool {
@@ -47,8 +49,22 @@ func (c *createIndices) Run() {
 
 	if exists {
 		c.logger.Println("Person index already exists")
-		c.exit(0)
-		return
+
+		if *c.force {
+			c.logger.Println("Changes are forced, deleting old index")
+			err := c.esClient.DeleteIndex(person.Person{})
+
+			if err != nil {
+				c.logger.Println(err)
+				c.exit(1)
+				return
+			}
+
+			c.logger.Println("Person index deleted successfully")
+		} else {
+			c.exit(0)
+			return
+		}
 	}
 
 	_, err = c.esClient.CreateIndex(person.Person{})

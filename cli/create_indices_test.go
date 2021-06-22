@@ -3,12 +3,13 @@ package cli
 import (
 	"bytes"
 	"errors"
-	"github.com/stretchr/testify/assert"
 	"log"
 	"opg-search-service/elasticsearch"
 	"opg-search-service/person"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewCreateIndices(t *testing.T) {
@@ -55,9 +56,11 @@ func TestCreateIndices_Run(t *testing.T) {
 
 	tests := []struct {
 		scenario     string
+		force        bool
 		esError      error
 		esExists     bool
 		esExistsErr  error
+		esDeleteErr  error
 		wantInLog    string
 		wantExitCode int
 	}{
@@ -93,6 +96,25 @@ func TestCreateIndices_Run(t *testing.T) {
 			wantInLog:    ESErrorMessage,
 			wantExitCode: 1,
 		},
+		{
+			scenario:     "Force delete existing index",
+			force:        true,
+			esError:      nil,
+			esExists:     true,
+			esExistsErr:  nil,
+			wantInLog:    "Person index already exists",
+			wantExitCode: 0,
+		},
+		{
+			scenario:     "Error deleting existing index",
+			force:        true,
+			esError:      nil,
+			esExists:     true,
+			esExistsErr:  nil,
+			esDeleteErr:  errors.New(ESErrorMessage),
+			wantInLog:    ESErrorMessage,
+			wantExitCode: 1,
+		},
 	}
 	for _, test := range tests {
 		lBuf := new(bytes.Buffer)
@@ -100,12 +122,14 @@ func TestCreateIndices_Run(t *testing.T) {
 
 		esClient := new(elasticsearch.MockESClient)
 		esClient.On("IndexExists", person.Person{}).Times(1).Return(test.esExists, test.esExistsErr)
+		esClient.On("DeleteIndex", person.Person{}).Times(1).Return(test.esDeleteErr)
 		esClient.On("CreateIndex", person.Person{}).Times(1).Return(test.esError == nil, test.esError)
 
 		exitCode := 666
 		ci := createIndices{
 			logger:   l,
 			esClient: esClient,
+			force:    &test.force,
 			exit: func(code int) {
 				exitCode = code
 			},
