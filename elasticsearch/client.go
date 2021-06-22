@@ -25,6 +25,7 @@ type ClientInterface interface {
 	Index(i Indexable) *IndexResult
 	Search(requestBody map[string]interface{}, dataType Indexable) (*SearchResult, error)
 	CreateIndex(i Indexable) (bool, error)
+	DeleteIndex(i Indexable) error
 	IndexExists(i Indexable) (bool, error)
 }
 
@@ -260,4 +261,32 @@ func (c Client) CreateIndex(i Indexable) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func (c Client) DeleteIndex(i Indexable) error {
+	c.logger.Printf("Deleting index '%s' for %T", i.IndexName(), i)
+
+	endpoint := c.domain + "/" + i.IndexName()
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(i.IndexConfig()); err != nil {
+		return err
+	}
+	body := bytes.NewReader(buf.Bytes())
+
+	// Form the HTTP request
+	req, err := http.NewRequest(http.MethodDelete, endpoint, body)
+	if err != nil {
+		return err
+	}
+
+	// You can probably infer Content-Type programmatically, but here, we just say that it's JSON
+	req.Header.Add("Content-Type", "application/json")
+
+	// Sign the request, send it, and print the response
+	_, _ = c.signer.Sign(req, body, c.service, c.region, time.Now())
+
+	_, err = c.httpClient.Do(req)
+
+	return err
 }
