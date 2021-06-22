@@ -66,6 +66,8 @@ type Person struct {
 		Caserecnumber string `json:"caseRecNumber"`
 		Batchid       string `json:"batchId"`
 		Classname     string `json:"className"`
+		Casetype      string `json:"caseType"`
+		Casesubtype   string `json:"caseSubtype"`
 	} `json:"cases"`
 	Orders []struct {
 		Order struct {
@@ -223,6 +225,14 @@ func (p Person) IndexConfig() map[string]interface{} {
 							"copy_to": "searchable",
 						},
 						"batchId": map[string]interface{}{
+							"type":    "keyword",
+							"copy_to": "searchable",
+						},
+						"caseType": map[string]interface{}{
+							"type":    "keyword",
+							"copy_to": "searchable",
+						},
+						"caseSubtype": map[string]interface{}{
 							"type":    "keyword",
 							"copy_to": "searchable",
 						},
