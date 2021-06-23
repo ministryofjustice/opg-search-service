@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"net"
 	"net/http"
 	"opg-search-service/cache"
 	"opg-search-service/cli"
@@ -14,6 +15,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"golang.org/x/net/netutil"
 )
 
 func main() {
@@ -303,7 +305,15 @@ func main() {
 
 	// start the server
 	go func() {
-		err := s.ListenAndServe()
+		ln, err := net.Listen("tcp", s.Addr)
+		if err != nil {
+			l.Fatal(err)
+		}
+
+		ln = netutil.LimitListener(ln, 2)
+
+		err = s.Serve(ln)
+
 		if err != nil {
 			l.Fatal(err)
 		}
