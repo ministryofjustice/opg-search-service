@@ -57,21 +57,15 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 	// delete all indices
 	req, _ := http.NewRequest(http.MethodDelete, os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")+"/_all", nil)
 	resp, err := httpClient.Do(req)
+	if err != nil {
+		panic(err)
+	}
 	suite.NotNil(resp)
 	suite.Nil(err)
 	suite.Equal(http.StatusOK, resp.StatusCode)
 
 	exists, err := suite.esClient.IndexExists(person.Person{})
 	suite.False(exists, "Person index should not exist at this point")
-	suite.Nil(err)
-
-	// create indices
-	ok, err := suite.esClient.CreateIndex(person.Person{})
-	suite.True(ok, "Could not create Person index")
-	suite.Nil(err)
-
-	exists, err = suite.esClient.IndexExists(person.Person{})
-	suite.True(exists, "Person index should exist at this point")
 	suite.Nil(err)
 
 	// wait up to 5 seconds for the app to start
@@ -82,6 +76,11 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 			time.Sleep(time.Second)
 			continue
 		}
+
+		exists, err = suite.esClient.IndexExists(person.Person{})
+		suite.True(exists, "Person index should exist at this point")
+		suite.Nil(err)
+
 		conn.Close()
 		return
 	}
