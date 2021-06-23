@@ -2,16 +2,18 @@ package main
 
 import (
 	"context"
-	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"opg-search-service/cache"
 	"opg-search-service/cli"
+	"opg-search-service/elasticsearch"
 	"opg-search-service/middleware"
 	"opg-search-service/person"
 	"os"
 	"os/signal"
 	"time"
+
+	"github.com/gorilla/mux"
 )
 
 func main() {
@@ -23,6 +25,26 @@ func main() {
 		cli.NewHealthCheck(l),
 		cli.NewCreateIndices(l),
 	)
+
+	// Create persons index if it doesn't exist
+	esClient, err := elasticsearch.NewClient(&http.Client{}, l)
+	if err != nil {
+		l.Fatal(err)
+	}
+
+	exists, err := esClient.IndexExists(person.Person{})
+	if err != nil {
+		l.Fatal(err)
+	}
+
+	if !exists {
+		l.Println("'person' index does not exist, creating")
+		_, err = esClient.CreateIndex(person.Person{})
+
+		if err != nil {
+			l.Fatal(err)
+		}
+	}
 
 	// Create new serveMux
 	sm := mux.NewRouter().PathPrefix(os.Getenv("PATH_PREFIX")).Subrouter()
