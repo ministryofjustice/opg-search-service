@@ -2,22 +2,23 @@ package cli
 
 import (
 	"flag"
-	"log"
 	"net/http"
 	"opg-search-service/elasticsearch"
 	"opg-search-service/person"
 	"os"
+
+	"github.com/sirupsen/logrus"
 )
 
 type createIndices struct {
-	logger    *log.Logger
+	logger    *logrus.Logger
 	shouldRun *bool
 	force     *bool
 	esClient  elasticsearch.ClientInterface
 	exit      func(code int)
 }
 
-func NewCreateIndices(logger *log.Logger) *createIndices {
+func NewCreateIndices(logger *logrus.Logger) *createIndices {
 	esClient, err := elasticsearch.NewClient(&http.Client{}, logger)
 	if err != nil {
 		logger.Fatal(err)

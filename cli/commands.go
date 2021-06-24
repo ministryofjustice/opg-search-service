@@ -2,7 +2,8 @@ package cli
 
 import (
 	"flag"
-	"log"
+
+	"github.com/sirupsen/logrus"
 )
 
 type Command interface {
@@ -12,10 +13,10 @@ type Command interface {
 }
 
 type commands struct {
-	logger *log.Logger
+	logger *logrus.Logger
 }
 
-func Commands(logger *log.Logger) *commands {
+func Commands(logger *logrus.Logger) *commands {
 	c := commands{
 		logger,
 	}

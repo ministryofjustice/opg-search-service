@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"opg-search-service/elasticsearch"
@@ -14,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -29,8 +29,7 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 	os.Setenv("USER_HASH_SALT", "ufUvZWyqrCikO1HPcPfrz7qQ6ENV84p0")
 	os.Setenv("ENVIRONMENT", "local")
 
-	logBuf := new(bytes.Buffer)
-	logger := log.New(logBuf, "opg-search-service ", log.LstdFlags)
+	logger, _ := test.NewNullLogger()
 	httpClient := &http.Client{}
 	suite.esClient, _ = elasticsearch.NewClient(httpClient, logger)
 

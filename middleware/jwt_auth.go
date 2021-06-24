@@ -6,12 +6,12 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"opg-search-service/response"
 	"strings"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/sirupsen/logrus"
 )
 
 type authorisationError struct {
@@ -25,12 +25,12 @@ type Cacheable interface {
 	GetSecretString(key string) (string, error)
 }
 
-func JwtVerify(secretsCache Cacheable) func(next http.Handler) http.Handler {
+func JwtVerify(secretsCache Cacheable, logger *logrus.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 			jwtSecret, jwtErr := secretsCache.GetSecretString("jwt-key")
 			if jwtErr != nil {
-				log.Println("Error in fetching JWT secret from cache:", jwtErr.Error())
+				logger.Println("Error in fetching JWT secret from cache:", jwtErr.Error())
 				response.WriteJSONError(rw, "missing_secret_key", jwtErr.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -40,19 +40,19 @@ func JwtVerify(secretsCache Cacheable) func(next http.Handler) http.Handler {
 			token, verifyErr := verifyToken(header, jwtSecret)
 
 			if verifyErr != nil {
-				log.Println("Error in token verification :", verifyErr.Error())
+				logger.Println("Error in token verification :", verifyErr.Error())
 				response.WriteJSONError(rw, "Authorisation Error", verifyErr.Error(), http.StatusUnauthorized)
 			} else {
 				claims := token.Claims.(jwt.MapClaims)
 				email := claims["session-data"].(string)
 				salt, saltErr := secretsCache.GetSecretString("user-hash-salt")
 				if saltErr != nil {
-					log.Println("Error in fetching hash salt from cache:", saltErr.Error())
+					logger.Println("Error in fetching hash salt from cache:", saltErr.Error())
 					response.WriteJSONError(rw, "missing_secret_salt", saltErr.Error(), http.StatusInternalServerError)
 					return
 				}
 				hashedEmail := hashEmail(email, salt)
-				log.Println("JWT Token is valid for user ", hashedEmail)
+				logger.Println("JWT Token is valid for user ", hashedEmail)
 
 				ctx := context.WithValue(r.Context(), HashedEmail{}, hashedEmail)
 				next.ServeHTTP(rw, r.WithContext(ctx))

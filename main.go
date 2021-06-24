@@ -14,11 +14,13 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 )
 
 func main() {
 	// Create a Logger
-	l := log.New(os.Stdout, "opg-search-service ", log.LstdFlags)
+	l := logrus.New()
+	l.SetFormatter(&logrus.JSONFormatter{})
 
 	// Register CLI commands
 	cli.Commands(l).Register(
@@ -65,7 +67,7 @@ func main() {
 
 	// Create a sub-router for protected handlers
 	postRouter := sm.Methods(http.MethodPost).Subrouter()
-	postRouter.Use(middleware.JwtVerify(secretsCache))
+	postRouter.Use(middleware.JwtVerify(secretsCache, l))
 
 	// Register protected handlers
 	iph, err := person.NewIndexHandler(l)
@@ -292,10 +294,13 @@ func main() {
 	}
 	postRouter.Handle("/persons/search", sph)
 
+	w := l.Writer()
+	defer w.Close()
+
 	s := &http.Server{
 		Addr:         ":8000",           // configure the bind address
 		Handler:      sm,                // set the default handler
-		ErrorLog:     l,                 // Set the logger for the server
+		ErrorLog:     log.New(w, "", 0), // Set the logger for the server
 		IdleTimeout:  120 * time.Second, // max time fro connections using TCP Keep-Alive
 		ReadTimeout:  1 * time.Second,   // max time to read request from the client
 		WriteTimeout: 1 * time.Minute,   // max time to write response to the client

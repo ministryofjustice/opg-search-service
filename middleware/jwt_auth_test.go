@@ -2,12 +2,13 @@ package middleware
 
 import (
 	"errors"
-	"github.com/stretchr/testify/mock"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 type mockSecretsCache struct {
@@ -28,8 +29,8 @@ func TestJwtVerify(t *testing.T) {
 	tests := []struct {
 		scenario     string
 		token        string
-		secret 		 mockValue
-		salt 		 mockValue
+		secret       mockValue
+		salt         mockValue
 		expectedCode int
 	}{
 		{
@@ -83,26 +84,28 @@ func TestJwtVerify(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
+	for _, tc := range tests {
 		req, err := http.NewRequest("GET", "/jwt", nil)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if test.token != "" {
-			req.Header.Set("Authorization", "Bearer "+test.token)
+		if tc.token != "" {
+			req.Header.Set("Authorization", "Bearer "+tc.token)
 		}
 		testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
 
 		rw := httptest.NewRecorder()
 
+		logger, _ := test.NewNullLogger()
+
 		mockCache := new(mockSecretsCache)
-		mockCache.On("GetSecretString", "jwt-key").Return(test.secret.v, test.secret.e)
-		mockCache.On("GetSecretString", "user-hash-salt").Return(test.salt.v, test.salt.e)
-		handler := JwtVerify(mockCache)(testHandler)
+		mockCache.On("GetSecretString", "jwt-key").Return(tc.secret.v, tc.secret.e)
+		mockCache.On("GetSecretString", "user-hash-salt").Return(tc.salt.v, tc.salt.e)
+		handler := JwtVerify(mockCache, logger)(testHandler)
 		handler.ServeHTTP(rw, req)
 		res := rw.Result()
-		assert.Equal(t, test.expectedCode, res.StatusCode, test.scenario)
+		assert.Equal(t, tc.expectedCode, res.StatusCode, tc.scenario)
 	}
 }
 

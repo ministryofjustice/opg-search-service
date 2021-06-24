@@ -1,17 +1,17 @@
 package cli
 
 import (
-	"bytes"
-	"github.com/stretchr/testify/assert"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
+
+	"github.com/sirupsen/logrus/hooks/test"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewHealthCheck(t *testing.T) {
-	l := new(log.Logger)
+	l, _ := test.NewNullLogger()
 	hc := NewHealthCheck(l)
 
 	assert.IsType(t, new(healthCheck), hc)
@@ -22,7 +22,8 @@ func TestNewHealthCheck(t *testing.T) {
 }
 
 func TestHealthCheck_DefineFlags(t *testing.T) {
-	hc := NewHealthCheck(new(log.Logger))
+	l, _ := test.NewNullLogger()
+	hc := NewHealthCheck(l)
 	assert.Nil(t, hc.shouldRun)
 	hc.DefineFlags()
 	assert.False(t, *hc.shouldRun)
@@ -70,12 +71,11 @@ func TestHealthCheck_Run(t *testing.T) {
 			wantExitCode: 1,
 		},
 	}
-	for _, test := range tests {
-		lBuf := new(bytes.Buffer)
-		l := log.New(lBuf, "", log.LstdFlags)
+	for _, tc := range tests {
+		l, hook := test.NewNullLogger()
 
 		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(test.responseCode)
+			w.WriteHeader(tc.responseCode)
 		}))
 
 		exitCode := 666
@@ -89,7 +89,7 @@ func TestHealthCheck_Run(t *testing.T) {
 		}
 		hc.Run()
 
-		assert.Contains(t, lBuf.String(), test.wantInLog, test.scenario)
-		assert.Equal(t, test.wantExitCode, exitCode, test.scenario)
+		assert.Contains(t, hook.LastEntry().Message, tc.wantInLog, tc.scenario)
+		assert.Equal(t, tc.wantExitCode, exitCode, tc.scenario)
 	}
 }
