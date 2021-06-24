@@ -2,19 +2,20 @@ package cli
 
 import (
 	"flag"
-	"log"
 	"net/http"
 	"os"
+
+	"github.com/sirupsen/logrus"
 )
 
 type healthCheck struct {
-	logger    *log.Logger
+	logger    *logrus.Logger
 	shouldRun *bool
 	checkUrl  string
 	exit      func(code int)
 }
 
-func NewHealthCheck(logger *log.Logger) *healthCheck {
+func NewHealthCheck(logger *logrus.Logger) *healthCheck {
 	return &healthCheck{
 		logger:   logger,
 		checkUrl: "http://localhost:8000" + os.Getenv("PATH_PREFIX") + "/health-check",

@@ -4,19 +4,20 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"log"
 	"net/http"
 	"opg-search-service/elasticsearch"
 	"opg-search-service/response"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 type IndexHandler struct {
-	logger *log.Logger
+	logger *logrus.Logger
 	es     elasticsearch.ClientInterface
 }
 
-func NewIndexHandler(logger *log.Logger) (*IndexHandler, error) {
+func NewIndexHandler(logger *logrus.Logger) (*IndexHandler, error) {
 	client, err := elasticsearch.NewClient(&http.Client{}, logger)
 	if err != nil {
 		logger.Println(err)

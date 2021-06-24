@@ -3,19 +3,21 @@ package person
 import (
 	"encoding/json"
 	"errors"
-	"log"
+	"fmt"
 	"net/http"
 	"opg-search-service/elasticsearch"
 	"opg-search-service/response"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 type SearchHandler struct {
-	logger *log.Logger
+	logger *logrus.Logger
 	es     elasticsearch.ClientInterface
 }
 
-func NewSearchHandler(logger *log.Logger) (*SearchHandler, error) {
+func NewSearchHandler(logger *logrus.Logger) (*SearchHandler, error) {
 	client, err := elasticsearch.NewClient(&http.Client{}, logger)
 	if err != nil {
 		logger.Println(err)
@@ -105,5 +107,5 @@ func (s SearchHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	rw.WriteHeader(http.StatusOK)
 	_, _ = rw.Write(jsonResp)
 
-	s.logger.Println("Request took: ", time.Since(start))
+	s.logger.Println(fmt.Sprintf("Request took: %d", time.Since(start)))
 }
