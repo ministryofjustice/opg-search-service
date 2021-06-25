@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"opg-search-service/elasticsearch"
@@ -15,6 +14,8 @@ import (
 	"testing"
 
 	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
@@ -22,7 +23,7 @@ import (
 
 type SearchHandlerTestSuite struct {
 	suite.Suite
-	logger   *log.Logger
+	logger   *logrus.Logger
 	esClient *elasticsearch.MockESClient
 	handler  *SearchHandler
 	router   *mux.Router
@@ -31,8 +32,7 @@ type SearchHandlerTestSuite struct {
 }
 
 func (suite *SearchHandlerTestSuite) SetupTest() {
-	buf := new(bytes.Buffer)
-	suite.logger = log.New(buf, "test", log.LstdFlags)
+	suite.logger, _ = test.NewNullLogger()
 	suite.esClient = new(elasticsearch.MockESClient)
 	suite.handler = &SearchHandler{
 		logger: suite.logger,
@@ -205,8 +205,7 @@ func TestSearchHandler(t *testing.T) {
 }
 
 func TestNewSearchHandler(t *testing.T) {
-	lBuf := new(bytes.Buffer)
-	l := log.New(lBuf, "", log.LstdFlags)
+	l, _ := test.NewNullLogger()
 
 	sh, err := NewSearchHandler(l)
 

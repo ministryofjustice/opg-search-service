@@ -1,11 +1,11 @@
 package cli
 
 import (
-	"bytes"
+	"testing"
+
+	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"log"
-	"testing"
 )
 
 type MockCommand struct {
@@ -26,7 +26,7 @@ func (m *MockCommand) Run() {
 }
 
 func TestCommands(t *testing.T) {
-	l := new(log.Logger)
+	l, _ := test.NewNullLogger()
 	c := Commands(l)
 
 	assert.IsType(t, new(commands), c)
@@ -34,8 +34,7 @@ func TestCommands(t *testing.T) {
 }
 
 func TestCommands_Register(t *testing.T) {
-	lBuf := new(bytes.Buffer)
-	l := log.New(lBuf, "", log.LstdFlags)
+	l, hook := test.NewNullLogger()
 
 	cmd1 := new(MockCommand)
 	cmd2 := new(MockCommand)
@@ -51,5 +50,5 @@ func TestCommands_Register(t *testing.T) {
 	c := commands{logger: l}
 	c.Register(cmd1, cmd2)
 
-	assert.Contains(t, lBuf.String(), "Running command: *cli.MockCommand")
+	assert.Contains(t, hook.LastEntry().Message, "Running command: *cli.MockCommand")
 }
