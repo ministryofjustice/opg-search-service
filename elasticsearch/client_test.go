@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"strings"
 	"testing"
 
+	logrus_test "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -89,8 +89,7 @@ func TestClient_Index(t *testing.T) {
 	for _, test := range tests {
 		mc := new(MockHttpClient)
 
-		lBuf := new(bytes.Buffer)
-		l := log.New(lBuf, "", log.LstdFlags)
+		l, hook := logrus_test.NewNullLogger()
 
 		c, err := NewClient(mc, l)
 
@@ -125,8 +124,8 @@ func TestClient_Index(t *testing.T) {
 		assert.Equal(t, test.expectedStatusCode, ir.StatusCode, test.scenario)
 		assert.Equal(t, test.expectedMessage, ir.Message, test.scenario)
 
-		for _, logM := range test.expectedLogs {
-			assert.Contains(t, lBuf.String(), logM, test.scenario)
+		for i, logM := range test.expectedLogs {
+			assert.Contains(t, hook.Entries[i].Message, logM, test.scenario)
 		}
 	}
 }
@@ -137,8 +136,7 @@ func TestClient_Index_MalformedEndpoint(t *testing.T) {
 
 	mc := new(MockHttpClient)
 
-	lBuf := new(bytes.Buffer)
-	l := log.New(lBuf, "", log.LstdFlags)
+	l, _ := logrus_test.NewNullLogger()
 
 	c, err := NewClient(mc, l)
 
@@ -193,8 +191,7 @@ func TestClient_CreateIndex(t *testing.T) {
 	for _, test := range tests {
 		mc := new(MockHttpClient)
 
-		lBuf := new(bytes.Buffer)
-		l := log.New(lBuf, "", log.LstdFlags)
+		l, hook := logrus_test.NewNullLogger()
 
 		c, err := NewClient(mc, l)
 
@@ -224,7 +221,7 @@ func TestClient_CreateIndex(t *testing.T) {
 
 		result, err := c.CreateIndex(mi)
 
-		assert.Contains(t, lBuf.String(), "Creating index 'test-index' for *elasticsearch.MockIndexable", test.scenario)
+		assert.Contains(t, hook.LastEntry().Message, "Creating index 'test-index' for *elasticsearch.MockIndexable", test.scenario)
 		assert.Equal(t, test.expectedError == nil, result, test.scenario)
 		assert.Equal(t, test.expectedError, err, test.scenario)
 	}
@@ -236,8 +233,7 @@ func TestClient_CreateIndex_MalformedEndpoint(t *testing.T) {
 
 	mc := new(MockHttpClient)
 
-	lBuf := new(bytes.Buffer)
-	l := log.New(lBuf, "", log.LstdFlags)
+	l, _ := logrus_test.NewNullLogger()
 
 	c, _ := NewClient(mc, l)
 
@@ -278,8 +274,7 @@ func TestClient_DeleteIndex(t *testing.T) {
 	for _, test := range tests {
 		mc := new(MockHttpClient)
 
-		lBuf := new(bytes.Buffer)
-		l := log.New(lBuf, "", log.LstdFlags)
+		l, hook := logrus_test.NewNullLogger()
 
 		c, err := NewClient(mc, l)
 
@@ -305,7 +300,7 @@ func TestClient_DeleteIndex(t *testing.T) {
 
 		err = c.DeleteIndex(mi)
 
-		assert.Contains(t, lBuf.String(), "Deleting index 'test-index' for *elasticsearch.MockIndexable", test.scenario)
+		assert.Contains(t, hook.LastEntry().Message, "Deleting index 'test-index' for *elasticsearch.MockIndexable", test.scenario)
 		assert.Equal(t, test.expectedError, err, test.scenario)
 	}
 }
@@ -316,8 +311,7 @@ func TestClient_DeleteIndex_MalformedEndpoint(t *testing.T) {
 
 	mc := new(MockHttpClient)
 
-	lBuf := new(bytes.Buffer)
-	l := log.New(lBuf, "", log.LstdFlags)
+	l, _ := logrus_test.NewNullLogger()
 
 	c, _ := NewClient(mc, l)
 
@@ -336,8 +330,7 @@ func TestClient_DeleteIndex_MalformedEndpoint(t *testing.T) {
 func TestClient_Search_InvalidIndexConfig(t *testing.T) {
 	mc := new(MockHttpClient)
 
-	lBuf := new(bytes.Buffer)
-	l := log.New(lBuf, "", log.LstdFlags)
+	l, _ := logrus_test.NewNullLogger()
 
 	c, _ := NewClient(mc, l)
 
@@ -425,8 +418,7 @@ func TestClient_Search(t *testing.T) {
 			assert := assert.New(t)
 			mc := new(MockHttpClient)
 
-			lBuf := new(bytes.Buffer)
-			l := log.New(lBuf, "", log.LstdFlags)
+			l, _ := logrus_test.NewNullLogger()
 
 			c, err := NewClient(mc, l)
 
@@ -475,8 +467,7 @@ func TestClient_Search_MalformedEndpoint(t *testing.T) {
 
 	mc := new(MockHttpClient)
 
-	lBuf := new(bytes.Buffer)
-	l := log.New(lBuf, "", log.LstdFlags)
+	l, _ := logrus_test.NewNullLogger()
 
 	c, _ := NewClient(mc, l)
 
@@ -495,8 +486,7 @@ func TestClient_Search_MalformedEndpoint(t *testing.T) {
 func TestClient_Search_InvalidESRequestBody(t *testing.T) {
 	mc := new(MockHttpClient)
 
-	lBuf := new(bytes.Buffer)
-	l := log.New(lBuf, "", log.LstdFlags)
+	l, _ := logrus_test.NewNullLogger()
 
 	c, _ := NewClient(mc, l)
 
@@ -547,8 +537,7 @@ func TestClient_IndexExists(t *testing.T) {
 	for _, test := range tests {
 		mc := new(MockHttpClient)
 
-		lBuf := new(bytes.Buffer)
-		l := log.New(lBuf, "", log.LstdFlags)
+		l, hook := logrus_test.NewNullLogger()
 
 		c, err := NewClient(mc, l)
 
@@ -573,7 +562,7 @@ func TestClient_IndexExists(t *testing.T) {
 
 		exists, err := c.IndexExists(mi)
 
-		assert.Contains(t, lBuf.String(), "Checking index 'test-index' exists", test.scenario)
+		assert.Contains(t, hook.LastEntry().Message, "Checking index 'test-index' exists", test.scenario)
 		assert.Equal(t, test.wantExists, exists, test.scenario)
 		assert.Equal(t, test.wantError, err, test.scenario)
 	}

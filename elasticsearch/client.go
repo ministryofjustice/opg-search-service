@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
+	"github.com/sirupsen/logrus"
 )
 
 type HTTPClient interface {
@@ -38,7 +38,7 @@ type Indexable interface {
 
 type Client struct {
 	httpClient HTTPClient
-	logger     *log.Logger
+	logger     *logrus.Logger
 	domain     string
 	region     string
 	service    string
@@ -70,7 +70,7 @@ type SearchResult struct {
 	TotalExact   bool
 }
 
-func NewClient(httpClient HTTPClient, logger *log.Logger) (ClientInterface, error) {
+func NewClient(httpClient HTTPClient, logger *logrus.Logger) (ClientInterface, error) {
 	client := Client{
 		httpClient: httpClient,
 		logger:     logger,
@@ -99,7 +99,7 @@ func (c Client) Index(i Indexable) *IndexResult {
 	// Form the HTTP request
 	req, err := http.NewRequest(http.MethodPut, endpoint, body)
 	if err != nil {
-		c.logger.Println(err.Error())
+		c.logger.Error(err.Error())
 		iRes.StatusCode = http.StatusInternalServerError
 		iRes.Message = "Unable to create document index request"
 		return &iRes
@@ -113,7 +113,7 @@ func (c Client) Index(i Indexable) *IndexResult {
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		c.logger.Println(err.Error())
+		c.logger.Error(err.Error())
 		iRes.StatusCode = http.StatusInternalServerError
 		iRes.Message = "Unable to process document index request"
 		return &iRes
@@ -129,6 +129,7 @@ func (c Client) Index(i Indexable) *IndexResult {
 	default:
 		bodyBytes, _ := ioutil.ReadAll(resp.Body)
 		iRes.Message = string(bodyBytes)
+		c.logger.Error(string(bodyBytes))
 	}
 
 	return &iRes

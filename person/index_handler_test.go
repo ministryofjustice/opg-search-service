@@ -3,22 +3,24 @@ package person
 import (
 	"bytes"
 	"context"
-	"github.com/gorilla/mux"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/suite"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"opg-search-service/elasticsearch"
 	"opg-search-service/middleware"
 	"strings"
 	"testing"
+
+	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/test"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/suite"
 )
 
 type IndexHandlerTestSuite struct {
 	suite.Suite
-	logger   *log.Logger
+	logger   *logrus.Logger
 	esClient *elasticsearch.MockESClient
 	handler  *IndexHandler
 	router   *mux.Router
@@ -27,8 +29,7 @@ type IndexHandlerTestSuite struct {
 }
 
 func (suite *IndexHandlerTestSuite) SetupTest() {
-	buf := new(bytes.Buffer)
-	suite.logger = log.New(buf, "test", log.LstdFlags)
+	suite.logger, _ = test.NewNullLogger()
 	suite.esClient = new(elasticsearch.MockESClient)
 	suite.handler = &IndexHandler{
 		logger: suite.logger,
@@ -155,8 +156,7 @@ func TestIndexHandler(t *testing.T) {
 }
 
 func TestNewIndexHandler(t *testing.T) {
-	lBuf := new(bytes.Buffer)
-	l := log.New(lBuf, "", log.LstdFlags)
+	l, _ := test.NewNullLogger()
 
 	ih, err := NewIndexHandler(l)
 
