@@ -3,7 +3,6 @@ package person
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"opg-search-service/elasticsearch"
 	"opg-search-service/response"
@@ -107,5 +106,5 @@ func (s SearchHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	rw.WriteHeader(http.StatusOK)
 	_, _ = rw.Write(jsonResp)
 
-	s.logger.Println(fmt.Sprintf("Request took: %d", time.Since(start)))
+	s.logger.Printf("Request took: %d", time.Since(start))
 }
