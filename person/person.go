@@ -5,6 +5,8 @@ import (
 	"opg-search-service/response"
 )
 
+const personIndexName = "person"
+
 type Person struct {
 	ID              *int64 `json:"id"`
 	UID             string `json:"uId"`
@@ -91,7 +93,7 @@ func (p Person) Id() int64 {
 }
 
 func (p Person) IndexName() string {
-	return "person"
+	return personIndexName
 }
 
 func (p Person) Json() string {

@@ -4,13 +4,17 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"opg-search-service/elasticsearch"
 	"opg-search-service/response"
+	"strconv"
 	"time"
 
 	"github.com/sirupsen/logrus"
 )
+
+const indexBatchSize = 40000
 
 type IndexHandler struct {
 	logger *logrus.Logger
@@ -30,46 +34,67 @@ func NewIndexHandler(logger *logrus.Logger) (*IndexHandler, error) {
 	}, nil
 }
 
-func (i IndexHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
+func (i IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 
-	// get persons from payload
 	var req IndexRequest
-	resp := new(response.IndexResponse)
 
 	bodyBuf := new(bytes.Buffer)
 	_, _ = bodyBuf.ReadFrom(r.Body)
 
 	if bodyBuf.Len() == 0 {
 		i.logger.Println("request body is empty")
-		response.WriteJSONError(rw, "request", "Request body is empty", http.StatusBadRequest)
+		response.WriteJSONError(w, "request", "Request body is empty", http.StatusBadRequest)
 		return
 	}
 
 	err := json.Unmarshal(bodyBuf.Bytes(), &req)
 	if err != nil {
 		i.logger.Println(err.Error())
-		response.WriteJSONError(rw, "request", "Unable to unmarshal JSON request", http.StatusBadRequest)
+		response.WriteJSONError(w, "request", "Unable to unmarshal JSON request", http.StatusBadRequest)
 		return
 	}
 
 	validationErrs := req.Validate()
 	if len(validationErrs) > 0 {
 		i.logger.Println("Request failed validation", validationErrs)
-		response.WriteJSONErrors(rw, "Some fields have failed validation", validationErrs, http.StatusBadRequest)
+		response.WriteJSONErrors(w, "Some fields have failed validation", validationErrs, http.StatusBadRequest)
 		return
 	}
 
-	for _, p := range req.Persons {
-		// index person in elasticsearch
-		resp.Results = append(resp.Results, *i.es.Index(p))
+	batchSize := 40000
+	if s := r.FormValue("batchSize"); s != "" {
+		if v, err := strconv.Atoi(s); err == nil {
+			batchSize = v
+		}
 	}
 
-	jsonResp, _ := json.Marshal(resp)
+	op := elasticsearch.NewBulkOp(personIndexName)
+	var results []elasticsearch.IndexResult
 
-	rw.WriteHeader(http.StatusAccepted)
+	for _, p := range req.Persons {
+		if err := op.Index(p.Id(), p); err != nil {
+			i.logger.Println(err)
 
-	_, _ = rw.Write(jsonResp)
+			http.Error(w, fmt.Sprintf("could not construct index request for id=%d", p.Id()), http.StatusBadRequest)
+			return
+		}
+
+		if op.Count() >= batchSize {
+			results = append(results, i.es.DoBulk(op)...)
+			op.Reset()
+		}
+	}
+
+	if op.Count() > 0 {
+		results = append(results, i.es.DoBulk(op)...)
+	}
+
+	jsonResp, _ := json.Marshal(response.IndexResponse{Results: results})
+
+	w.WriteHeader(http.StatusAccepted)
+
+	_, _ = w.Write(jsonResp)
 
 	i.logger.Println("Request took: ", time.Since(start))
 }
