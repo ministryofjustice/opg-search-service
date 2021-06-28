@@ -106,16 +106,20 @@ func (suite *IndexHandlerTestSuite) Test_Index() {
 
 		suite.Equal(expected, actual)
 	}
-	esCall.Return(&elasticsearch.BulkResult{
+	esCall.Return([]elasticsearch.IndexResult{{
 		StatusCode: 200,
+		Id:         13,
 		Message:    "test success",
-		Results:    []elasticsearch.BulkResultItem{{ID: "13", StatusCode: 200}, {ID: "14", StatusCode: 200}},
-	}).Once()
+	}, {
+		StatusCode: 200,
+		Id:         14,
+		Message:    "test success",
+	}}).Once()
 
 	suite.ServeRequest(http.MethodPost, "/persons", reqBody)
 
 	suite.Equal(http.StatusAccepted, suite.RespCode())
-	suite.Equal(`[{"statusCode":200,"message":"test success","results":[{"id":"13","statusCode":200},{"id":"14","statusCode":200}]}]`, suite.RespBody())
+	suite.Equal(`{"results":[{"id":13,"statusCode":200,"message":"test success"},{"id":14,"statusCode":200,"message":"test success"}]}`, suite.RespBody())
 }
 
 func (suite *IndexHandlerTestSuite) Test_IndexBatchSize() {
@@ -132,11 +136,11 @@ func (suite *IndexHandlerTestSuite) Test_IndexBatchSize() {
 			expected.Index(13, Person{ID: &id1})
 			suite.Equal(expected, actual)
 		}).
-		Return(&elasticsearch.BulkResult{
+		Return([]elasticsearch.IndexResult{{
 			StatusCode: 200,
+			Id:         13,
 			Message:    "test success",
-			Results:    []elasticsearch.BulkResultItem{{ID: "13", StatusCode: 200}},
-		}).
+		}}).
 		Once()
 
 	suite.esClient.On("DoBulk", mock.AnythingOfType("*elasticsearch.BulkOp")).
@@ -148,17 +152,17 @@ func (suite *IndexHandlerTestSuite) Test_IndexBatchSize() {
 			expected.Index(14, Person{ID: &id2})
 			suite.Equal(expected, actual)
 		}).
-		Return(&elasticsearch.BulkResult{
+		Return([]elasticsearch.IndexResult{{
 			StatusCode: 200,
+			Id:         14,
 			Message:    "test success",
-			Results:    []elasticsearch.BulkResultItem{{ID: "14", StatusCode: 200}},
-		}).
+		}}).
 		Once()
 
 	suite.ServeRequest(http.MethodPost, "/persons?batchSize=1", reqBody)
 
 	suite.Equal(http.StatusAccepted, suite.RespCode())
-	suite.Equal(`[{"statusCode":200,"message":"test success","results":[{"id":"13","statusCode":200}]},{"statusCode":200,"message":"test success","results":[{"id":"14","statusCode":200}]}]`, suite.RespBody())
+	suite.Equal(`{"results":[{"id":13,"statusCode":200,"message":"test success"},{"id":14,"statusCode":200,"message":"test success"}]}`, suite.RespBody())
 }
 
 func TestIndexHandler(t *testing.T) {

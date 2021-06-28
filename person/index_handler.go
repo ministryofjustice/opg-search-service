@@ -70,7 +70,7 @@ func (i IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	op := elasticsearch.NewBulkOp(personIndexName)
-	var results []*elasticsearch.BulkResult
+	var results []elasticsearch.IndexResult
 
 	for _, p := range req.Persons {
 		if err := op.Index(p.Id(), p); err != nil {
@@ -81,16 +81,16 @@ func (i IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if op.Count() >= batchSize {
-			results = append(results, i.es.DoBulk(op))
+			results = append(results, i.es.DoBulk(op)...)
 			op.Reset()
 		}
 	}
 
 	if op.Count() > 0 {
-		results = append(results, i.es.DoBulk(op))
+		results = append(results, i.es.DoBulk(op)...)
 	}
 
-	jsonResp, _ := json.Marshal(results)
+	jsonResp, _ := json.Marshal(response.IndexResponse{Results: results})
 
 	w.WriteHeader(http.StatusAccepted)
 

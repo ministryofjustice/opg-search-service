@@ -54,15 +54,15 @@ func TestClient_DoBulkIndex(t *testing.T) {
 		esResponseError    error
 		expectedStatusCode int
 		expectedResponse   string
-		expectedResult     *BulkResult
+		expectedResult     []IndexResult
 		expectedLogs       []string
 	}{
 		{
 			scenario:           "Document updated successfully",
 			esResponseError:    nil,
 			expectedStatusCode: 200,
-			expectedResponse:   `{"errors":false}`,
-			expectedResult:     &BulkResult{StatusCode: 200},
+			expectedResponse:   `{"errors":false,"items":[{"index":{"_id":"12","status":200}}]}`,
+			expectedResult:     []IndexResult{{Id: 12, StatusCode: 200}},
 			expectedLogs:       []string{},
 		},
 		{
@@ -70,7 +70,7 @@ func TestClient_DoBulkIndex(t *testing.T) {
 			esResponseError:    errors.New("some ES error"),
 			expectedStatusCode: 500,
 			expectedResponse:   "",
-			expectedResult:     &BulkResult{StatusCode: 500, Message: "Unable to process document index request"},
+			expectedResult:     []IndexResult{{StatusCode: 500, Message: "Unable to process document index request"}},
 			expectedLogs: []string{
 				"some ES error",
 			},
@@ -80,7 +80,7 @@ func TestClient_DoBulkIndex(t *testing.T) {
 			esResponseError:    nil,
 			expectedStatusCode: 200,
 			expectedResponse:   `{"errors":true,"items":[{"index":{"_id":"12","status":400}}]}`,
-			expectedResult:     &BulkResult{StatusCode: 200, Results: []BulkResultItem{{ID: "12", StatusCode: 400}}},
+			expectedResult:     []IndexResult{{Id: 12, StatusCode: 400}},
 			expectedLogs:       []string{},
 		},
 	}
