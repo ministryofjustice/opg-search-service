@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"opg-search-service/elasticsearch"
@@ -121,24 +122,9 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
 
 		suite.Equal(http.StatusAccepted, resp.StatusCode)
 
-		var iResp response.IndexResponse
+		data, _ := ioutil.ReadAll(resp.Body)
 
-		err = json.NewDecoder(resp.Body).Decode(&iResp)
-		if err != nil {
-			suite.Fail("Unable to decode JSON index response", resp.Body)
-		}
-
-		expectedResp := response.IndexResponse{
-			Results: []elasticsearch.IndexResult{
-				{
-					Id:         testPerson.Id(),
-					StatusCode: 201,
-					Message:    "Document created",
-				},
-			},
-		}
-
-		suite.Equal(expectedResp, iResp, "Unexpected index result")
+		suite.Equal(`{"statusCode":200,"message":"","results":null}`, string(data))
 	}
 
 	hit, _ := json.Marshal(suite.testPeople[1])
