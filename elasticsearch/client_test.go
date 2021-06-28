@@ -152,7 +152,7 @@ func TestClient_Index_MalformedEndpoint(t *testing.T) {
 
 	assert.Equal(t, int64(6), ir.Id)
 	assert.Equal(t, http.StatusInternalServerError, ir.StatusCode)
-	assert.Equal(t, "Unable to create document index request", ir.Message)
+	assert.Equal(t, "Unable to process document index request", ir.Message)
 
 	_ = os.Setenv("AWS_ELASTICSEARCH_ENDPOINT", oldESEndpoint)
 }
