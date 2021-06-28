@@ -30,46 +30,52 @@ func NewIndexHandler(logger *logrus.Logger) (*IndexHandler, error) {
 	}, nil
 }
 
-func (i IndexHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
+func (i IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 
-	// get persons from payload
 	var req IndexRequest
-	resp := new(response.IndexResponse)
 
 	bodyBuf := new(bytes.Buffer)
 	_, _ = bodyBuf.ReadFrom(r.Body)
 
 	if bodyBuf.Len() == 0 {
 		i.logger.Println("request body is empty")
-		response.WriteJSONError(rw, "request", "Request body is empty", http.StatusBadRequest)
+		response.WriteJSONError(w, "request", "Request body is empty", http.StatusBadRequest)
 		return
 	}
 
 	err := json.Unmarshal(bodyBuf.Bytes(), &req)
 	if err != nil {
 		i.logger.Println(err.Error())
-		response.WriteJSONError(rw, "request", "Unable to unmarshal JSON request", http.StatusBadRequest)
+		response.WriteJSONError(w, "request", "Unable to unmarshal JSON request", http.StatusBadRequest)
 		return
 	}
 
 	validationErrs := req.Validate()
 	if len(validationErrs) > 0 {
 		i.logger.Println("Request failed validation", validationErrs)
-		response.WriteJSONErrors(rw, "Some fields have failed validation", validationErrs, http.StatusBadRequest)
+		response.WriteJSONErrors(w, "Some fields have failed validation", validationErrs, http.StatusBadRequest)
 		return
 	}
 
+	op := elasticsearch.NewBulkOp(personIndexName)
+
 	for _, p := range req.Persons {
-		// index person in elasticsearch
-		resp.Results = append(resp.Results, *i.es.Index(p))
+		if err := op.Index(p.Id(), p); err != nil {
+			i.logger.Println(err)
+
+			http.Error(w, "could not construct index request", http.StatusBadRequest)
+			return
+		}
 	}
 
-	jsonResp, _ := json.Marshal(resp)
+	res := i.es.DoBulk(op)
 
-	rw.WriteHeader(http.StatusAccepted)
+	jsonResp, _ := json.Marshal(res)
 
-	_, _ = rw.Write(jsonResp)
+	w.WriteHeader(http.StatusAccepted)
+
+	_, _ = w.Write(jsonResp)
 
 	i.logger.Println("Request took: ", time.Since(start))
 }

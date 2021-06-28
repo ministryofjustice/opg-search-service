@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -23,7 +22,7 @@ type HTTPClient interface {
 }
 
 type ClientInterface interface {
-	Index(i Indexable) *IndexResult
+	DoBulk(op *BulkOp) *BulkResult
 	Search(requestBody map[string]interface{}, dataType Indexable) (*SearchResult, error)
 	CreateIndex(i Indexable) (bool, error)
 	DeleteIndex(i Indexable) error
@@ -102,37 +101,83 @@ func (c *Client) doRequest(method, endpoint string, body io.ReadSeeker, contentT
 	return c.httpClient.Do(req)
 }
 
-func (c *Client) Index(i Indexable) *IndexResult {
-	c.logger.Printf("Indexing %T ID %d", i, i.Id())
+type bulkResponse struct {
+	Errors bool `json:"errors"`
+	Items  []struct {
+		Index struct {
+			ID     string `json:"_id"`
+			Status int    `json:"status"`
+		} `json:"index"`
+	} `json:"items"`
+}
 
-	endpoint := c.domain + "/" + i.IndexName() + "/_doc/" + strconv.FormatInt(i.Id(), 10)
+type bulkOp struct {
+	Index indexOp `json:"index"`
+}
 
-	body := strings.NewReader(i.Json())
+type indexOp struct {
+	ID string `json:"_id"`
+}
 
-	iRes := IndexResult{Id: i.Id()}
+type BulkOp struct {
+	index string
+	buf   bytes.Buffer
+	enc   *json.Encoder
+}
 
-	resp, err := c.doRequest(http.MethodPut, endpoint, body, "application/json")
+func NewBulkOp(index string) *BulkOp {
+	op := &BulkOp{}
+	op.index = index
+	op.enc = json.NewEncoder(&op.buf)
+	return op
+}
+
+func (op *BulkOp) Index(id int64, v interface{}) error {
+	if err := op.enc.Encode(bulkOp{Index: indexOp{ID: strconv.Itoa(int(id))}}); err != nil {
+		return err
+	}
+
+	return op.enc.Encode(v)
+}
+
+func (c *Client) DoBulk(op *BulkOp) *BulkResult {
+	body := bytes.NewReader(op.buf.Bytes())
+
+	endpoint := fmt.Sprintf("%s/%s/_bulk", c.domain, op.index)
+	resp, err := c.doRequest(http.MethodPost, endpoint, body, "application/json")
 	if err != nil {
 		c.logger.Error(err.Error())
-		iRes.StatusCode = http.StatusInternalServerError
-		iRes.Message = "Unable to process document index request"
-		return &iRes
+
+		return &BulkResult{
+			StatusCode: http.StatusInternalServerError,
+			Message:    "Unable to process document index request",
+		}
 	}
+	defer resp.Body.Close()
 
-	iRes.StatusCode = resp.StatusCode
+	res := &BulkResult{StatusCode: resp.StatusCode}
 
-	switch iRes.StatusCode {
-	case http.StatusOK:
-		iRes.Message = "Document updated"
-	case http.StatusCreated:
-		iRes.Message = "Document created"
-	default:
+	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := ioutil.ReadAll(resp.Body)
-		iRes.Message = string(bodyBytes)
 		c.logger.Error(string(bodyBytes))
+
+		res.Message = string(bodyBytes)
+		return res
 	}
 
-	return &iRes
+	var v bulkResponse
+	if err := json.NewDecoder(resp.Body).Decode(&v); err != nil {
+		res.Message = err.Error()
+		return res
+	}
+
+	if v.Errors {
+		for _, d := range v.Items {
+			res.Results = append(res.Results, BulkResultItem{ID: d.Index.ID, StatusCode: d.Index.Status})
+		}
+	}
+
+	return res
 }
 
 // returns an array of JSON encoded results
@@ -149,6 +194,7 @@ func (c *Client) Search(requestBody map[string]interface{}, dataType Indexable) 
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		buf.Reset()
@@ -221,6 +267,7 @@ func (c *Client) CreateIndex(i Indexable) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		buf.Reset()
@@ -242,7 +289,11 @@ func (c *Client) DeleteIndex(i Indexable) error {
 	}
 	body := bytes.NewReader(buf.Bytes())
 
-	_, err := c.doRequest(http.MethodDelete, endpoint, body, "application/json")
+	resp, err := c.doRequest(http.MethodDelete, endpoint, body, "application/json")
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
 
-	return err
+	return nil
 }
