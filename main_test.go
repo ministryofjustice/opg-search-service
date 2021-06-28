@@ -101,31 +101,27 @@ func (suite *EndToEndTestSuite) TestHealthCheck() {
 func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
 	client := new(http.Client)
 
-	for _, testPerson := range suite.testPeople {
-		iReq := person.IndexRequest{
-			Persons: []person.Person{
-				testPerson,
-			},
-		}
-
-		jsonBody, _ := json.Marshal(iReq)
-		reqBody := bytes.NewReader(jsonBody)
-		req, _ := http.NewRequest(http.MethodPost, suite.GetUrl("/persons"), reqBody)
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Authorization", suite.authHeader)
-
-		resp, err := client.Do(req)
-		if err != nil {
-			suite.Fail("Error indexing person", err)
-		}
-		defer resp.Body.Close()
-
-		suite.Equal(http.StatusAccepted, resp.StatusCode)
-
-		data, _ := ioutil.ReadAll(resp.Body)
-
-		suite.Equal(`{"statusCode":200,"message":"","results":null}`, string(data))
+	iReq := person.IndexRequest{
+		Persons: suite.testPeople,
 	}
+
+	jsonBody, _ := json.Marshal(iReq)
+	reqBody := bytes.NewReader(jsonBody)
+	req, _ := http.NewRequest(http.MethodPost, suite.GetUrl("/persons"), reqBody)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", suite.authHeader)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		suite.Fail("Error indexing person", err)
+	}
+	defer resp.Body.Close()
+
+	suite.Equal(http.StatusAccepted, resp.StatusCode)
+
+	data, _ := ioutil.ReadAll(resp.Body)
+
+	suite.Equal(`[{"statusCode":200,"message":"","results":null}]`, string(data))
 
 	hit, _ := json.Marshal(suite.testPeople[1])
 
@@ -142,8 +138,8 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
 		},
 	})
 
-	reqBody := bytes.NewReader([]byte(`{"term":"` + suite.testPeople[1].Surname + `"}`))
-	req, _ := http.NewRequest(http.MethodPost, suite.GetUrl("/persons/search"), reqBody)
+	reqBody = bytes.NewReader([]byte(`{"term":"` + suite.testPeople[1].Surname + `"}`))
+	req, _ = http.NewRequest(http.MethodPost, suite.GetUrl("/persons/search"), reqBody)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", suite.authHeader)
 

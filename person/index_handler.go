@@ -4,13 +4,17 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"opg-search-service/elasticsearch"
 	"opg-search-service/response"
+	"strconv"
 	"time"
 
 	"github.com/sirupsen/logrus"
 )
+
+const indexBatchSize = 40000
 
 type IndexHandler struct {
 	logger *logrus.Logger
@@ -58,20 +62,35 @@ func (i IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	batchSize := 40000
+	if s := r.FormValue("batchSize"); s != "" {
+		if v, err := strconv.Atoi(s); err == nil {
+			batchSize = v
+		}
+	}
+
 	op := elasticsearch.NewBulkOp(personIndexName)
+	var results []*elasticsearch.BulkResult
 
 	for _, p := range req.Persons {
 		if err := op.Index(p.Id(), p); err != nil {
 			i.logger.Println(err)
 
-			http.Error(w, "could not construct index request", http.StatusBadRequest)
+			http.Error(w, fmt.Sprintf("could not construct index request for id=%d", p.Id()), http.StatusBadRequest)
 			return
+		}
+
+		if op.Count() >= batchSize {
+			results = append(results, i.es.DoBulk(op))
+			op.Reset()
 		}
 	}
 
-	res := i.es.DoBulk(op)
+	if op.Count() > 0 {
+		results = append(results, i.es.DoBulk(op))
+	}
 
-	jsonResp, _ := json.Marshal(res)
+	jsonResp, _ := json.Marshal(results)
 
 	w.WriteHeader(http.StatusAccepted)
 

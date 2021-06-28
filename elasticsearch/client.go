@@ -123,6 +123,7 @@ type BulkOp struct {
 	index string
 	buf   bytes.Buffer
 	enc   *json.Encoder
+	count int
 }
 
 func NewBulkOp(index string) *BulkOp {
@@ -137,7 +138,21 @@ func (op *BulkOp) Index(id int64, v interface{}) error {
 		return err
 	}
 
-	return op.enc.Encode(v)
+	if err := op.enc.Encode(v); err != nil {
+		return err
+	}
+
+	op.count += 1
+	return nil
+}
+
+func (op *BulkOp) Count() int {
+	return op.count
+}
+
+func (op *BulkOp) Reset() {
+	op.count = 0
+	op.buf.Reset()
 }
 
 func (c *Client) DoBulk(op *BulkOp) *BulkResult {
