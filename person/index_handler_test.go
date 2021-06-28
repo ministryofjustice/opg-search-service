@@ -91,61 +91,75 @@ func (suite *IndexHandlerTestSuite) Test_InvalidIndexRequestBody() {
 	suite.Contains(suite.RespBody(), `{"message":"Some fields have failed validation","errors":[{"name":"id","description":"field is empty"}]}`)
 }
 
-func (suite *IndexHandlerTestSuite) Test_IndexSingle() {
-	reqBody := `{"persons":[{"id":13}]}`
+func (suite *IndexHandlerTestSuite) Test_Index() {
+	reqBody := `{"persons":[{"id":13},{"id":14}]}`
 
-	id := int64(13)
-	esCall := suite.esClient.On("Index", mock.AnythingOfType("Person"))
+	esCall := suite.esClient.On("DoBulk", mock.AnythingOfType("*elasticsearch.BulkOp"))
 	esCall.RunFn = func(args mock.Arguments) {
-		i := args[0].(Person)
-		suite.Equal(Person{
-			ID: &id,
-		}, i)
+		actual := args[0].(*elasticsearch.BulkOp)
+
+		var id1, id2 int64 = 13, 14
+
+		expected := elasticsearch.NewBulkOp("person")
+		expected.Index(13, Person{ID: &id1})
+		expected.Index(14, Person{ID: &id2})
+
+		suite.Equal(expected, actual)
 	}
-	esCall.Return(&elasticsearch.IndexResult{
-		Id:         id,
+	esCall.Return([]elasticsearch.IndexResult{{
 		StatusCode: 200,
+		Id:         13,
 		Message:    "test success",
-	})
+	}, {
+		StatusCode: 200,
+		Id:         14,
+		Message:    "test success",
+	}}).Once()
 
 	suite.ServeRequest(http.MethodPost, "/persons", reqBody)
 
 	suite.Equal(http.StatusAccepted, suite.RespCode())
-	suite.Equal(`{"results":[{"id":13,"statusCode":200,"message":"test success"}]}`, suite.RespBody())
+	suite.Equal(`{"results":[{"id":13,"statusCode":200,"message":"test success"},{"id":14,"statusCode":200,"message":"test success"}]}`, suite.RespBody())
 }
 
-func (suite *IndexHandlerTestSuite) Test_IndexMultiple() {
+func (suite *IndexHandlerTestSuite) Test_IndexBatchSize() {
 	reqBody := `{"persons":[{"id":13},{"id":14}]}`
 
-	ids := [2]int64{13, 14}
+	var id1, id2 int64 = 13, 14
 
-	esCall := suite.esClient.On("Index", mock.AnythingOfType("Person"))
-	esCall.RunFn = func(args mock.Arguments) {
-		i := args[0].(Person)
-		suite.Equal(Person{
-			ID: &ids[0],
-		}, i)
-	}
-	esCall.Return(&elasticsearch.IndexResult{
-		Id:         ids[0],
-		StatusCode: 200,
-		Message:    "test success",
-	}).Once()
+	suite.esClient.On("DoBulk", mock.AnythingOfType("*elasticsearch.BulkOp")).
+		Run(func(args mock.Arguments) {
+			actual := args[0].(*elasticsearch.BulkOp)
 
-	esCall = suite.esClient.On("Index", mock.AnythingOfType("Person"))
-	esCall.RunFn = func(args mock.Arguments) {
-		i := args[0].(Person)
-		suite.Equal(Person{
-			ID: &ids[1],
-		}, i)
-	}
-	esCall.Return(&elasticsearch.IndexResult{
-		Id:         ids[1],
-		StatusCode: 200,
-		Message:    "test success",
-	}).Once()
+			expected := elasticsearch.NewBulkOp("person")
 
-	suite.ServeRequest(http.MethodPost, "/persons", reqBody)
+			expected.Index(13, Person{ID: &id1})
+			suite.Equal(expected, actual)
+		}).
+		Return([]elasticsearch.IndexResult{{
+			StatusCode: 200,
+			Id:         13,
+			Message:    "test success",
+		}}).
+		Once()
+
+	suite.esClient.On("DoBulk", mock.AnythingOfType("*elasticsearch.BulkOp")).
+		Run(func(args mock.Arguments) {
+			actual := args[0].(*elasticsearch.BulkOp)
+
+			expected := elasticsearch.NewBulkOp("person")
+
+			expected.Index(14, Person{ID: &id2})
+			suite.Equal(expected, actual)
+		}).
+		Return([]elasticsearch.IndexResult{{
+			StatusCode: 200,
+			Id:         14,
+			Message:    "test success",
+		}}).
+		Once()
+
+	suite.ServeRequest(http.MethodPost, "/persons?batchSize=1", reqBody)
 
 	suite.Equal(http.StatusAccepted, suite.RespCode())
 	suite.Equal(`{"results":[{"id":13,"statusCode":200,"message":"test success"},{"id":14,"statusCode":200,"message":"test success"}]}`, suite.RespBody())

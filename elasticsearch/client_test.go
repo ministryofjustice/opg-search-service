@@ -48,113 +48,92 @@ func (m *MockIndexable) IndexConfig() map[string]interface{} {
 	return args.Get(0).(map[string]interface{})
 }
 
-func TestClient_Index(t *testing.T) {
+func TestClient_DoBulkIndex(t *testing.T) {
 	tests := []struct {
 		scenario           string
 		esResponseError    error
 		expectedStatusCode int
-		expectedMessage    string
+		expectedResponse   string
+		expectedResult     []IndexResult
 		expectedLogs       []string
 	}{
-		{
-			scenario:           "Document created successfully",
-			esResponseError:    nil,
-			expectedStatusCode: 201,
-			expectedMessage:    "Document created",
-			expectedLogs: []string{
-				"Indexing *elasticsearch.MockIndexable ID 6",
-			},
-		},
 		{
 			scenario:           "Document updated successfully",
 			esResponseError:    nil,
 			expectedStatusCode: 200,
-			expectedMessage:    "Document updated",
-			expectedLogs: []string{
-				"Indexing *elasticsearch.MockIndexable ID 6",
-			},
+			expectedResponse:   `{"errors":false,"items":[{"index":{"_id":"12","status":200}}]}`,
+			expectedResult:     []IndexResult{{Id: 12, StatusCode: 200}},
+			expectedLogs:       []string{},
 		},
 		{
 			scenario:           "Index request failure",
 			esResponseError:    errors.New("some ES error"),
 			expectedStatusCode: 500,
-			expectedMessage:    "Unable to process document index request",
+			expectedResponse:   "",
+			expectedResult:     []IndexResult{{StatusCode: 500, Message: "Unable to process document index request"}},
 			expectedLogs: []string{
-				"Indexing *elasticsearch.MockIndexable ID 6",
 				"some ES error",
 			},
+		},
+		{
+			scenario:           "Document failure",
+			esResponseError:    nil,
+			expectedStatusCode: 200,
+			expectedResponse:   `{"errors":true,"items":[{"index":{"_id":"12","status":400}}]}`,
+			expectedResult:     []IndexResult{{Id: 12, StatusCode: 400}},
+			expectedLogs:       []string{},
 		},
 	}
 
 	for _, test := range tests {
-		mc := new(MockHttpClient)
+		t.Run(test.scenario, func(t *testing.T) {
+			assert := assert.New(t)
 
-		l, hook := logrus_test.NewNullLogger()
+			mc := new(MockHttpClient)
 
-		c, err := NewClient(mc, l)
+			l, hook := logrus_test.NewNullLogger()
 
-		assert.IsType(t, &Client{}, c, test.scenario)
-		assert.Nil(t, err, test.scenario)
+			c, err := NewClient(mc, l)
 
-		mi := new(MockIndexable)
-		mi.On("Id").Return(int64(6)).Times(3)
-		mi.On("IndexName").Return("test-index").Times(1)
-		mi.On("Json").Return("{\"test\":\"test\"}")
+			assert.IsType(&Client{}, c)
+			assert.Nil(err)
 
-		mcCall := mc.On("Do", mock.AnythingOfType("*http.Request"))
-		mcCall.RunFn = func(args mock.Arguments) {
-			req := args[0].(*http.Request)
-			assert.Equal(t, http.MethodPut, req.Method)
-			assert.Equal(t, os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")+"/test-index/_doc/6", req.URL.String())
-			reqBuf := new(bytes.Buffer)
-			_, _ = reqBuf.ReadFrom(req.Body)
-			assert.Equal(t, "{\"test\":\"test\"}", reqBuf.String())
-		}
-		mcCall.Return(
-			&http.Response{
-				StatusCode: test.expectedStatusCode,
-				Body:       ioutil.NopCloser(strings.NewReader(test.expectedMessage)),
-			},
-			test.esResponseError,
-		)
+			mi := new(MockIndexable)
+			mi.On("Id").Return(int64(6)).Times(3)
+			mi.On("IndexName").Return("test-index").Times(1)
+			mi.On("Json").Return("{\"test\":\"test\"}")
 
-		ir := c.Index(mi)
+			mcCall := mc.On("Do", mock.AnythingOfType("*http.Request"))
+			mcCall.RunFn = func(args mock.Arguments) {
+				req := args[0].(*http.Request)
+				assert.Equal(http.MethodPost, req.Method)
+				assert.Equal(os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")+"/this/_bulk", req.URL.String())
+				reqBuf := new(bytes.Buffer)
+				_, _ = reqBuf.ReadFrom(req.Body)
+				assert.Equal(`{"index":{"_id":"1"}}
+{"a":"b"}
+`, reqBuf.String())
+			}
+			mcCall.Return(
+				&http.Response{
+					StatusCode: test.expectedStatusCode,
+					Body:       ioutil.NopCloser(strings.NewReader(test.expectedResponse)),
+				},
+				test.esResponseError,
+			)
 
-		assert.Equal(t, int64(6), ir.Id, test.scenario)
-		assert.Equal(t, test.expectedStatusCode, ir.StatusCode, test.scenario)
-		assert.Equal(t, test.expectedMessage, ir.Message, test.scenario)
+			op := NewBulkOp("this")
+			op.Index(1, map[string]string{"a": "b"})
 
-		for i, logM := range test.expectedLogs {
-			assert.Contains(t, hook.Entries[i].Message, logM, test.scenario)
-		}
+			result := c.DoBulk(op)
+
+			assert.Equal(test.expectedResult, result)
+
+			for i, logM := range test.expectedLogs {
+				assert.Contains(hook.Entries[i].Message, logM)
+			}
+		})
 	}
-}
-
-func TestClient_Index_MalformedEndpoint(t *testing.T) {
-	oldESEndpoint := os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")
-	_ = os.Setenv("AWS_ELASTICSEARCH_ENDPOINT", ":-:/-=")
-
-	mc := new(MockHttpClient)
-
-	l, _ := logrus_test.NewNullLogger()
-
-	c, err := NewClient(mc, l)
-
-	assert.IsType(t, &Client{}, c)
-	assert.Nil(t, err)
-
-	mi := new(MockIndexable)
-	mi.On("Id").Return(int64(6)).Times(3)
-	mi.On("IndexName").Return("test-index").Times(1)
-	mi.On("Json").Return("{\"test\":\"test\"}")
-
-	ir := c.Index(mi)
-
-	assert.Equal(t, int64(6), ir.Id)
-	assert.Equal(t, http.StatusInternalServerError, ir.StatusCode)
-	assert.Equal(t, "Unable to create document index request", ir.Message)
-
-	_ = os.Setenv("AWS_ELASTICSEARCH_ENDPOINT", oldESEndpoint)
 }
 
 func TestClient_CreateIndex(t *testing.T) {
@@ -189,41 +168,43 @@ func TestClient_CreateIndex(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		mc := new(MockHttpClient)
+		t.Run(test.scenario, func(t *testing.T) {
+			mc := new(MockHttpClient)
 
-		l, hook := logrus_test.NewNullLogger()
+			l, hook := logrus_test.NewNullLogger()
 
-		c, err := NewClient(mc, l)
+			c, err := NewClient(mc, l)
 
-		assert.IsType(t, &Client{}, c, test.scenario)
-		assert.Nil(t, err, test.scenario)
+			assert.IsType(t, &Client{}, c)
+			assert.Nil(t, err)
 
-		mi := new(MockIndexable)
-		mi.On("IndexName").Return("test-index").Times(2)
-		mi.On("IndexConfig").Return(map[string]interface{}{"test": "test"}).Times(1)
+			mi := new(MockIndexable)
+			mi.On("IndexName").Return("test-index").Times(2)
+			mi.On("IndexConfig").Return(map[string]interface{}{"test": "test"}).Times(1)
 
-		mcCall := mc.On("Do", mock.AnythingOfType("*http.Request"))
-		mcCall.RunFn = func(args mock.Arguments) {
-			req := args[0].(*http.Request)
-			assert.Equal(t, http.MethodPut, req.Method)
-			assert.Equal(t, os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")+"/test-index", req.URL.String())
-			reqBuf := new(bytes.Buffer)
-			_, _ = reqBuf.ReadFrom(req.Body)
-			assert.Equal(t, `{"test":"test"}`, strings.TrimSpace(reqBuf.String()))
-		}
-		mcCall.Return(
-			&http.Response{
-				StatusCode: test.esResponseCode,
-				Body:       ioutil.NopCloser(strings.NewReader(test.esResponseMessage)),
-			},
-			test.esResponseError,
-		)
+			mcCall := mc.On("Do", mock.AnythingOfType("*http.Request"))
+			mcCall.RunFn = func(args mock.Arguments) {
+				req := args[0].(*http.Request)
+				assert.Equal(t, http.MethodPut, req.Method)
+				assert.Equal(t, os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")+"/test-index", req.URL.String())
+				reqBuf := new(bytes.Buffer)
+				_, _ = reqBuf.ReadFrom(req.Body)
+				assert.Equal(t, `{"test":"test"}`, strings.TrimSpace(reqBuf.String()))
+			}
+			mcCall.Return(
+				&http.Response{
+					StatusCode: test.esResponseCode,
+					Body:       ioutil.NopCloser(strings.NewReader(test.esResponseMessage)),
+				},
+				test.esResponseError,
+			)
 
-		result, err := c.CreateIndex(mi)
+			result, err := c.CreateIndex(mi)
 
-		assert.Contains(t, hook.LastEntry().Message, "Creating index 'test-index' for *elasticsearch.MockIndexable", test.scenario)
-		assert.Equal(t, test.expectedError == nil, result, test.scenario)
-		assert.Equal(t, test.expectedError, err, test.scenario)
+			assert.Contains(t, hook.LastEntry().Message, "Creating index 'test-index' for *elasticsearch.MockIndexable")
+			assert.Equal(t, test.expectedError == nil, result)
+			assert.Equal(t, test.expectedError, err)
+		})
 	}
 }
 
@@ -272,36 +253,39 @@ func TestClient_DeleteIndex(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		mc := new(MockHttpClient)
+		t.Run(test.scenario, func(t *testing.T) {
+			mc := new(MockHttpClient)
 
-		l, hook := logrus_test.NewNullLogger()
+			l, hook := logrus_test.NewNullLogger()
 
-		c, err := NewClient(mc, l)
+			c, err := NewClient(mc, l)
 
-		assert.IsType(t, &Client{}, c, test.scenario)
-		assert.Nil(t, err, test.scenario)
+			assert.IsType(t, &Client{}, c)
+			assert.Nil(t, err)
 
-		mi := new(MockIndexable)
-		mi.On("IndexName").Return("test-index").Times(2)
-		mi.On("IndexConfig").Return(map[string]interface{}{"test": "test"}).Times(1)
+			mi := new(MockIndexable)
+			mi.On("IndexName").Return("test-index").Times(2)
+			mi.On("IndexConfig").Return(map[string]interface{}{"test": "test"}).Times(1)
 
-		mcCall := mc.On("Do", mock.AnythingOfType("*http.Request"))
-		mcCall.RunFn = func(args mock.Arguments) {
-			req := args[0].(*http.Request)
-			assert.Equal(t, http.MethodDelete, req.Method)
-			assert.Equal(t, os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")+"/test-index", req.URL.String())
-		}
-		mcCall.Return(
-			&http.Response{
-				StatusCode: test.esResponseCode,
-			},
-			test.esResponseError,
-		)
+			mcCall := mc.On("Do", mock.AnythingOfType("*http.Request"))
+			mcCall.RunFn = func(args mock.Arguments) {
+				req := args[0].(*http.Request)
+				assert.Equal(t, http.MethodDelete, req.Method)
+				assert.Equal(t, os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")+"/test-index", req.URL.String())
+			}
+			mcCall.Return(
+				&http.Response{
+					StatusCode: test.esResponseCode,
+					Body:       ioutil.NopCloser(strings.NewReader("")),
+				},
+				test.esResponseError,
+			)
 
-		err = c.DeleteIndex(mi)
+			err = c.DeleteIndex(mi)
 
-		assert.Contains(t, hook.LastEntry().Message, "Deleting index 'test-index' for *elasticsearch.MockIndexable", test.scenario)
-		assert.Equal(t, test.expectedError, err, test.scenario)
+			assert.Contains(t, hook.LastEntry().Message, "Deleting index 'test-index' for *elasticsearch.MockIndexable")
+			assert.Equal(t, test.expectedError, err)
+		})
 	}
 }
 
@@ -535,35 +519,57 @@ func TestClient_IndexExists(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		mc := new(MockHttpClient)
+		t.Run(test.scenario, func(t *testing.T) {
+			mc := new(MockHttpClient)
 
-		l, hook := logrus_test.NewNullLogger()
+			l, hook := logrus_test.NewNullLogger()
 
-		c, err := NewClient(mc, l)
+			c, err := NewClient(mc, l)
 
-		assert.IsType(t, &Client{}, c, test.scenario)
-		assert.Nil(t, err, test.scenario)
+			assert.IsType(t, &Client{}, c)
+			assert.Nil(t, err)
 
-		mi := new(MockIndexable)
-		mi.On("IndexName").Return("test-index").Times(2)
+			mi := new(MockIndexable)
+			mi.On("IndexName").Return("test-index").Times(2)
 
-		mcCall := mc.On("Do", mock.AnythingOfType("*http.Request"))
-		mcCall.RunFn = func(args mock.Arguments) {
-			req := args[0].(*http.Request)
-			assert.Equal(t, http.MethodHead, req.Method)
-			assert.Equal(t, os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")+"/test-index", req.URL.String())
-		}
-		mcCall.Return(
-			&http.Response{
-				StatusCode: test.esResponseCode,
-			},
-			test.esResponseError,
-		)
+			mcCall := mc.On("Do", mock.AnythingOfType("*http.Request"))
+			mcCall.RunFn = func(args mock.Arguments) {
+				req := args[0].(*http.Request)
+				assert.Equal(t, http.MethodHead, req.Method)
+				assert.Equal(t, os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")+"/test-index", req.URL.String())
+			}
+			mcCall.Return(
+				&http.Response{
+					StatusCode: test.esResponseCode,
+				},
+				test.esResponseError,
+			)
 
-		exists, err := c.IndexExists(mi)
+			exists, err := c.IndexExists(mi)
 
-		assert.Contains(t, hook.LastEntry().Message, "Checking index 'test-index' exists", test.scenario)
-		assert.Equal(t, test.wantExists, exists, test.scenario)
-		assert.Equal(t, test.wantError, err, test.scenario)
+			assert.Contains(t, hook.LastEntry().Message, "Checking index 'test-index' exists")
+			assert.Equal(t, test.wantExists, exists)
+			assert.Equal(t, test.wantError, err)
+		})
 	}
+}
+
+func TestBulkOp(t *testing.T) {
+	op := NewBulkOp("test")
+	op.Index(1, map[string]interface{}{"a": 1})
+	op.Index(2, map[string]interface{}{"b": "c"})
+	op.Index(3, map[string]interface{}{"d": false})
+
+	expected := `{"index":{"_id":"1"}}
+{"a":1}
+{"index":{"_id":"2"}}
+{"b":"c"}
+{"index":{"_id":"3"}}
+{"d":false}
+`
+
+	assert.True(t, strings.HasSuffix(expected, "\n"), "ensure the final newline is not removed")
+
+	result := op.buf.String()
+	assert.Equal(t, expected, result)
 }
