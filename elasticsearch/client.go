@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -22,7 +22,7 @@ type HTTPClient interface {
 }
 
 type ClientInterface interface {
-	Index(i Indexable) *IndexResult
+	DoBulk(op *BulkOp) *BulkResult
 	Search(requestBody map[string]interface{}, dataType Indexable) (*SearchResult, error)
 	CreateIndex(i Indexable) (bool, error)
 	DeleteIndex(i Indexable) error
@@ -70,8 +70,8 @@ type SearchResult struct {
 	TotalExact   bool
 }
 
-func NewClient(httpClient HTTPClient, logger *logrus.Logger) (ClientInterface, error) {
-	client := Client{
+func NewClient(httpClient HTTPClient, logger *logrus.Logger) (*Client, error) {
+	client := &Client{
 		httpClient: httpClient,
 		logger:     logger,
 		domain:     os.Getenv("AWS_ELASTICSEARCH_ENDPOINT"),
@@ -84,59 +84,119 @@ func NewClient(httpClient HTTPClient, logger *logrus.Logger) (ClientInterface, e
 		client.region = "eu-west-1"
 	}
 
-	return &client, nil
+	return client, nil
 }
 
-func (c Client) Index(i Indexable) *IndexResult {
-	c.logger.Printf("Indexing %T ID %d", i, i.Id())
-
-	endpoint := c.domain + "/" + i.IndexName() + "/_doc/" + strconv.FormatInt(i.Id(), 10)
-
-	body := strings.NewReader(i.Json())
-
-	iRes := IndexResult{Id: i.Id()}
-
-	// Form the HTTP request
-	req, err := http.NewRequest(http.MethodPut, endpoint, body)
+func (c *Client) doRequest(method, endpoint string, body io.ReadSeeker, contentType string) (*http.Response, error) {
+	req, err := http.NewRequest(method, endpoint, body)
 	if err != nil {
-		c.logger.Error(err.Error())
-		iRes.StatusCode = http.StatusInternalServerError
-		iRes.Message = "Unable to create document index request"
-		return &iRes
+		return nil, err
+	}
+	if contentType != "" {
+		req.Header.Add("Content-Type", contentType)
 	}
 
-	// You can probably infer Content-Type programmatically, but here, we just say that it's JSON
-	req.Header.Add("Content-Type", "application/json")
-
-	// Sign the request, send it, and print the response
 	_, _ = c.signer.Sign(req, body, c.service, c.region, time.Now())
 
-	resp, err := c.httpClient.Do(req)
+	return c.httpClient.Do(req)
+}
+
+type bulkResponse struct {
+	Errors bool `json:"errors"`
+	Items  []struct {
+		Index struct {
+			ID     string `json:"_id"`
+			Status int    `json:"status"`
+		} `json:"index"`
+	} `json:"items"`
+}
+
+type bulkOp struct {
+	Index indexOp `json:"index"`
+}
+
+type indexOp struct {
+	ID string `json:"_id"`
+}
+
+type BulkOp struct {
+	index string
+	buf   bytes.Buffer
+	enc   *json.Encoder
+	count int
+}
+
+func NewBulkOp(index string) *BulkOp {
+	op := &BulkOp{}
+	op.index = index
+	op.enc = json.NewEncoder(&op.buf)
+	return op
+}
+
+func (op *BulkOp) Index(id int64, v interface{}) error {
+	if err := op.enc.Encode(bulkOp{Index: indexOp{ID: strconv.Itoa(int(id))}}); err != nil {
+		return err
+	}
+
+	if err := op.enc.Encode(v); err != nil {
+		return err
+	}
+
+	op.count += 1
+	return nil
+}
+
+func (op *BulkOp) Count() int {
+	return op.count
+}
+
+func (op *BulkOp) Reset() {
+	op.count = 0
+	op.buf.Reset()
+}
+
+func (c *Client) DoBulk(op *BulkOp) *BulkResult {
+	body := bytes.NewReader(op.buf.Bytes())
+
+	endpoint := fmt.Sprintf("%s/%s/_bulk", c.domain, op.index)
+	resp, err := c.doRequest(http.MethodPost, endpoint, body, "application/json")
 	if err != nil {
 		c.logger.Error(err.Error())
-		iRes.StatusCode = http.StatusInternalServerError
-		iRes.Message = "Unable to process document index request"
-		return &iRes
+
+		return &BulkResult{
+			StatusCode: http.StatusInternalServerError,
+			Message:    "Unable to process document index request",
+		}
 	}
+	defer resp.Body.Close()
 
-	iRes.StatusCode = resp.StatusCode
+	res := &BulkResult{StatusCode: resp.StatusCode}
 
-	switch iRes.StatusCode {
-	case http.StatusOK:
-		iRes.Message = "Document updated"
-	case http.StatusCreated:
-		iRes.Message = "Document created"
-	default:
+	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := ioutil.ReadAll(resp.Body)
-		iRes.Message = string(bodyBytes)
 		c.logger.Error(string(bodyBytes))
+
+		res.Message = string(bodyBytes)
+		return res
 	}
 
-	return &iRes
+	var v bulkResponse
+	if err := json.NewDecoder(resp.Body).Decode(&v); err != nil {
+		res.Message = err.Error()
+		return res
+	}
+
+	if v.Errors {
+		for _, d := range v.Items {
+			res.Results = append(res.Results, BulkResultItem{ID: d.Index.ID, StatusCode: d.Index.Status})
+		}
+	}
+
+	return res
 }
 
 // returns an array of JSON encoded results
-func (c Client) Search(requestBody map[string]interface{}, dataType Indexable) (*SearchResult, error) {
+func (c *Client) Search(requestBody map[string]interface{}, dataType Indexable) (*SearchResult, error) {
 	endpoint := c.domain + "/" + dataType.IndexName() + "/_search"
 
 	var buf bytes.Buffer
@@ -145,22 +205,11 @@ func (c Client) Search(requestBody map[string]interface{}, dataType Indexable) (
 	}
 	body := bytes.NewReader(buf.Bytes())
 
-	// Form the HTTP request
-	req, err := http.NewRequest(http.MethodPost, endpoint, body)
+	resp, err := c.doRequest(http.MethodPost, endpoint, body, "application/json")
 	if err != nil {
 		return nil, err
 	}
-
-	// You can probably infer Content-Type programmatically, but here, we just say that it's JSON
-	req.Header.Add("Content-Type", "application/json")
-
-	// Sign the request, send it, and print the response
-	_, _ = c.signer.Sign(req, body, c.service, c.region, time.Now())
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		buf.Reset()
@@ -197,22 +246,13 @@ func (c Client) Search(requestBody map[string]interface{}, dataType Indexable) (
 	}, nil
 }
 
-func (c Client) IndexExists(i Indexable) (bool, error) {
+func (c *Client) IndexExists(i Indexable) (bool, error) {
 	c.logger.Printf("Checking index '%s' exists", i.IndexName())
 
 	endpoint := c.domain + "/" + i.IndexName()
 
-	// Form the HTTP request
 	body := bytes.NewReader([]byte(""))
-	req, err := http.NewRequest(http.MethodHead, endpoint, body)
-	if err != nil {
-		return false, err
-	}
-
-	// Sign the request, send it, and print the response
-	_, _ = c.signer.Sign(req, body, c.service, c.region, time.Now())
-
-	resp, err := c.httpClient.Do(req)
+	resp, err := c.doRequest(http.MethodHead, endpoint, body, "")
 	if err != nil {
 		return false, err
 	}
@@ -227,7 +267,7 @@ func (c Client) IndexExists(i Indexable) (bool, error) {
 	return false, errors.New(fmt.Sprintf(`index check failed with status code %d`, resp.StatusCode))
 }
 
-func (c Client) CreateIndex(i Indexable) (bool, error) {
+func (c *Client) CreateIndex(i Indexable) (bool, error) {
 	c.logger.Printf("Creating index '%s' for %T", i.IndexName(), i)
 
 	endpoint := c.domain + "/" + i.IndexName()
@@ -238,22 +278,11 @@ func (c Client) CreateIndex(i Indexable) (bool, error) {
 	}
 	body := bytes.NewReader(buf.Bytes())
 
-	// Form the HTTP request
-	req, err := http.NewRequest(http.MethodPut, endpoint, body)
+	resp, err := c.doRequest(http.MethodPut, endpoint, body, "application/json")
 	if err != nil {
 		return false, err
 	}
-
-	// You can probably infer Content-Type programmatically, but here, we just say that it's JSON
-	req.Header.Add("Content-Type", "application/json")
-
-	// Sign the request, send it, and print the response
-	_, _ = c.signer.Sign(req, body, c.service, c.region, time.Now())
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return false, err
-	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		buf.Reset()
@@ -264,7 +293,7 @@ func (c Client) CreateIndex(i Indexable) (bool, error) {
 	return true, nil
 }
 
-func (c Client) DeleteIndex(i Indexable) error {
+func (c *Client) DeleteIndex(i Indexable) error {
 	c.logger.Printf("Deleting index '%s' for %T", i.IndexName(), i)
 
 	endpoint := c.domain + "/" + i.IndexName()
@@ -275,17 +304,11 @@ func (c Client) DeleteIndex(i Indexable) error {
 	}
 	body := bytes.NewReader(buf.Bytes())
 
-	// Form the HTTP request
-	req, err := http.NewRequest(http.MethodDelete, endpoint, body)
+	resp, err := c.doRequest(http.MethodDelete, endpoint, body, "application/json")
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 
-	req.Header.Add("Content-Type", "application/json")
-
-	_, _ = c.signer.Sign(req, body, c.service, c.region, time.Now())
-
-	_, err = c.httpClient.Do(req)
-
-	return err
+	return nil
 }
