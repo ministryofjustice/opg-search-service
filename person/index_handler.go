@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"opg-search-service/elasticsearch"
 	"opg-search-service/response"
-	"strconv"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -62,31 +61,27 @@ func (i IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	batchSize := 40000
-	if s := r.FormValue("batchSize"); s != "" {
-		if v, err := strconv.Atoi(s); err == nil {
-			batchSize = v
-		}
-	}
-
 	op := elasticsearch.NewBulkOp(personIndexName)
 	var results []elasticsearch.IndexResult
 
 	for _, p := range req.Persons {
-		if err := op.Index(p.Id(), p); err != nil {
+		err := op.Index(p.Id(), p)
+
+		if err == elasticsearch.ErrOpTooLarge {
+			results = append(results, i.es.DoBulk(op)...)
+			op.Reset()
+			err = op.Index(p.Id(), p)
+		}
+
+		if err != nil {
 			i.logger.Println(err)
 
 			http.Error(w, fmt.Sprintf("could not construct index request for id=%d", p.Id()), http.StatusBadRequest)
 			return
 		}
-
-		if op.Count() >= batchSize {
-			results = append(results, i.es.DoBulk(op)...)
-			op.Reset()
-		}
 	}
 
-	if op.Count() > 0 {
+	if !op.Empty() {
 		results = append(results, i.es.DoBulk(op)...)
 	}
 
