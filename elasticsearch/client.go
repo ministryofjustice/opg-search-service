@@ -17,6 +17,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const maxPayloadSize = 10485760 // bytes
+
+var ErrOpTooLarge = errors.New("BulkOp exceeds maximum payload size")
+
 type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
@@ -122,14 +126,14 @@ type indexOp struct {
 type BulkOp struct {
 	index string
 	buf   bytes.Buffer
+	tmp   bytes.Buffer
 	enc   *json.Encoder
-	count int
 }
 
 func NewBulkOp(index string) *BulkOp {
 	op := &BulkOp{}
 	op.index = index
-	op.enc = json.NewEncoder(&op.buf)
+	op.enc = json.NewEncoder(&op.tmp)
 	return op
 }
 
@@ -142,17 +146,21 @@ func (op *BulkOp) Index(id int64, v interface{}) error {
 		return err
 	}
 
-	op.count += 1
-	return nil
+	if op.tmp.Len()+op.buf.Len() > maxPayloadSize {
+		return ErrOpTooLarge
+	}
+
+	_, err := op.tmp.WriteTo(&op.buf)
+	return err
 }
 
-func (op *BulkOp) Count() int {
-	return op.count
+func (op *BulkOp) Empty() bool {
+	return op.buf.Len() == 0
 }
 
 func (op *BulkOp) Reset() {
-	op.count = 0
 	op.buf.Reset()
+	op.tmp.Reset()
 }
 
 func (c *Client) DoBulk(op *BulkOp) []IndexResult {
