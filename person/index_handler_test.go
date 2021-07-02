@@ -3,6 +3,7 @@ package person
 import (
 	"bytes"
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"opg-search-service/elasticsearch"
@@ -111,15 +112,19 @@ func (suite *IndexHandlerTestSuite) Test_Index() {
 		Id:         13,
 		Message:    "test success",
 	}, {
-		StatusCode: 200,
+		StatusCode: 201,
 		Id:         14,
 		Message:    "test success",
-	}}).Once()
+	}, {
+		StatusCode: 400,
+		Id:         15,
+		Message:    "test failed",
+	}}, errors.New("hmm")).Once()
 
 	suite.ServeRequest(http.MethodPost, "/persons", reqBody)
 
 	suite.Equal(http.StatusAccepted, suite.RespCode())
-	suite.Equal(`{"results":[{"id":13,"statusCode":200,"message":"test success"},{"id":14,"statusCode":200,"message":"test success"}]}`, suite.RespBody())
+	suite.Equal(`{"successful":2,"failed":1,"errors":["hmm"]}`, suite.RespBody())
 }
 
 func TestIndexHandler(t *testing.T) {
