@@ -94,9 +94,10 @@ func (i IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 type indexResponse struct {
-	Successful int      `json:"successful"`
-	Failed     int      `json:"failed"`
-	Errors     []string `json:"errors,omitempty"`
+	Successful int                         `json:"successful"`
+	Failed     int                         `json:"failed"`
+	Errors     []string                    `json:"errors,omitempty"`
+	Results    []elasticsearch.IndexResult `json:"results"`
 }
 
 func (r *indexResponse) Add(results []elasticsearch.IndexResult, err error) {
@@ -107,6 +108,8 @@ func (r *indexResponse) Add(results []elasticsearch.IndexResult, err error) {
 			r.Failed += 1
 		}
 	}
+
+	r.Results = append(r.Results, results...)
 
 	if err != nil {
 		r.Errors = append(r.Errors, err.Error())

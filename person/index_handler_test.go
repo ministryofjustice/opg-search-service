@@ -124,7 +124,7 @@ func (suite *IndexHandlerTestSuite) Test_Index() {
 	suite.ServeRequest(http.MethodPost, "/persons", reqBody)
 
 	suite.Equal(http.StatusAccepted, suite.RespCode())
-	suite.Equal(`{"successful":2,"failed":1,"errors":["hmm"]}`, suite.RespBody())
+	suite.Equal(`{"successful":2,"failed":1,"errors":["hmm"],"results":[{"id":13,"statusCode":200,"message":"test success"},{"id":14,"statusCode":201,"message":"test success"},{"id":15,"statusCode":400,"message":"test failed"}]}`, suite.RespBody())
 }
 
 func TestIndexHandler(t *testing.T) {

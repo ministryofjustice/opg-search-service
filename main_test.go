@@ -121,7 +121,7 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
 
 	data, _ := ioutil.ReadAll(resp.Body)
 
-	suite.Equal(`{"successful":2,"failed":0}`, string(data))
+	suite.Equal(`{"successful":2,"failed":0,"results":[{"id":0,"statusCode":201,"message":""},{"id":1,"statusCode":201,"message":""}]}`, string(data))
 
 	hit, _ := json.Marshal(suite.testPeople[1])
 
