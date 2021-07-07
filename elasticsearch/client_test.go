@@ -55,6 +55,7 @@ func TestClient_DoBulkIndex(t *testing.T) {
 		expectedStatusCode int
 		expectedResponse   string
 		expectedResult     []IndexResult
+		expectedError      string
 		expectedLogs       []string
 	}{
 		{
@@ -70,7 +71,7 @@ func TestClient_DoBulkIndex(t *testing.T) {
 			esResponseError:    errors.New("some ES error"),
 			expectedStatusCode: 500,
 			expectedResponse:   "",
-			expectedResult:     []IndexResult{{StatusCode: 500, Message: "Unable to process document index request"}},
+			expectedError:      "unable to process index request: some ES error",
 			expectedLogs: []string{
 				"some ES error",
 			},
@@ -125,8 +126,11 @@ func TestClient_DoBulkIndex(t *testing.T) {
 			op := NewBulkOp("this")
 			op.Index(1, map[string]string{"a": "b"})
 
-			result := c.DoBulk(op)
+			result, err := c.DoBulk(op)
 
+			if err != nil {
+				assert.Equal(test.expectedError, err.Error())
+			}
 			assert.Equal(test.expectedResult, result)
 
 			for i, logM := range test.expectedLogs {

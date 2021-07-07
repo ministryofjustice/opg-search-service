@@ -26,7 +26,7 @@ type HTTPClient interface {
 }
 
 type ClientInterface interface {
-	DoBulk(op *BulkOp) []IndexResult
+	DoBulk(op *BulkOp) ([]IndexResult, error)
 	Search(requestBody map[string]interface{}, dataType Indexable) (*SearchResult, error)
 	CreateIndex(i Indexable) (bool, error)
 	DeleteIndex(i Indexable) error
@@ -163,7 +163,7 @@ func (op *BulkOp) Reset() {
 	op.tmp.Reset()
 }
 
-func (c *Client) DoBulk(op *BulkOp) []IndexResult {
+func (c *Client) DoBulk(op *BulkOp) ([]IndexResult, error) {
 	body := bytes.NewReader(op.buf.Bytes())
 
 	endpoint := fmt.Sprintf("%s/%s/_bulk", c.domain, op.index)
@@ -171,10 +171,7 @@ func (c *Client) DoBulk(op *BulkOp) []IndexResult {
 	if err != nil {
 		c.logger.Error(err.Error())
 
-		return []IndexResult{{
-			StatusCode: http.StatusInternalServerError,
-			Message:    "Unable to process document index request",
-		}}
+		return nil, fmt.Errorf("unable to process index request: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -182,18 +179,12 @@ func (c *Client) DoBulk(op *BulkOp) []IndexResult {
 		bodyBytes, _ := ioutil.ReadAll(resp.Body)
 		c.logger.Error(string(bodyBytes))
 
-		return []IndexResult{{
-			StatusCode: resp.StatusCode,
-			Message:    string(bodyBytes),
-		}}
+		return nil, fmt.Errorf("elasticsearch failed: %s", string(bodyBytes))
 	}
 
 	var v bulkResponse
 	if err := json.NewDecoder(resp.Body).Decode(&v); err != nil {
-		return []IndexResult{{
-			StatusCode: resp.StatusCode,
-			Message:    fmt.Sprintf("deserializing response: %s", err.Error()),
-		}}
+		return nil, fmt.Errorf("deserializing response: %s", err)
 	}
 
 	var results []IndexResult
@@ -202,7 +193,7 @@ func (c *Client) DoBulk(op *BulkOp) []IndexResult {
 		results = append(results, IndexResult{Id: int64(id), StatusCode: d.Index.Status})
 	}
 
-	return results
+	return results, nil
 }
 
 // returns an array of JSON encoded results

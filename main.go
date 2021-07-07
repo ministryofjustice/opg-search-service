@@ -225,6 +225,10 @@ func main() {
 	//                     type: string
 	//                   className:
 	//                     type: string
+	//                   caseType:
+	//                     type: string
+	//                   caseSubtype:
+	//                     type: string
 	//             orders:
 	//               type: array
 	//               items:
@@ -254,6 +258,16 @@ func main() {
 	//     schema:
 	//       type: object
 	//       properties:
+	//         successful:
+	//           type: integer
+	//           format: int64
+	//         failed:
+	//           type: integer
+	//           format: int64
+	//         errors:
+	//           type: array
+	//           items:
+	//             type: string
 	//         results:
 	//           type: array
 	//           items:

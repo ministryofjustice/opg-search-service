@@ -13,8 +13,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const indexBatchSize = 40000
-
 type IndexHandler struct {
 	logger *logrus.Logger
 	es     elasticsearch.ClientInterface
@@ -62,13 +60,14 @@ func (i IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	op := elasticsearch.NewBulkOp(personIndexName)
-	var results []elasticsearch.IndexResult
+
+	response := &indexResponse{}
 
 	for _, p := range req.Persons {
 		err := op.Index(p.Id(), p)
 
 		if err == elasticsearch.ErrOpTooLarge {
-			results = append(results, i.es.DoBulk(op)...)
+			response.Add(i.es.DoBulk(op))
 			op.Reset()
 			err = op.Index(p.Id(), p)
 		}
@@ -82,14 +81,37 @@ func (i IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !op.Empty() {
-		results = append(results, i.es.DoBulk(op)...)
+		response.Add(i.es.DoBulk(op))
 	}
 
-	jsonResp, _ := json.Marshal(response.IndexResponse{Results: results})
+	jsonResp, _ := json.Marshal(response)
 
 	w.WriteHeader(http.StatusAccepted)
 
 	_, _ = w.Write(jsonResp)
 
 	i.logger.Println("Request took: ", time.Since(start))
+}
+
+type indexResponse struct {
+	Successful int                         `json:"successful"`
+	Failed     int                         `json:"failed"`
+	Errors     []string                    `json:"errors,omitempty"`
+	Results    []elasticsearch.IndexResult `json:"results"`
+}
+
+func (r *indexResponse) Add(results []elasticsearch.IndexResult, err error) {
+	for _, result := range results {
+		if result.StatusCode == http.StatusOK || result.StatusCode == http.StatusCreated {
+			r.Successful += 1
+		} else {
+			r.Failed += 1
+		}
+	}
+
+	r.Results = append(r.Results, results...)
+
+	if err != nil {
+		r.Errors = append(r.Errors, err.Error())
+	}
 }

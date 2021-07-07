@@ -6,9 +6,9 @@ type MockESClient struct {
 	mock.Mock
 }
 
-func (m *MockESClient) DoBulk(op *BulkOp) []IndexResult {
+func (m *MockESClient) DoBulk(op *BulkOp) ([]IndexResult, error) {
 	args := m.Called(op)
-	return args.Get(0).([]IndexResult)
+	return args.Get(0).([]IndexResult), args.Error(1)
 }
 
 func (m *MockESClient) Search(requestBody map[string]interface{}, dataType Indexable) (*SearchResult, error) {
