@@ -54,7 +54,7 @@ func TestClient_DoBulkIndex(t *testing.T) {
 		esResponseError    error
 		expectedStatusCode int
 		expectedResponse   string
-		expectedResult     []IndexResult
+		expectedResult     BulkResult
 		expectedError      string
 		expectedLogs       []string
 	}{
@@ -63,7 +63,7 @@ func TestClient_DoBulkIndex(t *testing.T) {
 			esResponseError:    nil,
 			expectedStatusCode: 200,
 			expectedResponse:   `{"errors":false,"items":[{"index":{"_id":"12","status":200}}]}`,
-			expectedResult:     []IndexResult{{Id: 12, StatusCode: 200}},
+			expectedResult:     BulkResult{Successful: 1},
 			expectedLogs:       []string{},
 		},
 		{
@@ -81,7 +81,7 @@ func TestClient_DoBulkIndex(t *testing.T) {
 			esResponseError:    nil,
 			expectedStatusCode: 200,
 			expectedResponse:   `{"errors":true,"items":[{"index":{"_id":"12","status":400}}]}`,
-			expectedResult:     []IndexResult{{Id: 12, StatusCode: 400}},
+			expectedResult:     BulkResult{Failed: 1},
 			expectedLogs:       []string{},
 		},
 	}

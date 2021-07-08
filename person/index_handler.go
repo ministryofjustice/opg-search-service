@@ -94,22 +94,14 @@ func (i IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 type indexResponse struct {
-	Successful int                         `json:"successful"`
-	Failed     int                         `json:"failed"`
-	Errors     []string                    `json:"errors,omitempty"`
-	Results    []elasticsearch.IndexResult `json:"results"`
+	Successful int      `json:"successful"`
+	Failed     int      `json:"failed"`
+	Errors     []string `json:"errors,omitempty"`
 }
 
-func (r *indexResponse) Add(results []elasticsearch.IndexResult, err error) {
-	for _, result := range results {
-		if result.StatusCode == http.StatusOK || result.StatusCode == http.StatusCreated {
-			r.Successful += 1
-		} else {
-			r.Failed += 1
-		}
-	}
-
-	r.Results = append(r.Results, results...)
+func (r *indexResponse) Add(result elasticsearch.BulkResult, err error) {
+	r.Successful += result.Successful
+	r.Failed += result.Failed
 
 	if err != nil {
 		r.Errors = append(r.Errors, err.Error())
