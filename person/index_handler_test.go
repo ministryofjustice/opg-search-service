@@ -107,24 +107,12 @@ func (suite *IndexHandlerTestSuite) Test_Index() {
 
 		suite.Equal(expected, actual)
 	}
-	esCall.Return([]elasticsearch.IndexResult{{
-		StatusCode: 200,
-		Id:         13,
-		Message:    "test success",
-	}, {
-		StatusCode: 201,
-		Id:         14,
-		Message:    "test success",
-	}, {
-		StatusCode: 400,
-		Id:         15,
-		Message:    "test failed",
-	}}, errors.New("hmm")).Once()
+	esCall.Return(elasticsearch.BulkResult{Successful: 2, Failed: 1}, errors.New("hmm")).Once()
 
 	suite.ServeRequest(http.MethodPost, "/persons", reqBody)
 
 	suite.Equal(http.StatusAccepted, suite.RespCode())
-	suite.Equal(`{"successful":2,"failed":1,"errors":["hmm"],"results":[{"id":13,"statusCode":200,"message":"test success"},{"id":14,"statusCode":201,"message":"test success"},{"id":15,"statusCode":400,"message":"test failed"}]}`, suite.RespBody())
+	suite.Equal(`{"successful":2,"failed":1,"errors":["hmm"]}`, suite.RespBody())
 }
 
 func TestIndexHandler(t *testing.T) {
