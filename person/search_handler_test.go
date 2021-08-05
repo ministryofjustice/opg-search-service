@@ -141,7 +141,18 @@ func (suite *SearchHandlerTestSuite) Test_SearchWithAllParameters() {
 							"default_operator": "AND",
 						},
 					},
-					"filter": []interface{}{
+				},
+			},
+			"aggs": map[string]interface{}{
+				"personType": map[string]interface{}{
+					"terms": map[string]string{
+						"field": "personType",
+					},
+				},
+			},
+			"post_filter": map[string]interface{}{
+				"bool": map[string]interface{}{
+					"should": []interface{}{
 						map[string]interface{}{
 							"term": map[string]string{
 								"personType": "type1",
@@ -152,13 +163,6 @@ func (suite *SearchHandlerTestSuite) Test_SearchWithAllParameters() {
 								"personType": "type2",
 							},
 						},
-					},
-				},
-			},
-			"aggs": map[string]interface{}{
-				"personType": map[string]interface{}{
-					"terms": map[string]string{
-						"field": "personType",
 					},
 				},
 			},
