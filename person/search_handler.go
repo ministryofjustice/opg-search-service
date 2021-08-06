@@ -70,7 +70,6 @@ func (s SearchHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 						"default_operator": "AND",
 					},
 				},
-				"filter": filters,
 			},
 		},
 		"aggs": map[string]interface{}{
@@ -78,6 +77,11 @@ func (s SearchHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 				"terms": map[string]string{
 					"field": "personType",
 				},
+			},
+		},
+		"post_filter":  map[string]interface{}{
+			"bool": map[string]interface{}{
+				"should": filters,
 			},
 		},
 	}
