@@ -3,10 +3,11 @@ package person
 import (
 	"bytes"
 	"errors"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"net/http"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateSearchRequestFromRequest(t *testing.T) {
@@ -45,7 +46,7 @@ func TestCreateSearchRequestFromRequest(t *testing.T) {
 			`{"term":"René D’!Eath-Smi/the()","size":1,"from":2,"person_types":["tall","short"]}`,
 			nil,
 			&searchRequest{
-				Term: "René D’Eath-Smithe",
+				Term: "René D’Eath-Smi/the",
 				Size: 1,
 				From: 2,
 				PersonTypes: []string{

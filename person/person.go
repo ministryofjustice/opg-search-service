@@ -34,27 +34,23 @@ type Person struct {
 		Default     bool   `json:"default"`
 		Classname   string `json:"className"`
 	} `json:"mobilePhoneNumber"`
-	Email             string `json:"email"`
-	Dob               string `json:"dob"`
-	Firstname         string `json:"firstname"`
-	Middlenames       string `json:"middlenames"`
-	Surname           string `json:"surname"`
-	CompanyName       string `json:"companyName"`
-	Addressline1      string `json:"addressLine1"`
-	Addressline2      string `json:"addressLine2"`
-	Addressline3      string `json:"addressLine3"`
-	Town              string `json:"town"`
-	County            string `json:"county"`
-	Postcode          string `json:"postcode"`
-	Country           string `json:"country"`
-	Isairmailrequired bool   `json:"isAirmailRequired"`
-	Addresses         []struct {
-		Addresslines []string `json:"addressLines"`
-		Postcode     string   `json:"postcode"`
-		Classname    string   `json:"className"`
-	} `json:"addresses"`
-	Phonenumber  string `json:"phoneNumber"`
-	Phonenumbers []struct {
+	Email             string          `json:"email"`
+	Dob               string          `json:"dob"`
+	Firstname         string          `json:"firstname"`
+	Middlenames       string          `json:"middlenames"`
+	Surname           string          `json:"surname"`
+	CompanyName       string          `json:"companyName"`
+	Addressline1      string          `json:"addressLine1"`
+	Addressline2      string          `json:"addressLine2"`
+	Addressline3      string          `json:"addressLine3"`
+	Town              string          `json:"town"`
+	County            string          `json:"county"`
+	Postcode          string          `json:"postcode"`
+	Country           string          `json:"country"`
+	Isairmailrequired bool            `json:"isAirmailRequired"`
+	Addresses         []PersonAddress `json:"addresses"`
+	Phonenumber       string          `json:"phoneNumber"`
+	Phonenumbers      []struct {
 		ID          int    `json:"id"`
 		Phonenumber string `json:"phoneNumber"`
 		Type        string `json:"type"`
@@ -82,6 +78,12 @@ type Person struct {
 		Classname string `json:"className"`
 	} `json:"orders"`
 	Classname string `json:"className"`
+}
+
+type PersonAddress struct {
+	Addresslines []string `json:"addressLines"`
+	Postcode     string   `json:"postcode"`
+	Classname    string   `json:"className"`
 }
 
 func (p Person) Id() int64 {
