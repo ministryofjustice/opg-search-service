@@ -36,16 +36,27 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 
 	suite.authHeader = "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1ODcwNTIzMTcsImV4cCI6OTk5OTk5OTk5OSwic2Vzc2lvbi1kYXRhIjoiVGVzdC5NY1Rlc3RGYWNlQG1haWwuY29tIn0.8HtN6aTAnE2YFI9rJD8drzqgrXPkyUbwRRJymcPSmHk"
 
-	// define fixtures
-	var ids []int64
-	for i := 0; i < 2; i++ {
-		ids = append(ids, int64(i))
-		suite.testPeople = append(suite.testPeople, person.Person{
-			ID:         &ids[i],
-			Firstname:  fmt.Sprintf("John%d", i),
-			Surname:    fmt.Sprintf("Doe%d", i),
-			Persontype: fmt.Sprintf("Type%d", i%2),
-		})
+	suite.testPeople = []person.Person{
+		{
+			ID:         id(0),
+			Firstname:  "John0",
+			Surname:    "Doe0",
+			Persontype: "Type0",
+			Dob:        "01/02/1990",
+			Addresses: []person.PersonAddress{{
+				Postcode: "NG1 2CD",
+			}},
+		},
+		{
+			ID:         id(1),
+			Firstname:  "John1",
+			Surname:    "Doe1",
+			Persontype: "Type1",
+			Dob:        "20/03/1987",
+			Addresses: []person.PersonAddress{{
+				Postcode: "NG1 1AB",
+			}},
+		},
 	}
 
 	// wait for ES service to stand up
@@ -88,30 +99,14 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 	suite.Fail(fmt.Sprintf("Unable to start search service server after %d attempts", retries))
 }
 
-func (suite *EndToEndTestSuite) GetUrl(path string) string {
-	return "http://localhost:8000" + os.Getenv("PATH_PREFIX") + path
-}
-
 func (suite *EndToEndTestSuite) TestHealthCheck() {
-	resp, err := http.Get(suite.GetUrl("/health-check"))
+	resp, err := http.Get("http://localhost:8000" + os.Getenv("PATH_PREFIX") + "/health-check")
 	suite.Nil(err)
 	suite.Equal(http.StatusOK, resp.StatusCode)
 }
 
 func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
-	client := new(http.Client)
-
-	iReq := person.IndexRequest{
-		Persons: suite.testPeople,
-	}
-
-	jsonBody, _ := json.Marshal(iReq)
-	reqBody := bytes.NewReader(jsonBody)
-	req, _ := http.NewRequest(http.MethodPost, suite.GetUrl("/persons"), reqBody)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", suite.authHeader)
-
-	resp, err := client.Do(req)
+	resp, err := doRequest(suite.authHeader, "/persons", person.IndexRequest{Persons: suite.testPeople})
 	if err != nil {
 		suite.Fail("Error indexing person", err)
 	}
@@ -123,51 +118,122 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
 
 	suite.Equal(`{"successful":2,"failed":0}`, string(data))
 
-	hit, _ := json.Marshal(suite.testPeople[1])
+	testCases := []struct {
+		scenario         string
+		term             string
+		expectedResponse func() response.SearchResponse
+	}{
+		{
+			scenario: "search by surname",
+			term:     suite.testPeople[1].Surname,
+			expectedResponse: func() response.SearchResponse {
+				hit, _ := json.Marshal(suite.testPeople[1])
 
-	expectedSearchResp, _ := json.Marshal(response.SearchResponse{
-		Results: []json.RawMessage{hit},
-		Aggregations: map[string]map[string]int{
-			"personType": {
-				"Type1": 1,
+				return response.SearchResponse{
+					Results: []json.RawMessage{hit},
+					Aggregations: map[string]map[string]int{
+						"personType": {
+							"Type1": 1,
+						},
+					},
+					Total: response.Total{
+						Count: 1,
+						Exact: true,
+					},
+				}
 			},
 		},
-		Total: response.Total{
-			Count: 1,
-			Exact: true,
+		{
+			scenario: "search by dob",
+			term:     "01/02/1990",
+			expectedResponse: func() response.SearchResponse {
+				hit, _ := json.Marshal(suite.testPeople[0])
+
+				return response.SearchResponse{
+					Results: []json.RawMessage{hit},
+					Aggregations: map[string]map[string]int{
+						"personType": {
+							"Type0": 1,
+						},
+					},
+					Total: response.Total{
+						Count: 1,
+						Exact: true,
+					},
+				}
+			},
 		},
-	})
+		{
+			scenario: "search by postcode",
+			term:     "NG1 2CD",
+			expectedResponse: func() response.SearchResponse {
+				hit, _ := json.Marshal(suite.testPeople[0])
 
-	reqBody = bytes.NewReader([]byte(`{"term":"` + suite.testPeople[1].Surname + `"}`))
-	req, _ = http.NewRequest(http.MethodPost, suite.GetUrl("/persons/search"), reqBody)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", suite.authHeader)
-
-	var respBody string
-
-	// wait up to 2s for the indexed record to become searchable
-	for i := 0; i < 20; i++ {
-		resp, err := client.Do(req)
-		if err != nil {
-			suite.Fail("Error searching for a person", err)
-		}
-
-		suite.Equal(http.StatusOK, resp.StatusCode)
-
-		buf := new(bytes.Buffer)
-		_, _ = buf.ReadFrom(resp.Body)
-		respBody = buf.String()
-
-		if string(expectedSearchResp) == respBody {
-			break
-		}
-
-		time.Sleep(time.Millisecond * 100)
+				return response.SearchResponse{
+					Results: []json.RawMessage{hit},
+					Aggregations: map[string]map[string]int{
+						"personType": {
+							"Type0": 1,
+						},
+					},
+					Total: response.Total{
+						Count: 1,
+						Exact: true,
+					},
+				}
+			},
+		},
 	}
 
-	suite.Equal(string(expectedSearchResp), respBody, "Unexpected search result")
+	for _, tc := range testCases {
+		suite.Run(tc.scenario, func() {
+			var respBody []byte
+
+			expectedResponse, _ := json.Marshal(tc.expectedResponse())
+
+			// wait up to 2s for the indexed record to become searchable
+			for i := 0; i < 20; i++ {
+				resp, err := doRequest(suite.authHeader, "/persons/search", map[string]string{"term": tc.term})
+				if err != nil {
+					suite.Fail("Error searching for a person", err)
+				}
+
+				suite.Equal(http.StatusOK, resp.StatusCode)
+
+				respBody, _ = ioutil.ReadAll(resp.Body)
+
+				if bytes.Equal(expectedResponse, respBody) {
+					break
+				}
+
+				time.Sleep(time.Millisecond * 100)
+			}
+
+			suite.Equal(string(expectedResponse), string(respBody))
+		})
+	}
 }
 
 func TestEndToEnd(t *testing.T) {
 	suite.Run(t, new(EndToEndTestSuite))
+}
+
+func id(i int) *int64 {
+	x := int64(i)
+	return &x
+}
+
+func doRequest(authHeader, path string, data interface{}) (*http.Response, error) {
+	var buf bytes.Buffer
+	json.NewEncoder(&buf).Encode(data)
+
+	req, err := http.NewRequest(http.MethodPost, "http://localhost:8000"+os.Getenv("PATH_PREFIX")+path, &buf)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", authHeader)
+
+	return http.DefaultClient.Do(req)
 }

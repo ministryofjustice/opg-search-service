@@ -41,7 +41,7 @@ func CreateSearchRequestFromRequest(r *http.Request) (*searchRequest, error) {
 }
 
 func (sr *searchRequest) sanitise() {
-	re := regexp.MustCompile(`[^’\p{L}\d\-.@ ]`)
+	re := regexp.MustCompile(`[^’\p{L}\d\-.@ /]`)
 	log.Println(re.ReplaceAllString(sr.Term, ""))
 	sr.Term = strings.TrimSpace(re.ReplaceAllString(sr.Term, ""))
 
