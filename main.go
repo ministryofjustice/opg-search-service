@@ -221,6 +221,8 @@ func main() {
 	//                     format: int64
 	//                   caseRecNumber:
 	//                     type: string
+	//                   onlineLpaId:
+	//                     type: string
 	//                   batchId:
 	//                     type: string
 	//                   className:

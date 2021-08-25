@@ -57,17 +57,9 @@ type Person struct {
 		Default     bool   `json:"default"`
 		Classname   string `json:"className"`
 	} `json:"phoneNumbers"`
-	Persontype string `json:"personType"`
-	Cases      []struct {
-		UID           string `json:"uId"`
-		Normalizeduid int64  `json:"normalizedUid"`
-		Caserecnumber string `json:"caseRecNumber"`
-		Batchid       string `json:"batchId"`
-		Classname     string `json:"className"`
-		Casetype      string `json:"caseType"`
-		Casesubtype   string `json:"caseSubtype"`
-	} `json:"cases"`
-	Orders []struct {
+	Persontype string       `json:"personType"`
+	Cases      []PersonCase `json:"cases"`
+	Orders     []struct {
 		Order struct {
 			UID           string `json:"uId"`
 			Normalizeduid int64  `json:"normalizedUid"`
@@ -78,6 +70,17 @@ type Person struct {
 		Classname string `json:"className"`
 	} `json:"orders"`
 	Classname string `json:"className"`
+}
+
+type PersonCase struct {
+	UID           string `json:"uId"`
+	Normalizeduid int64  `json:"normalizedUid"`
+	Caserecnumber string `json:"caseRecNumber"`
+	OnlineLpaId   string `json:"onlineLpaId"`
+	Batchid       string `json:"batchId"`
+	Classname     string `json:"className"`
+	Casetype      string `json:"caseType"`
+	Casesubtype   string `json:"caseSubtype"`
 }
 
 type PersonAddress struct {
@@ -225,6 +228,10 @@ func (p Person) IndexConfig() map[string]interface{} {
 							"copy_to": "searchable",
 						},
 						"caseRecNumber": map[string]interface{}{
+							"type":    "keyword",
+							"copy_to": "searchable",
+						},
+						"onlineLpaId": map[string]interface{}{
 							"type":    "keyword",
 							"copy_to": "searchable",
 						},
