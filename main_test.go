@@ -56,6 +56,9 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 			Addresses: []person.PersonAddress{{
 				Postcode: "NG1 1AB",
 			}},
+			Cases: []person.PersonCase{{
+				OnlineLpaId: "ABCDEFGH",
+			}},
 		},
 	}
 
@@ -174,6 +177,26 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
 					Aggregations: map[string]map[string]int{
 						"personType": {
 							"Type0": 1,
+						},
+					},
+					Total: response.Total{
+						Count: 1,
+						Exact: true,
+					},
+				}
+			},
+		},
+		{
+			scenario: "search by a-ref",
+			term:     suite.testPeople[1].Cases[0].OnlineLpaId,
+			expectedResponse: func() response.SearchResponse {
+				hit, _ := json.Marshal(suite.testPeople[1])
+
+				return response.SearchResponse{
+					Results: []json.RawMessage{hit},
+					Aggregations: map[string]map[string]int{
+						"personType": {
+							"Type1": 1,
 						},
 					},
 					Total: response.Total{
