@@ -18,8 +18,11 @@ import (
 )
 
 const maxPayloadSize = 10485760 // bytes
+const backoff = 6 * time.Second
+const maxRetries = 10
 
 var ErrOpTooLarge = errors.New("BulkOp exceeds maximum payload size")
+var errTooManyRequests = errors.New("too many requests")
 
 type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
@@ -169,6 +172,21 @@ type BulkResult struct {
 }
 
 func (c *Client) DoBulk(op *BulkOp) (BulkResult, error) {
+	retries := 0
+
+	for {
+		res, err := c.doBulkOp(op)
+		if err == errTooManyRequests && retries < maxRetries {
+			time.Sleep(backoff)
+			retries++
+			continue
+		}
+
+		return res, err
+	}
+}
+
+func (c *Client) doBulkOp(op *BulkOp) (BulkResult, error) {
 	body := bytes.NewReader(op.buf.Bytes())
 
 	endpoint := fmt.Sprintf("%s/%s/_bulk", c.domain, op.index)
@@ -179,6 +197,10 @@ func (c *Client) DoBulk(op *BulkOp) (BulkResult, error) {
 		return BulkResult{}, fmt.Errorf("unable to process index request: %w", err)
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusTooManyRequests {
+		return BulkResult{}, errTooManyRequests
+	}
 
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := ioutil.ReadAll(resp.Body)

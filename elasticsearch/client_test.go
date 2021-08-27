@@ -140,6 +140,72 @@ func TestClient_DoBulkIndex(t *testing.T) {
 	}
 }
 
+func TestClient_DoBulkIndexWithRetry(t *testing.T) {
+	assert := assert.New(t)
+
+	mc := new(MockHttpClient)
+
+	l, _ := logrus_test.NewNullLogger()
+
+	c, err := NewClient(mc, l)
+
+	assert.IsType(&Client{}, c)
+	assert.Nil(err)
+
+	mi := new(MockIndexable)
+	mi.On("Id").Return(int64(6)).Times(3)
+	mi.On("IndexName").Return("test-index").Times(1)
+	mi.On("Json").Return("{\"test\":\"test\"}")
+
+	mc.On("Do", mock.AnythingOfType("*http.Request")).
+		Run(func(args mock.Arguments) {
+			req := args[0].(*http.Request)
+			assert.Equal(http.MethodPost, req.Method)
+			assert.Equal(os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")+"/this/_bulk", req.URL.String())
+			reqBuf := new(bytes.Buffer)
+			_, _ = reqBuf.ReadFrom(req.Body)
+			assert.Equal(`{"index":{"_id":"1"}}
+{"a":"b"}
+`, reqBuf.String())
+		}).
+		Return(
+			&http.Response{
+				StatusCode: http.StatusTooManyRequests,
+				Body:       ioutil.NopCloser(strings.NewReader("")),
+			},
+			nil,
+		).
+		Once()
+
+	mc.On("Do", mock.AnythingOfType("*http.Request")).
+		Run(func(args mock.Arguments) {
+			req := args[0].(*http.Request)
+			assert.Equal(http.MethodPost, req.Method)
+			assert.Equal(os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")+"/this/_bulk", req.URL.String())
+			reqBuf := new(bytes.Buffer)
+			_, _ = reqBuf.ReadFrom(req.Body)
+			assert.Equal(`{"index":{"_id":"1"}}
+{"a":"b"}
+`, reqBuf.String())
+		}).
+		Return(
+			&http.Response{
+				StatusCode: http.StatusOK,
+				Body:       ioutil.NopCloser(strings.NewReader(`{"errors":false,"items":[{"index":{"_id":"12","status":200}}]}`)),
+			},
+			nil,
+		).
+		Once()
+
+	op := NewBulkOp("this")
+	op.Index(1, map[string]string{"a": "b"})
+
+	result, err := c.DoBulk(op)
+
+	assert.Nil(err)
+	assert.Equal(BulkResult{Successful: 1}, result)
+}
+
 func TestClient_CreateIndex(t *testing.T) {
 	tests := []struct {
 		scenario          string
