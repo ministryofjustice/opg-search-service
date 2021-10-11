@@ -69,6 +69,7 @@ type Person struct {
 		} `json:"order"`
 		Classname string `json:"className"`
 	} `json:"orders"`
+    OrganisationName string `json:"organisationName"`
 	Classname string `json:"className"`
 }
 
@@ -249,6 +250,11 @@ func (p Person) IndexConfig() map[string]interface{} {
 						},
 					},
 				},
+                "OrganisationName": map[string]interface{}{
+                    "type":    "text",
+                    "copy_to": "searchable",
+                    "boost":   4.0,
+                },
 			},
 		},
 	}

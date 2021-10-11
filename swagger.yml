@@ -51,11 +51,17 @@ paths:
                           type: string
                         caseRecNumber:
                           type: string
+                        caseSubtype:
+                          type: string
+                        caseType:
+                          type: string
                         className:
                           type: string
                         normalizedUid:
                           format: int64
                           type: integer
+                        onlineLpaId:
+                          type: string
                         uId:
                           type: string
                       type: object
@@ -184,9 +190,17 @@ paths:
       - application/json
       responses:
         "202":
-          description: The request has been handled and individual index responses are included in the response body
+          description: The request has been handled and individual index responses
+            are included in the response body
           schema:
             properties:
+              errors:
+                items:
+                  type: string
+                type: array
+              failed:
+                format: int64
+                type: integer
               results:
                 items:
                   properties:
@@ -199,6 +213,9 @@ paths:
                       type: integer
                   type: object
                 type: array
+              successful:
+                format: int64
+                type: integer
             type: object
         "400":
           description: Request failed validation
