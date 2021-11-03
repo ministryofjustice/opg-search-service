@@ -4,6 +4,9 @@ test: ## Run all test suites
 	docker-compose --project-name search-service-test -f docker-compose.yml -f docker-compose.test.yml run --rm search_service_test make go-test
 	docker-compose --project-name search-service-test down
 
+build:
+	docker-compose build search_service
+
 go-test:
 	go mod download
 	gotestsum --format short-verbose -- -coverprofile=../cover.out ./...
