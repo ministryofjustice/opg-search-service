@@ -43,10 +43,10 @@ func TestCreateSearchRequestFromRequest(t *testing.T) {
 		},
 		{
 			"created request is sanitised",
-			`{"term":"René D’!Eath-Smi/the()","size":1,"from":2,"person_types":["tall","short"]}`,
+			`{"term":"René_82 D’!Eath-Smi/the()","size":1,"from":2,"person_types":["tall","short"]}`,
 			nil,
 			&searchRequest{
-				Term: "René D’Eath-Smi/the",
+				Term: "René_82 D’Eath-Smi/the",
 				Size: 1,
 				From: 2,
 				PersonTypes: []string{
