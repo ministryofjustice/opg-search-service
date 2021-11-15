@@ -2,10 +2,13 @@ package middleware
 
 import (
 	"errors"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -25,6 +28,24 @@ func (c *mockSecretsCache) GetSecretString(key string) (string, error) {
 	return args.String(0), args.Error(1)
 }
 
+func makeToken(expired bool) string {
+	exp := time.Now().AddDate(0, 1, 0).Unix()
+	if expired {
+		exp = time.Now().AddDate(0, -1, 0).Unix()
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"session-data": "Test.McTestFace@mail.com",
+		"iat":          time.Date(2015, 10, 10, 12, 0, 0, 0, time.UTC).Unix(),
+		"exp":          exp,
+	})
+	tokenString, err := token.SignedString([]byte("MyTestSecret"))
+	if err != nil {
+		log.Fatal("Could not make test token")
+	}
+	return tokenString
+}
+
 func TestJwtVerify(t *testing.T) {
 	tests := []struct {
 		scenario     string
@@ -35,7 +56,7 @@ func TestJwtVerify(t *testing.T) {
 	}{
 		{
 			"Valid token",
-			"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1ODcwNTIzMTcsImV4cCI6OTk5OTk5OTk5OSwic2Vzc2lvbi1kYXRhIjoiVGVzdC5NY1Rlc3RGYWNlQG1haWwuY29tIn0.8HtN6aTAnE2YFI9rJD8drzqgrXPkyUbwRRJymcPSmHk",
+			makeToken(false),
 			mockValue{"MyTestSecret", nil},
 			mockValue{"ufUvZWyqrCikO1HPcPfrz7qQ6ENV84p0", nil},
 			200,
@@ -63,21 +84,21 @@ func TestJwtVerify(t *testing.T) {
 		},
 		{
 			"Expired token",
-			"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1ODcwNTIzMTcsImV4cCI6MTU4NzA1MjMxNywic2Vzc2lvbi1kYXRhIjoiVGVzdC5NY1Rlc3RGYWNlQG1haWwuY29tIn0.OuafGwOMHkXrFiQFrog8-zR14hxRwFkq5SeWXgvKi2o",
+			makeToken(true),
 			mockValue{"MyTestSecret", nil},
 			mockValue{"ufUvZWyqrCikO1HPcPfrz7qQ6ENV84p0", nil},
 			401,
 		},
 		{
 			"Cannot fetch JWT secret",
-			"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1ODcwNTIzMTcsImV4cCI6MTU4NzA1MjMxNywic2Vzc2lvbi1kYXRhIjoiVGVzdC5NY1Rlc3RGYWNlQG1haWwuY29tIn0.OuafGwOMHkXrFiQFrog8-zR14hxRwFkq5SeWXgvKi2o",
+			makeToken(false),
 			mockValue{"", errors.New("Missing secret")},
 			mockValue{"ufUvZWyqrCikO1HPcPfrz7qQ6ENV84p0", nil},
 			500,
 		},
 		{
 			"Cannot fetch salt secret",
-			"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1ODcwNTIzMTcsImV4cCI6OTk5OTk5OTk5OSwic2Vzc2lvbi1kYXRhIjoiVGVzdC5NY1Rlc3RGYWNlQG1haWwuY29tIn0.8HtN6aTAnE2YFI9rJD8drzqgrXPkyUbwRRJymcPSmHk",
+			makeToken(false),
 			mockValue{"MyTestSecret", nil},
 			mockValue{"", errors.New("Missing secret")},
 			500,

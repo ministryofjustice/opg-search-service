@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	"opg-search-service/elasticsearch"
@@ -14,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/suite"
 )
@@ -25,6 +27,21 @@ type EndToEndTestSuite struct {
 	authHeader string
 }
 
+func makeToken() string {
+	exp := time.Now().AddDate(0, 1, 0).Unix()
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"session-data": "Test.McTestFace@mail.com",
+		"iat":          time.Date(2015, 10, 10, 12, 0, 0, 0, time.UTC).Unix(),
+		"exp":          exp,
+	})
+	tokenString, err := token.SignedString([]byte("MyTestSecret"))
+	if err != nil {
+		log.Fatal("Could not make test token")
+	}
+	return tokenString
+}
+
 func (suite *EndToEndTestSuite) SetupSuite() {
 	os.Setenv("JWT_SECRET", "MyTestSecret")
 	os.Setenv("USER_HASH_SALT", "ufUvZWyqrCikO1HPcPfrz7qQ6ENV84p0")
@@ -34,7 +51,7 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 	httpClient := &http.Client{}
 	suite.esClient, _ = elasticsearch.NewClient(httpClient, logger)
 
-	suite.authHeader = "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1ODcwNTIzMTcsImV4cCI6OTk5OTk5OTk5OSwic2Vzc2lvbi1kYXRhIjoiVGVzdC5NY1Rlc3RGYWNlQG1haWwuY29tIn0.8HtN6aTAnE2YFI9rJD8drzqgrXPkyUbwRRJymcPSmHk"
+	suite.authHeader = "Bearer " + makeToken()
 
 	suite.testPeople = []person.Person{
 		{
