@@ -33,10 +33,25 @@ func makeToken(expired bool) string {
 	if expired {
 		exp = time.Now().AddDate(0, -1, 0).Unix()
 	}
+	iat := time.Date(2015, 10, 10, 12, 0, 0, 0, time.UTC).Unix()
+	signing := jwt.SigningMethodHS256
+	tokenString := buildToken(signing, iat, exp)
+	return tokenString
+}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+func makeInvalidToken() string {
+	//identical issue and expiry
+	exp := time.Now().AddDate(0, -1, 0).Unix()
+	iat := time.Now().AddDate(0, -1, 0).Unix()
+	signing := jwt.SigningMethodHS256
+	tokenString := buildToken(signing, iat, exp)
+	return tokenString
+}
+
+func buildToken(signing jwt.SigningMethod, iat int64, exp int64) string {
+	token := jwt.NewWithClaims(signing, jwt.MapClaims{
 		"session-data": "Test.McTestFace@mail.com",
-		"iat":          time.Date(2015, 10, 10, 12, 0, 0, 0, time.UTC).Unix(),
+		"iat":          iat,
 		"exp":          exp,
 	})
 	tokenString, err := token.SignedString([]byte("MyTestSecret"))
@@ -63,7 +78,7 @@ func TestJwtVerify(t *testing.T) {
 		},
 		{
 			"Invalid token",
-			"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1ODcwNTIzMTcsImV4cCI6MTU4NzA1MjMxNywic2Vzc2lvbi1kYXRhIjoiVGVzdC5NY1Rlc3RGYWNlQG1haWwuY29tIn0.Db9h9JqwfdlS-LksLLqmdNYH8bQBxGTyFFL3086AxSE",
+			makeInvalidToken(),
 			mockValue{"MyTestSecret", nil},
 			mockValue{"ufUvZWyqrCikO1HPcPfrz7qQ6ENV84p0", nil},
 			401,
