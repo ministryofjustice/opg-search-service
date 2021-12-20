@@ -26,6 +26,7 @@ func main() {
 	cli.Commands(l).Register(
 		cli.NewHealthCheck(l),
 		cli.NewCreateIndices(l),
+		cli.NewReindex(l),
 	)
 
 	// Create persons index if it doesn't exist
