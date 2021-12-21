@@ -22,10 +22,13 @@ func main() {
 	l := logrus.New()
 	l.SetFormatter(&logrus.JSONFormatter{})
 
+	secretsCache := cache.New()
+
 	// Register CLI commands
 	cli.Commands(l).Register(
 		cli.NewHealthCheck(l),
 		cli.NewCreateIndices(l),
+		cli.NewReindex(l, secretsCache),
 	)
 
 	// Create persons index if it doesn't exist
@@ -62,8 +65,6 @@ func main() {
 	sm.HandleFunc("/health-check", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
-
-	secretsCache := cache.New()
 
 	// Create a sub-router for protected handlers
 	postRouter := sm.Methods(http.MethodPost).Subrouter()
