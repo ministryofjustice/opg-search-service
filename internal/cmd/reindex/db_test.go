@@ -21,7 +21,7 @@ func TestQueryByID(t *testing.T) {
 	}
 	defer conn.Close(ctx)
 
-	schemaSql, _ := os.ReadFile("testdata/schema.sql")
+	schemaSql, _ := os.ReadFile("../../../testdata/schema.sql")
 
 	_, err = conn.Exec(ctx, string(schemaSql))
 	if !assert.Nil(err) {
@@ -129,7 +129,7 @@ func TestQueryByDate(t *testing.T) {
 	}
 	defer conn.Close(ctx)
 
-	schemaSql, _ := os.ReadFile("testdata/schema.sql")
+	schemaSql, _ := os.ReadFile("../../../testdata/schema.sql")
 
 	_, err = conn.Exec(ctx, string(schemaSql))
 	if !assert.Nil(err) {
