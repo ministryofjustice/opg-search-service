@@ -1,17 +1,18 @@
 package cache
 
 import (
+	"log"
+	"os"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/secretsmanager"
 	"github.com/aws/aws-secretsmanager-caching-go/secretcache"
-	"log"
-	"os"
 )
 
 type SecretsCache struct {
-	env string
+	env   string
 	cache AwsSecretsCache
 }
 
@@ -19,7 +20,7 @@ type AwsSecretsCache interface {
 	GetSecretString(secretId string) (string, error)
 }
 
-func applyAwsConfig (c *secretcache.Cache) {
+func applyAwsConfig(c *secretcache.Cache) {
 
 	var region string
 	var ok bool
@@ -50,4 +51,8 @@ func New() *SecretsCache {
 
 func (c *SecretsCache) GetSecretString(key string) (string, error) {
 	return c.cache.GetSecretString(c.env + "/" + key)
+}
+
+func (c *SecretsCache) GetGlobalSecretString(key string) (string, error) {
+	return c.cache.GetSecretString(key)
 }
