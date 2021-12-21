@@ -60,27 +60,31 @@ func (c *reindexCommand) ShouldRun() bool {
 }
 
 func (c *reindexCommand) Run() {
+	if err := c.run(); err != nil {
+		c.logger.Errorln(err)
+		c.exit(1)
+		return
+	}
+
+	c.exit(0)
+}
+
+func (c *reindexCommand) run() error {
 	ctx := context.Background()
 
 	connString, err := c.dbConnectionString()
 	if err != nil {
-		c.logger.Errorln(err)
-		c.exit(1)
-		return
+		return err
 	}
 
 	conn, err := pgx.Connect(ctx, connString)
 	if err != nil {
-		c.logger.Errorln(err)
-		c.exit(1)
-		return
+		return err
 	}
 	defer conn.Close(ctx)
 
 	if err := conn.Ping(ctx); err != nil {
-		c.logger.Errorln(err)
-		c.exit(1)
-		return
+		return err
 	}
 
 	reindexer := reindex.New(conn, c.esClient)
@@ -88,9 +92,7 @@ func (c *reindexCommand) Run() {
 	fromDate, err := time.Parse(time.RFC3339, *c.fromDate)
 
 	if *c.fromDate != "" && err != nil {
-		c.logger.Errorln("-from-date:", err)
-		c.exit(1)
-		return
+		return fmt.Errorf("-from-date: %w", err)
 	}
 
 	var result *reindex.Result
@@ -102,9 +104,7 @@ func (c *reindexCommand) Run() {
 	}
 
 	if err != nil {
-		c.logger.Errorln(err)
-		c.exit(1)
-		return
+		return err
 	}
 
 	c.logger.Printf("indexing done successful=%d failed=%d", result.Successful, result.Failed)
@@ -112,7 +112,7 @@ func (c *reindexCommand) Run() {
 		c.logger.Println(e)
 	}
 
-	c.exit(0)
+	return nil
 }
 
 func (c *reindexCommand) dbConnectionString() (string, error) {
@@ -142,5 +142,5 @@ func (c *reindexCommand) dbConnectionString() (string, error) {
 		return "", errors.New("SEARCH_SERVICE_DB_DATABASE must be specified")
 	}
 
-	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s", user, host, pass, port, database), nil
+	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s", user, pass, host, port, database), nil
 }
