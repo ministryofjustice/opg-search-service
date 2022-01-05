@@ -98,8 +98,10 @@ func (c *reindexCommand) run() error {
 	var result *reindex.Result
 
 	if !fromDate.IsZero() {
+		c.logger.Printf("indexing by date from=%v", fromDate)
 		result, err = reindexer.ByDate(ctx, fromDate)
 	} else {
+		c.logger.Printf("indexing by id from=%d to=%d batchSize=%d", *c.from, *c.to, *c.batchSize)
 		result, err = reindexer.ByID(ctx, *c.from, *c.to, *c.batchSize)
 	}
 
