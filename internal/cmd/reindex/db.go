@@ -113,7 +113,7 @@ type rowResult struct {
 	Type               string
 	OrganisationName   string
 	AddressID          *int
-	AddressLines       []string
+	AddressLines       interface{}
 	Postcode           string
 	CaseID             *int
 	CasesUID           *int
@@ -173,7 +173,7 @@ func addResultToPerson(a *personAdded, p *person.Person, s rowResult) {
 
 	if s.AddressID != nil && !a.hasAddress(*s.AddressID) {
 		p.Addresses = append(p.Addresses, person.PersonAddress{
-			Addresslines: s.AddressLines,
+			Addresslines: getAddressLines(s.AddressLines),
 			Postcode:     s.Postcode,
 		})
 	}
@@ -194,5 +194,31 @@ func addResultToPerson(a *personAdded, p *person.Person, s rowResult) {
 			Casetype:      s.CasesCaseType,
 			Casesubtype:   s.CasesCaseSubType,
 		})
+	}
+}
+
+func getAddressLines(lines interface{}) []string {
+	switch v := lines.(type) {
+	case []interface{}:
+		r := make([]string, len(v))
+		for i, x := range v {
+			r[i] = x.(string)
+		}
+		return r
+
+	case map[string]interface{}:
+		r := make([]string, 3)
+		for k, x := range v {
+			i, err := strconv.Atoi(k)
+			if err != nil {
+				return nil
+			}
+
+			r[i] = x.(string)
+		}
+		return r
+
+	default:
+		return nil
 	}
 }

@@ -38,7 +38,7 @@ INSERT INTO phonenumbers (id, person_id, phone_number)
 									VALUES (1, 1, '077777777');
 
 INSERT INTO addresses (id, person_id, address_lines, postcode)
-							 VALUES (1, 1, json_build_array('123 Fake St'), 'S1 1AB');
+							 VALUES (1, 1, json_build_object('0', '1 Road', '2', 'Place'), 'S1 1AB');
 
 INSERT INTO cases (id, uid, caserecnumber, onlinelpaid, batchid, casetype, casesubtype)
 					 VALUES (1, 7000, '545534', 'A123', 'x', 'lpa', 'hw'),
@@ -79,7 +79,7 @@ INSERT INTO person_caseitem (person_id, caseitem_id) VALUES (1, 1), (1, 2);
 				Phonenumber: "077777777",
 			}},
 			Addresses: []person.PersonAddress{{
-				Addresslines: []string{"123 Fake St"},
+				Addresslines: []string{"1 Road", "", "Place"},
 				Postcode:     "S1 1AB",
 			}},
 			Cases: []person.PersonCase{{
