@@ -114,6 +114,10 @@ type bulkResponse struct {
 		Index struct {
 			ID     string `json:"_id"`
 			Status int    `json:"status"`
+			Error  *struct {
+				Type   string `json:"type"`
+				Reason string `json:"reason"`
+			} `json:"error"`
 		} `json:"index"`
 	} `json:"items"`
 }
@@ -169,6 +173,7 @@ func (op *BulkOp) Reset() {
 type BulkResult struct {
 	Successful int
 	Failed     int
+	Error      string
 }
 
 func (c *Client) DoBulk(op *BulkOp) (BulkResult, error) {
@@ -220,6 +225,9 @@ func (c *Client) doBulkOp(op *BulkOp) (BulkResult, error) {
 			result.Successful += 1
 		} else {
 			result.Failed += 1
+			if d.Index.Error != nil && result.Error == "" {
+				result.Error = fmt.Sprintf("%s: %s", d.Index.Error.Type, d.Index.Error.Reason)
+			}
 		}
 	}
 
