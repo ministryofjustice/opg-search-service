@@ -87,7 +87,7 @@ func (c *reindexCommand) run() error {
 		return err
 	}
 
-	reindexer := reindex.New(conn, c.esClient)
+	reindexer := reindex.New(conn, c.esClient, c.logger)
 
 	fromDate, err := time.Parse(time.RFC3339, *c.fromDate)
 
