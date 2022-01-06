@@ -17,7 +17,7 @@ func (r *Reindexer) reindex(ctx context.Context, persons <-chan person.Person) (
 		if err == elasticsearch.ErrOpTooLarge {
 			res, bulkErr := r.es.DoBulk(op)
 			if bulkErr == nil {
-				r.log.Printf("batch indexed successful=%d failed=%d", res.Successful, res.Failed)
+				r.log.Printf("batch indexed successful=%d failed=%d error=%s", res.Successful, res.Failed, res.Error)
 			} else {
 				r.log.Printf("indexing error: %s", bulkErr.Error())
 			}
