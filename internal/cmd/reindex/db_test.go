@@ -11,6 +11,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+type mockLogger struct{}
+
+func (*mockLogger) Printf(s string, args ...interface{}) {}
+
 func TestQueryByID(t *testing.T) {
 	assert := assert.New(t)
 	ctx := context.Background()
@@ -50,7 +54,7 @@ INSERT INTO person_caseitem (person_id, caseitem_id) VALUES (1, 1), (1, 2);
 		return
 	}
 
-	r := &Reindexer{conn: conn}
+	r := &Reindexer{conn: conn, log: &mockLogger{}}
 
 	resultsCh := make(chan person.Person)
 	results := []person.Person{}

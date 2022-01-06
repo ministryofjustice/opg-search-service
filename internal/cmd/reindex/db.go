@@ -15,6 +15,8 @@ func (r *Reindexer) queryByID(ctx context.Context, results chan<- person.Person,
 	batch := &batchIter{start: start, end: end, size: batchSize}
 
 	for batch.Next() {
+		r.log.Printf("reading range from db (%d, %d)", batch.From(), batch.To())
+
 		rows, err := r.conn.Query(ctx, makeQuery(`p.id >= $1 AND p.id <= $2`), batch.From(), batch.To())
 		if err != nil {
 			return err
