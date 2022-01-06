@@ -177,8 +177,8 @@ func (c *Client) DoBulk(op *BulkOp) (BulkResult, error) {
 	for {
 		res, err := c.doBulkOp(op)
 		if err == errTooManyRequests && retries < maxRetries {
-			time.Sleep(backoff)
 			retries++
+			time.Sleep(time.Duration(retries) * backoff)
 			continue
 		}
 

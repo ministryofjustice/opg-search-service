@@ -13,16 +13,22 @@ type BulkClient interface {
 	DoBulk(*elasticsearch.BulkOp) (elasticsearch.BulkResult, error)
 }
 
-func New(conn *pgx.Conn, es BulkClient) *Reindexer {
+type Logger interface {
+	Printf(string, ...interface{})
+}
+
+func New(conn *pgx.Conn, es BulkClient, logger Logger) *Reindexer {
 	return &Reindexer{
 		conn: conn,
 		es:   es,
+		log:  logger,
 	}
 }
 
 type Reindexer struct {
 	conn *pgx.Conn
 	es   BulkClient
+	log  Logger
 }
 
 func (r *Reindexer) ByID(ctx context.Context, start, end, batchSize int) (*Result, error) {
