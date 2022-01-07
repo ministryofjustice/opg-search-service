@@ -23,14 +23,6 @@ type reindexCommand struct {
 	logger   *logrus.Logger
 	esClient reindex.BulkClient
 	secrets  Secrets
-	exit     func(code int)
-
-	shouldRun *bool
-	db        *string
-	from      *int
-	to        *int
-	batchSize *int
-	fromDate  *string
 }
 
 func NewReindex(logger *logrus.Logger, secrets Secrets) *reindexCommand {
@@ -43,33 +35,31 @@ func NewReindex(logger *logrus.Logger, secrets Secrets) *reindexCommand {
 		logger:   logger,
 		esClient: esClient,
 		secrets:  secrets,
-		exit:     os.Exit,
 	}
 }
 
-func (c *reindexCommand) DefineFlags() {
-	c.shouldRun = flag.Bool("reindex", false, "reindex elasticsearch")
-	c.from = flag.Int("from", 0, "id to index from")
-	c.to = flag.Int("to", 100, "id to index to")
-	c.batchSize = flag.Int("batch-size", 1000, "batch size to read from db")
-	c.fromDate = flag.String("from-date", "", "index all records updated from this date")
+func (c *reindexCommand) Name() string {
+	return "reindex"
 }
+
+func (c *reindexCommand) DefineFlags() {}
 
 func (c *reindexCommand) ShouldRun() bool {
-	return *c.shouldRun
+	return false
 }
 
-func (c *reindexCommand) Run() {
-	if err := c.run(); err != nil {
-		c.logger.Errorln(err)
-		c.exit(1)
-		return
+func (c *reindexCommand) Run(args []string) error {
+	flagset := flag.NewFlagSet("reindex", flag.ExitOnError)
+
+	from := flagset.Int("from", 0, "id to index from")
+	to := flagset.Int("to", 100, "id to index to")
+	batchSize := flagset.Int("batch-size", 1000, "batch size to read from db")
+	fromDate := flagset.String("from-date", "", "index all records updated from this date")
+
+	if err := flagset.Parse(args); err != nil {
+		return err
 	}
 
-	c.exit(0)
-}
-
-func (c *reindexCommand) run() error {
 	ctx := context.Background()
 
 	connString, err := c.dbConnectionString()
@@ -89,20 +79,20 @@ func (c *reindexCommand) run() error {
 
 	reindexer := reindex.New(conn, c.esClient, c.logger)
 
-	fromDate, err := time.Parse(time.RFC3339, *c.fromDate)
+	fromTime, err := time.Parse(time.RFC3339, *fromDate)
 
-	if *c.fromDate != "" && err != nil {
+	if *fromDate != "" && err != nil {
 		return fmt.Errorf("-from-date: %w", err)
 	}
 
 	var result *reindex.Result
 
-	if !fromDate.IsZero() {
+	if !fromTime.IsZero() {
 		c.logger.Printf("indexing by date from=%v", fromDate)
-		result, err = reindexer.ByDate(ctx, fromDate)
+		result, err = reindexer.ByDate(ctx, fromTime)
 	} else {
-		c.logger.Printf("indexing by id from=%d to=%d batchSize=%d", *c.from, *c.to, *c.batchSize)
-		result, err = reindexer.ByID(ctx, *c.from, *c.to, *c.batchSize)
+		c.logger.Printf("indexing by id from=%d to=%d batchSize=%d", *from, *to, *batchSize)
+		result, err = reindexer.ByID(ctx, *from, *to, *batchSize)
 	}
 
 	if err != nil {

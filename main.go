@@ -24,8 +24,7 @@ func main() {
 
 	secretsCache := cache.New()
 
-	// Register CLI commands
-	cli.Commands(l).Register(
+	cli.Run(l,
 		cli.NewHealthCheck(l),
 		cli.NewCreateIndices(l),
 		cli.NewReindex(l, secretsCache),
