@@ -2,7 +2,6 @@ package cli
 
 import (
 	"context"
-	"flag"
 	"os"
 	"testing"
 
@@ -17,13 +16,6 @@ func TestReindex(t *testing.T) {
 
 	l, hook := test.NewNullLogger()
 	command := NewReindex(l, nil)
-
-	command.DefineFlags()
-
-	os.Args = []string{"", "-reindex"}
-	flag.Parse()
-
-	assert.True(command.ShouldRun())
 
 	os.Setenv("SEARCH_SERVICE_DB_PASS", "searchservice")
 	os.Setenv("SEARCH_SERVICE_DB_USER", "searchservice")
@@ -46,7 +38,7 @@ func TestReindex(t *testing.T) {
 		return
 	}
 
-	err = command.run()
+	err = command.Run([]string{})
 	assert.Nil(err)
 	assert.Equal("indexing done successful=0 failed=0", hook.LastEntry().Message)
 }
