@@ -1,4 +1,4 @@
-package reindex
+package index
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v4"
 )
 
-func (r *Reindexer) queryByID(ctx context.Context, results chan<- person.Person, start, end, batchSize int) error {
+func (r *Indexer) queryByID(ctx context.Context, results chan<- person.Person, start, end, batchSize int) error {
 	defer func() { close(results) }()
 
 	batch := &batchIter{start: start, end: end, size: batchSize}
@@ -30,7 +30,7 @@ func (r *Reindexer) queryByID(ctx context.Context, results chan<- person.Person,
 	return nil
 }
 
-func (r *Reindexer) queryByDate(ctx context.Context, results chan<- person.Person, from time.Time) error {
+func (r *Indexer) queryByDate(ctx context.Context, results chan<- person.Person, from time.Time) error {
 	rows, err := r.conn.Query(ctx, makeQuery(`p.updatedDate >= $1`), from)
 	if err != nil {
 		return err

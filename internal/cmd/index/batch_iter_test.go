@@ -1,4 +1,4 @@
-package reindex
+package index
 
 import (
 	"testing"

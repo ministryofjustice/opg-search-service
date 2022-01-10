@@ -1,4 +1,4 @@
-package reindex
+package index
 
 import (
 	"context"
@@ -54,7 +54,7 @@ INSERT INTO person_caseitem (person_id, caseitem_id) VALUES (1, 1), (1, 2);
 		return
 	}
 
-	r := &Reindexer{conn: conn, log: &mockLogger{}}
+	r := &Indexer{conn: conn, log: &mockLogger{}}
 
 	resultsCh := make(chan person.Person)
 	results := []person.Person{}
@@ -162,7 +162,7 @@ INSERT INTO person_caseitem (person_id, caseitem_id) VALUES (1, 1), (1, 2);
 		return
 	}
 
-	r := &Reindexer{conn: conn}
+	r := &Indexer{conn: conn}
 
 	resultsCh := make(chan person.Person)
 	results := []person.Person{}

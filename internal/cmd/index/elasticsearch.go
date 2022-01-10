@@ -1,4 +1,4 @@
-package reindex
+package index
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"opg-search-service/person"
 )
 
-func (r *Reindexer) reindex(ctx context.Context, persons <-chan person.Person) (*Result, error) {
+func (r *Indexer) index(ctx context.Context, persons <-chan person.Person) (*Result, error) {
 	op := elasticsearch.NewBulkOp("person")
 	result := &Result{}
 

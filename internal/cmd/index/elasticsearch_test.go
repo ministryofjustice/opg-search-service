@@ -1,4 +1,4 @@
-package reindex
+package index
 
 import (
 	"context"
@@ -21,14 +21,14 @@ func (c *mockBulkClient) DoBulk(op *elasticsearch.BulkOp) (elasticsearch.BulkRes
 	return c.result, c.err
 }
 
-func TestReindex(t *testing.T) {
+func TestIndex(t *testing.T) {
 	assert := assert.New(t)
 	ctx := context.Background()
 
 	client := &mockBulkClient{
 		result: elasticsearch.BulkResult{Successful: 1, Failed: 0},
 	}
-	r := &Reindexer{es: client}
+	r := &Indexer{es: client}
 
 	p := person.Person{ID: i64(1), Firstname: "A"}
 
@@ -39,7 +39,7 @@ func TestReindex(t *testing.T) {
 	expectedOp := elasticsearch.NewBulkOp("person")
 	expectedOp.Index(p.Id(), p)
 
-	result, err := r.reindex(ctx, persons)
+	result, err := r.index(ctx, persons)
 	if assert.Nil(err) {
 		assert.Equal(1, result.Successful)
 		assert.Equal(0, result.Failed)

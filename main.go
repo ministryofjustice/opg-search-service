@@ -27,7 +27,7 @@ func main() {
 	cli.Run(l,
 		cli.NewHealthCheck(l),
 		cli.NewCreateIndices(l),
-		cli.NewReindex(l, secretsCache),
+		cli.NewIndex(l, secretsCache),
 	)
 
 	// Create persons index if it doesn't exist

@@ -1,4 +1,4 @@
-package reindex
+package index
 
 // batchIter iterates over the range start-end (inclusive) giving batches of
 // size
