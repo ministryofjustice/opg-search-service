@@ -36,7 +36,9 @@ func (r *Indexer) queryByID(ctx context.Context, results chan<- person.Person, s
 	return nil
 }
 
-func (r *Indexer) queryByDate(ctx context.Context, results chan<- person.Person, from time.Time) error {
+func (r *Indexer) queryFromDate(ctx context.Context, results chan<- person.Person, from time.Time) error {
+	defer func() { close(results) }()
+
 	rows, err := r.conn.Query(ctx, makeQuery(`p.updatedDate >= $1`), from)
 	if err != nil {
 		return err
