@@ -42,12 +42,6 @@ func (c *indexCommand) Name() string {
 	return "index"
 }
 
-func (c *indexCommand) DefineFlags() {}
-
-func (c *indexCommand) ShouldRun() bool {
-	return false
-}
-
 func (c *indexCommand) Run(args []string) error {
 	flagset := flag.NewFlagSet("index", flag.ExitOnError)
 
