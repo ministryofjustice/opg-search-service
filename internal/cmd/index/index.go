@@ -59,12 +59,12 @@ func (r *Indexer) ByID(ctx context.Context, start, end, batchSize int) (*Result,
 	return result, err
 }
 
-func (r *Indexer) ByDate(ctx context.Context, from time.Time) (*Result, error) {
+func (r *Indexer) FromDate(ctx context.Context, from time.Time, batchSize int) (*Result, error) {
 	var rerr error
-	persons := make(chan person.Person, 100)
+	persons := make(chan person.Person, batchSize)
 
 	go func() {
-		err := r.queryByDate(ctx, persons, from)
+		err := r.queryFromDate(ctx, persons, from)
 		if err != nil {
 			rerr = err
 		}

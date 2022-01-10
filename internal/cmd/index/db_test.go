@@ -156,9 +156,12 @@ INSERT INTO person_caseitem (person_id, caseitem_id) VALUES (1, 1), (1, 2);
 			Cases:            nil,
 		}}, results)
 	}
+
+	_, ok := <-resultsCh
+	assert.False(ok)
 }
 
-func TestQueryByDate(t *testing.T) {
+func TestQueryFromDate(t *testing.T) {
 	assert := assert.New(t)
 	ctx := context.Background()
 
@@ -207,7 +210,7 @@ INSERT INTO person_caseitem (person_id, caseitem_id) VALUES (1, 1), (1, 2);
 		}
 	}()
 
-	err = r.queryByDate(ctx, resultsCh, time.Date(2021, time.January, 1, 23, 0, 0, 0, time.UTC))
+	err = r.queryFromDate(ctx, resultsCh, time.Date(2021, time.January, 1, 23, 0, 0, 0, time.UTC))
 	if assert.Nil(err) && assert.Len(results, 2) {
 		assert.Equal([]person.Person{{
 			ID:               i64(1),
@@ -264,6 +267,9 @@ INSERT INTO person_caseitem (person_id, caseitem_id) VALUES (1, 1), (1, 2);
 			Cases:            nil,
 		}}, results)
 	}
+
+	_, ok := <-resultsCh
+	assert.False(ok)
 }
 
 func i64(x int) *int64 {
