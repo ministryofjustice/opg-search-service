@@ -1,4 +1,4 @@
-package reindex
+package index
 
 import (
 	"context"
@@ -17,21 +17,21 @@ type Logger interface {
 	Printf(string, ...interface{})
 }
 
-func New(conn *pgx.Conn, es BulkClient, logger Logger) *Reindexer {
-	return &Reindexer{
+func New(conn *pgx.Conn, es BulkClient, logger Logger) *Indexer {
+	return &Indexer{
 		conn: conn,
 		es:   es,
 		log:  logger,
 	}
 }
 
-type Reindexer struct {
+type Indexer struct {
 	conn *pgx.Conn
 	es   BulkClient
 	log  Logger
 }
 
-func (r *Reindexer) ByID(ctx context.Context, start, end, batchSize int) (*Result, error) {
+func (r *Indexer) ByID(ctx context.Context, start, end, batchSize int) (*Result, error) {
 	var rerr error
 	persons := make(chan person.Person, batchSize)
 
@@ -42,7 +42,7 @@ func (r *Reindexer) ByID(ctx context.Context, start, end, batchSize int) (*Resul
 		}
 	}()
 
-	result, err := r.reindex(ctx, persons)
+	result, err := r.index(ctx, persons)
 	if rerr != nil {
 		return result, rerr
 	}
@@ -50,7 +50,7 @@ func (r *Reindexer) ByID(ctx context.Context, start, end, batchSize int) (*Resul
 	return result, err
 }
 
-func (r *Reindexer) ByDate(ctx context.Context, from time.Time) (*Result, error) {
+func (r *Indexer) ByDate(ctx context.Context, from time.Time) (*Result, error) {
 	var rerr error
 	persons := make(chan person.Person, 100)
 
@@ -61,7 +61,7 @@ func (r *Reindexer) ByDate(ctx context.Context, from time.Time) (*Result, error)
 		}
 	}()
 
-	result, err := r.reindex(ctx, persons)
+	result, err := r.index(ctx, persons)
 	if rerr != nil {
 		return result, rerr
 	}

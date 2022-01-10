@@ -10,12 +10,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestReindex(t *testing.T) {
+func TestIndex(t *testing.T) {
 	assert := assert.New(t)
 	ctx := context.Background()
 
 	l, hook := test.NewNullLogger()
-	command := NewReindex(l, nil)
+	command := NewIndex(l, nil)
 
 	os.Setenv("SEARCH_SERVICE_DB_PASS", "searchservice")
 	os.Setenv("SEARCH_SERVICE_DB_USER", "searchservice")

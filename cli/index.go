@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"opg-search-service/elasticsearch"
-	"opg-search-service/internal/cmd/reindex"
+	"opg-search-service/internal/cmd/index"
 	"os"
 	"time"
 
@@ -19,41 +19,41 @@ type Secrets interface {
 	GetGlobalSecretString(key string) (string, error)
 }
 
-type reindexCommand struct {
+type indexCommand struct {
 	logger   *logrus.Logger
-	esClient reindex.BulkClient
+	esClient index.BulkClient
 	secrets  Secrets
 }
 
-func NewReindex(logger *logrus.Logger, secrets Secrets) *reindexCommand {
+func NewIndex(logger *logrus.Logger, secrets Secrets) *indexCommand {
 	esClient, err := elasticsearch.NewClient(&http.Client{}, logger)
 	if err != nil {
 		logger.Fatal(err)
 	}
 
-	return &reindexCommand{
+	return &indexCommand{
 		logger:   logger,
 		esClient: esClient,
 		secrets:  secrets,
 	}
 }
 
-func (c *reindexCommand) Name() string {
-	return "reindex"
+func (c *indexCommand) Name() string {
+	return "index"
 }
 
-func (c *reindexCommand) DefineFlags() {}
+func (c *indexCommand) DefineFlags() {}
 
-func (c *reindexCommand) ShouldRun() bool {
+func (c *indexCommand) ShouldRun() bool {
 	return false
 }
 
-func (c *reindexCommand) Run(args []string) error {
-	flagset := flag.NewFlagSet("reindex", flag.ExitOnError)
+func (c *indexCommand) Run(args []string) error {
+	flagset := flag.NewFlagSet("index", flag.ExitOnError)
 
 	from := flagset.Int("from", 0, "id to index from")
 	to := flagset.Int("to", 100, "id to index to")
-	batchSize := flagset.Int("batch-size", 1000, "batch size to read from db")
+	batchSize := flagset.Int("batch-size", 10000, "batch size to read from db")
 	fromDate := flagset.String("from-date", "", "index all records updated from this date")
 
 	if err := flagset.Parse(args); err != nil {
@@ -77,7 +77,7 @@ func (c *reindexCommand) Run(args []string) error {
 		return err
 	}
 
-	reindexer := reindex.New(conn, c.esClient, c.logger)
+	indexer := index.New(conn, c.esClient, c.logger)
 
 	fromTime, err := time.Parse(time.RFC3339, *fromDate)
 
@@ -85,14 +85,14 @@ func (c *reindexCommand) Run(args []string) error {
 		return fmt.Errorf("-from-date: %w", err)
 	}
 
-	var result *reindex.Result
+	var result *index.Result
 
 	if !fromTime.IsZero() {
 		c.logger.Printf("indexing by date from=%v", fromDate)
-		result, err = reindexer.ByDate(ctx, fromTime)
+		result, err = indexer.ByDate(ctx, fromTime)
 	} else {
 		c.logger.Printf("indexing by id from=%d to=%d batchSize=%d", *from, *to, *batchSize)
-		result, err = reindexer.ByID(ctx, *from, *to, *batchSize)
+		result, err = indexer.ByID(ctx, *from, *to, *batchSize)
 	}
 
 	if err != nil {
@@ -107,7 +107,7 @@ func (c *reindexCommand) Run(args []string) error {
 	return nil
 }
 
-func (c *reindexCommand) dbConnectionString() (string, error) {
+func (c *indexCommand) dbConnectionString() (string, error) {
 	pass := os.Getenv("SEARCH_SERVICE_DB_PASS")
 	if passSecret := os.Getenv("SEARCH_SERVICE_DB_PASS_SECRET"); passSecret != "" {
 		var err error
