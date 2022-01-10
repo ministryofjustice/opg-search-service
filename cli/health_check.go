@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"flag"
 	"net/http"
 	"os"
@@ -12,15 +13,17 @@ type healthCheck struct {
 	logger    *logrus.Logger
 	shouldRun *bool
 	checkUrl  string
-	exit      func(code int)
 }
 
 func NewHealthCheck(logger *logrus.Logger) *healthCheck {
 	return &healthCheck{
 		logger:   logger,
 		checkUrl: "http://localhost:8000" + os.Getenv("PATH_PREFIX") + "/health-check",
-		exit:     os.Exit,
 	}
+}
+
+func (h *healthCheck) Name() string {
+	return "hc"
 }
 
 func (h *healthCheck) DefineFlags() {
@@ -31,13 +34,11 @@ func (h *healthCheck) ShouldRun() bool {
 	return *h.shouldRun
 }
 
-func (h *healthCheck) Run() {
+func (h *healthCheck) Run(args []string) error {
 	resp, err := http.Get(h.checkUrl)
 	if err != nil || resp.StatusCode != 200 {
-		h.logger.Println("FAIL")
-		h.exit(1)
-		return
+		return errors.New("FAIL")
 	}
 	h.logger.Println("OK")
-	h.exit(0)
+	return nil
 }
