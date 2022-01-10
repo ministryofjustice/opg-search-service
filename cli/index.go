@@ -51,6 +51,7 @@ func (c *indexCommand) ShouldRun() bool {
 func (c *indexCommand) Run(args []string) error {
 	flagset := flag.NewFlagSet("index", flag.ExitOnError)
 
+	all := flagset.Bool("all", false, "index all records")
 	from := flagset.Int("from", 0, "id to index from")
 	to := flagset.Int("to", 100, "id to index to")
 	batchSize := flagset.Int("batch-size", 10000, "batch size to read from db")
@@ -90,6 +91,9 @@ func (c *indexCommand) Run(args []string) error {
 	if !fromTime.IsZero() {
 		c.logger.Printf("indexing by date from=%v", fromDate)
 		result, err = indexer.ByDate(ctx, fromTime)
+	} else if *all {
+		c.logger.Printf("indexing all records batchSize=%d", *batchSize)
+		result, err = indexer.All(ctx, *batchSize)
 	} else {
 		c.logger.Printf("indexing by id from=%d to=%d batchSize=%d", *from, *to, *batchSize)
 		result, err = indexer.ByID(ctx, *from, *to, *batchSize)

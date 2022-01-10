@@ -31,6 +31,15 @@ type Indexer struct {
 	log  Logger
 }
 
+func (r *Indexer) All(ctx context.Context, batchSize int) (*Result, error) {
+	min, max, err := r.getIDRange(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return r.ByID(ctx, min, max, batchSize)
+}
+
 func (r *Indexer) ByID(ctx context.Context, start, end, batchSize int) (*Result, error) {
 	var rerr error
 	persons := make(chan person.Person, batchSize)

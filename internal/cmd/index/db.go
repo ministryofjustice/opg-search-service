@@ -9,6 +9,12 @@ import (
 	"github.com/jackc/pgx/v4"
 )
 
+func (r *Indexer) getIDRange(ctx context.Context) (min int, max int, err error) {
+	err = r.conn.QueryRow(ctx, "SELECT MIN(id), MAX(id) FROM persons").Scan(&min, &max)
+
+	return min, max, err
+}
+
 func (r *Indexer) queryByID(ctx context.Context, results chan<- person.Person, start, end, batchSize int) error {
 	defer func() { close(results) }()
 

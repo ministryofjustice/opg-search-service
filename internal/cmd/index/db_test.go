@@ -15,6 +15,41 @@ type mockLogger struct{}
 
 func (*mockLogger) Printf(s string, args ...interface{}) {}
 
+func TestGetIDRange(t *testing.T) {
+	assert := assert.New(t)
+	ctx := context.Background()
+
+	conn, err := pgx.Connect(ctx, "postgres://searchservice:searchservice@postgres:5432/searchservice")
+	if !assert.Nil(err) {
+		return
+	}
+	defer conn.Close(ctx)
+
+	schemaSql, _ := os.ReadFile("../../../testdata/schema.sql")
+
+	_, err = conn.Exec(ctx, string(schemaSql))
+	if !assert.Nil(err) {
+		return
+	}
+
+	_, err = conn.Exec(ctx, `
+INSERT INTO persons (id, uid, caserecnumber, email, dob, firstname, middlenames, surname, companyname, type, organisationname)
+						 VALUES (1, 7000, 1010101, 'email@example.com', '2002-01-02', 'John', 'J', 'Johnson', '& co', 'lpa_donor', 'Orgz'),
+										(2, 7002, null, null, '1990-01-02', 'Jack', null, 'Jackson', null, 'lpa_donor', null),
+										(3, 7003, null, null, '1990-01-02', 'J', null, 'J', null, 'lpa_donor', null);
+`)
+	if !assert.Nil(err) {
+		return
+	}
+
+	r := &Indexer{conn: conn, log: &mockLogger{}}
+
+	min, max, err := r.getIDRange(ctx)
+	assert.Nil(err)
+	assert.Equal(1, min)
+	assert.Equal(3, max)
+}
+
 func TestQueryByID(t *testing.T) {
 	assert := assert.New(t)
 	ctx := context.Background()
