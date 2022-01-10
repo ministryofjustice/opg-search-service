@@ -48,17 +48,30 @@ Another gotcha... Make sure annotations are written with 2 space tabs in order f
 
 ## Environment Variables
 
-| Variable                      | Default                           |  Description   |
-| ----------------------------- | --------------------------------- | -------------- |
-| AWS_ELASTICSEARCH_ENDPOINT    |                                   | Used for overwriting the ElasticSearch endpoint locally e.g. http://localstack:4571 |
-| AWS_REGION                    | eu-west-1                         | Set the AWS region for all operations with the SDK                                  |
-| AWS_ACCESS_KEY_ID             |                                   | Used for authenticating with localstack e.g. set to "localstack"                    |
-| AWS_SECRET_ACCESS_KEY         |                                   | Used for authenticating with localstack e.g. set to "localstack"                    |
-| AWS_SECRETS_MANAGER_ENDPOINT  |                                   | Used for accessing the Secrets Manager endpoint locally e.g. http://localstack:4566 |
-| ENVIRONMENT                   |                                   | Used when creating a new secrets cache object locally                               |
-| PATH_PREFIX                   |                                   | Path prefix where all requested will be routed                                      |
+| Variable                     | Default   | Description                                                                         |
+|------------------------------|-----------|-------------------------------------------------------------------------------------|
+| AWS_ELASTICSEARCH_ENDPOINT   |           | Used for overwriting the ElasticSearch endpoint locally e.g. http://localstack:4571 |
+| AWS_REGION                   | eu-west-1 | Set the AWS region for all operations with the SDK                                  |
+| AWS_ACCESS_KEY_ID            |           | Used for authenticating with localstack e.g. set to "localstack"                    |
+| AWS_SECRET_ACCESS_KEY        |           | Used for authenticating with localstack e.g. set to "localstack"                    |
+| AWS_SECRETS_MANAGER_ENDPOINT |           | Used for accessing the Secrets Manager endpoint locally e.g. http://localstack:4566 |
+| ENVIRONMENT                  |           | Used when creating a new secrets cache object locally                               |
+| PATH_PREFIX                  |           | Path prefix where all requested will be routed                                      |
+
+Required when running `index` command:
+
+| Variable                      | Default | Description                                     |
+|-------------------------------|---------|-------------------------------------------------|
+| SEARCH_SERVICE_DB_PASS        |         |                                                 |
+| SEARCH_SERVICE_DB_PASS_SECRET |         | AWS Secret name to read instead of raw password |
+| SEARCH_SERVICE_DB_USER        |         |                                                 |
+| SEARCH_SERVICE_DB_HOST        |         |                                                 |
+| SEARCH_SERVICE_DB_PORT        |         |                                                 |
+| SEARCH_SERVICE_DB_DATABASE    |         |                                                 |
+
 
 ## Console commands
 
-- `docker-compose run --rm search-service -hc` - Container health check. Exit code 0 on success and 1 on error.
-- `docker-compose run --rm search-service -create-indices` - Creates indices in ElasticSearch
+- `docker-compose run --rm search-service hc` - Container health check. Exit code 0 on success and 1 on error.
+- `docker-compose run --rm search-service create-indices` - Creates indices in ElasticSearch
+- `docker-compose run --rm search-service index` - Index records in ElasticSearch from a database

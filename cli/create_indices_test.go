@@ -87,10 +87,14 @@ func TestCreateIndicesRun(t *testing.T) {
 			ci := createIndices{
 				logger:   l,
 				esClient: esClient,
-				force:    &tc.force,
 			}
 
-			err := ci.Run([]string{})
+			args := []string{}
+			if tc.force {
+				args = []string{"-force"}
+			}
+
+			err := ci.Run(args)
 			assert.Equal(t, tc.wantErr, err)
 
 			for i, message := range tc.wantInLog {

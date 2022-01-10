@@ -10,10 +10,8 @@ import (
 )
 
 type createIndices struct {
-	logger    *logrus.Logger
-	shouldRun *bool
-	force     *bool
-	esClient  elasticsearch.ClientInterface
+	logger   *logrus.Logger
+	esClient elasticsearch.ClientInterface
 }
 
 func NewCreateIndices(logger *logrus.Logger) *createIndices {
@@ -32,16 +30,15 @@ func (c *createIndices) Name() string {
 	return "create-indices"
 }
 
-func (c *createIndices) DefineFlags() {
-	c.shouldRun = flag.Bool("create-indices", false, "create elasticsearch indices")
-	c.force = flag.Bool("force", false, "force changes")
-}
-
-func (c *createIndices) ShouldRun() bool {
-	return *c.shouldRun
-}
-
 func (c *createIndices) Run(args []string) error {
+	flagset := flag.NewFlagSet("create-indices", flag.ExitOnError)
+
+	force := flagset.Bool("force", false, "force recreation if index already exists")
+
+	if err := flagset.Parse(args); err != nil {
+		return err
+	}
+
 	exists, err := c.esClient.IndexExists(person.Person{})
 	if err != nil {
 		return err
@@ -50,7 +47,7 @@ func (c *createIndices) Run(args []string) error {
 	if exists {
 		c.logger.Println("Person index already exists")
 
-		if !*c.force {
+		if !*force {
 			return nil
 		}
 

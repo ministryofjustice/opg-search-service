@@ -2,6 +2,7 @@ package cli
 
 import (
 	"errors"
+	"os"
 	"testing"
 
 	"github.com/sirupsen/logrus/hooks/test"
@@ -15,16 +16,7 @@ type MockCommand struct {
 }
 
 func (m *MockCommand) Name() string {
-	return "mock"
-}
-
-func (m *MockCommand) DefineFlags() {
-	_ = m.Called()
-}
-
-func (m *MockCommand) ShouldRun() bool {
-	args := m.Called()
-	return args.Get(0).(bool)
+	return m.name
 }
 
 func (m *MockCommand) Run(xs []string) error {
@@ -40,15 +32,12 @@ func TestCommandsRun(t *testing.T) {
 		exitCode = c
 	}
 
-	cmd1 := &MockCommand{}
-	cmd1.On("DefineFlags").Times(1).Return()
-	cmd1.On("ShouldRun").Times(1).Return(false)
+	cmd1 := &MockCommand{name: "1"}
 
-	cmd2 := &MockCommand{}
-	cmd2.On("DefineFlags").Times(1).Return()
-	cmd2.On("ShouldRun").Times(1).Return(true)
+	cmd2 := &MockCommand{name: "2"}
 	cmd2.On("Run", []string{}).Times(1).Return(nil)
 
+	os.Args = []string{"search-service", "2"}
 	Run(l, cmd1, cmd2)
 
 	assert.Contains(t, "Running command: *cli.MockCommand", hook.LastEntry().Message)
@@ -64,12 +53,8 @@ func TestCommandsRunErrors(t *testing.T) {
 	}
 
 	cmd1 := &MockCommand{name: "1"}
-	cmd1.On("DefineFlags").Times(1).Return()
-	cmd1.On("ShouldRun").Times(1).Return(false)
 
 	cmd2 := &MockCommand{name: "2"}
-	cmd2.On("DefineFlags").Times(1).Return()
-	cmd2.On("ShouldRun").Times(1).Return(true)
 	cmd2.On("Run", []string{}).Times(1).Return(errors.New("what"))
 
 	Run(l, cmd1, cmd2)
