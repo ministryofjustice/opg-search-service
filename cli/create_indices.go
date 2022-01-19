@@ -4,25 +4,30 @@ import (
 	"flag"
 	"net/http"
 	"opg-search-service/elasticsearch"
-	"opg-search-service/person"
 
 	"github.com/sirupsen/logrus"
 )
 
-type createIndices struct {
-	logger   *logrus.Logger
-	esClient elasticsearch.ClientInterface
+type IndexClient interface {
+	CreateIndex(name string, config []byte, force bool) error
 }
 
-func NewCreateIndices(logger *logrus.Logger) *createIndices {
+type createIndices struct {
+	esClient    IndexClient
+	indexName   string
+	indexConfig []byte
+}
+
+func NewCreateIndices(logger *logrus.Logger, indexName string, indexConfig []byte) *createIndices {
 	esClient, err := elasticsearch.NewClient(&http.Client{}, logger)
 	if err != nil {
 		logger.Fatal(err)
 	}
 
 	return &createIndices{
-		logger:   logger,
-		esClient: esClient,
+		esClient:    esClient,
+		indexName:   indexName,
+		indexConfig: indexConfig,
 	}
 }
 
@@ -39,31 +44,13 @@ func (c *createIndices) Run(args []string) error {
 		return err
 	}
 
-	exists, err := c.esClient.IndexExists(person.Person{})
-	if err != nil {
+	if err := c.esClient.CreateIndex("person", c.indexConfig, *force); err != nil {
 		return err
 	}
 
-	if exists {
-		c.logger.Println("Person index already exists")
-
-		if !*force {
-			return nil
-		}
-
-		c.logger.Println("Changes are forced, deleting old index")
-
-		if err := c.esClient.DeleteIndex(person.Person{}); err != nil {
-			return err
-		}
-
-		c.logger.Println("Person index deleted successfully")
-	}
-
-	if _, err := c.esClient.CreateIndex(person.Person{}); err != nil {
+	if err := c.esClient.CreateIndex(c.indexName, c.indexConfig, *force); err != nil {
 		return err
 	}
 
-	c.logger.Println("Person index created successfully")
 	return nil
 }

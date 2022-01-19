@@ -1,7 +1,9 @@
 package person
 
 import (
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"opg-search-service/response"
 )
 
@@ -53,15 +55,6 @@ func (p Person) Id() int64 {
 	return val
 }
 
-func (p Person) IndexName() string {
-	return personIndexName
-}
-
-func (p Person) Json() string {
-	b, _ := json.Marshal(p)
-	return string(b)
-}
-
 func (p Person) Validate() []response.Error {
 	var errs []response.Error
 
@@ -75,8 +68,8 @@ func (p Person) Validate() []response.Error {
 	return errs
 }
 
-func (p Person) IndexConfig() map[string]interface{} {
-	return map[string]interface{}{
+func IndexConfig() (name string, config []byte, err error) {
+	personConfig := map[string]interface{}{
 		"settings": map[string]interface{}{
 			"number_of_shards":   1,
 			"number_of_replicas": 1,
@@ -213,4 +206,13 @@ func (p Person) IndexConfig() map[string]interface{} {
 			},
 		},
 	}
+
+	data, err := json.Marshal(personConfig)
+	if err != nil {
+		return "", nil, err
+	}
+
+	sum := sha256.Sum256(data)
+
+	return fmt.Sprintf("%s_%x", personIndexName, sum[:8]), data, err
 }
