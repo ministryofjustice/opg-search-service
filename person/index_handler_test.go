@@ -33,8 +33,9 @@ func (suite *IndexHandlerTestSuite) SetupTest() {
 	suite.logger, _ = test.NewNullLogger()
 	suite.esClient = new(elasticsearch.MockESClient)
 	suite.handler = &IndexHandler{
-		logger: suite.logger,
-		es:     suite.esClient,
+		logger:    suite.logger,
+		client:    suite.esClient,
+		indexName: "person-test",
 	}
 	suite.router = mux.NewRouter().Methods(http.MethodPost).Subrouter()
 	suite.router.Handle("/persons", suite.handler)
@@ -95,24 +96,33 @@ func (suite *IndexHandlerTestSuite) Test_InvalidIndexRequestBody() {
 func (suite *IndexHandlerTestSuite) Test_Index() {
 	reqBody := `{"persons":[{"id":13},{"id":14}]}`
 
+	call := 0
+
 	esCall := suite.esClient.On("DoBulk", mock.AnythingOfType("*elasticsearch.BulkOp"))
 	esCall.RunFn = func(args mock.Arguments) {
 		actual := args[0].(*elasticsearch.BulkOp)
 
 		var id1, id2 int64 = 13, 14
 
-		expected := elasticsearch.NewBulkOp("person")
-		expected.Index(13, Person{ID: &id1})
-		expected.Index(14, Person{ID: &id2})
-
-		suite.Equal(expected, actual)
+		if call == 0 {
+			expected := elasticsearch.NewBulkOp("person")
+			expected.Index(13, Person{ID: &id1})
+			expected.Index(14, Person{ID: &id2})
+			suite.Equal(expected, actual)
+			call++
+		} else {
+			expected := elasticsearch.NewBulkOp("person-test")
+			expected.Index(13, Person{ID: &id1})
+			expected.Index(14, Person{ID: &id2})
+			suite.Equal(expected, actual)
+		}
 	}
-	esCall.Return(elasticsearch.BulkResult{Successful: 2, Failed: 1}, errors.New("hmm")).Once()
+	esCall.Return(elasticsearch.BulkResult{Successful: 2, Failed: 1}, errors.New("hmm")).Twice()
 
 	suite.ServeRequest(http.MethodPost, "/persons", reqBody)
 
 	suite.Equal(http.StatusAccepted, suite.RespCode())
-	suite.Equal(`{"successful":2,"failed":1,"errors":["hmm"]}`, suite.RespBody())
+	suite.Equal(`{"successful":4,"failed":2,"errors":["hmm","hmm"]}`, suite.RespBody())
 }
 
 func TestIndexHandler(t *testing.T) {
@@ -122,7 +132,7 @@ func TestIndexHandler(t *testing.T) {
 func TestNewIndexHandler(t *testing.T) {
 	l, _ := test.NewNullLogger()
 
-	ih, err := NewIndexHandler(l)
+	ih, err := NewIndexHandler(l, "i")
 
 	assert.Nil(t, err)
 	assert.IsType(t, &IndexHandler{}, ih)

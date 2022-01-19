@@ -17,18 +17,20 @@ type Logger interface {
 	Printf(string, ...interface{})
 }
 
-func New(conn *pgx.Conn, es BulkClient, logger Logger) *Indexer {
+func New(conn *pgx.Conn, es BulkClient, logger Logger, indexName string) *Indexer {
 	return &Indexer{
-		conn: conn,
-		es:   es,
-		log:  logger,
+		conn:      conn,
+		es:        es,
+		log:       logger,
+		indexName: indexName,
 	}
 }
 
 type Indexer struct {
-	conn *pgx.Conn
-	es   BulkClient
-	log  Logger
+	conn      *pgx.Conn
+	es        BulkClient
+	log       Logger
+	indexName string
 }
 
 func (r *Indexer) All(ctx context.Context, batchSize int) (*Result, error) {

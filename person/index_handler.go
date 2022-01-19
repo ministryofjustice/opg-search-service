@@ -13,12 +13,17 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type IndexHandler struct {
-	logger *logrus.Logger
-	es     elasticsearch.ClientInterface
+type IndexClient interface {
+	DoBulk(op *elasticsearch.BulkOp) (elasticsearch.BulkResult, error)
 }
 
-func NewIndexHandler(logger *logrus.Logger) (*IndexHandler, error) {
+type IndexHandler struct {
+	logger    *logrus.Logger
+	client    IndexClient
+	indexName string
+}
+
+func NewIndexHandler(logger *logrus.Logger, indexName string) (*IndexHandler, error) {
 	client, err := elasticsearch.NewClient(&http.Client{}, logger)
 	if err != nil {
 		logger.Println(err)
@@ -26,12 +31,13 @@ func NewIndexHandler(logger *logrus.Logger) (*IndexHandler, error) {
 	}
 
 	return &IndexHandler{
-		logger,
-		client,
+		logger:    logger,
+		client:    client,
+		indexName: indexName,
 	}, nil
 }
 
-func (i IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (i *IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 
 	var req IndexRequest
@@ -59,29 +65,14 @@ func (i IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	op := elasticsearch.NewBulkOp(personIndexName)
-
 	response := &indexResponse{}
 
-	for _, p := range req.Persons {
-		err := op.Index(p.Id(), p)
-
-		if err == elasticsearch.ErrOpTooLarge {
-			response.Add(i.es.DoBulk(op))
-			op.Reset()
-			err = op.Index(p.Id(), p)
-		}
-
-		if err != nil {
-			i.logger.Println(err)
-
-			http.Error(w, fmt.Sprintf("could not construct index request for id=%d", p.Id()), http.StatusBadRequest)
-			return
-		}
+	if err := i.doIndex(personIndexName, response, req.Persons); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 
-	if !op.Empty() {
-		response.Add(i.es.DoBulk(op))
+	if err := i.doIndex(i.indexName, response, req.Persons); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 
 	jsonResp, _ := json.Marshal(response)
@@ -91,6 +82,32 @@ func (i IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(jsonResp)
 
 	i.logger.Println("Request took: ", time.Since(start))
+}
+
+func (i *IndexHandler) doIndex(indexName string, response *indexResponse, persons []Person) error {
+	op := elasticsearch.NewBulkOp(indexName)
+
+	for _, p := range persons {
+		err := op.Index(p.Id(), p)
+
+		if err == elasticsearch.ErrOpTooLarge {
+			response.Add(i.client.DoBulk(op))
+			op.Reset()
+			err = op.Index(p.Id(), p)
+		}
+
+		if err != nil {
+			i.logger.Println(err)
+
+			return fmt.Errorf("could not construct index request for id=%d", p.Id())
+		}
+	}
+
+	if !op.Empty() {
+		response.Add(i.client.DoBulk(op))
+	}
+
+	return nil
 }
 
 type indexResponse struct {

@@ -11,22 +11,12 @@ func (m *MockESClient) DoBulk(op *BulkOp) (BulkResult, error) {
 	return args.Get(0).(BulkResult), args.Error(1)
 }
 
-func (m *MockESClient) Search(requestBody map[string]interface{}, dataType Indexable) (*SearchResult, error) {
-	args := m.Called(requestBody, dataType)
+func (m *MockESClient) Search(indexName string, requestBody map[string]interface{}) (*SearchResult, error) {
+	args := m.Called(indexName, requestBody)
 	return args.Get(0).(*SearchResult), args.Error(1)
 }
 
-func (m *MockESClient) CreateIndex(i Indexable) (bool, error) {
-	args := m.Called(i)
-	return args.Get(0).(bool), args.Error(1)
-}
-
-func (m *MockESClient) IndexExists(i Indexable) (bool, error) {
-	args := m.Called(i)
-	return args.Get(0).(bool), args.Error(1)
-}
-
-func (m *MockESClient) DeleteIndex(i Indexable) error {
-	args := m.Called(i)
+func (m *MockESClient) CreateIndex(name string, config []byte, force bool) error {
+	args := m.Called(name, config, force)
 	return args.Error(0)
 }

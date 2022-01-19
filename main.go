@@ -22,12 +22,17 @@ func main() {
 	l := logrus.New()
 	l.SetFormatter(&logrus.JSONFormatter{})
 
+	personName, personConfig, err := person.IndexConfig()
+	if err != nil {
+		l.Fatal(err)
+	}
+
 	secretsCache := cache.New()
 
 	cli.Run(l,
 		cli.NewHealthCheck(l),
-		cli.NewCreateIndices(l),
-		cli.NewIndex(l, secretsCache),
+		cli.NewCreateIndices(l, personName, personConfig),
+		cli.NewIndex(l, secretsCache, personName),
 	)
 
 	// Create persons index if it doesn't exist
@@ -36,18 +41,12 @@ func main() {
 		l.Fatal(err)
 	}
 
-	exists, err := esClient.IndexExists(person.Person{})
-	if err != nil {
+	if err := esClient.CreateIndex("person", personConfig, false); err != nil {
 		l.Fatal(err)
 	}
 
-	if !exists {
-		l.Println("'person' index does not exist, creating")
-		_, err = esClient.CreateIndex(person.Person{})
-
-		if err != nil {
-			l.Fatal(err)
-		}
+	if err := esClient.CreateIndex(personName, personConfig, false); err != nil {
+		l.Fatal(err)
 	}
 
 	// Create new serveMux
@@ -70,7 +69,7 @@ func main() {
 	postRouter.Use(middleware.JwtVerify(secretsCache, l))
 
 	// Register protected handlers
-	iph, err := person.NewIndexHandler(l)
+	iph, err := person.NewIndexHandler(l, personName)
 	if err != nil {
 		l.Fatal(err)
 	}
