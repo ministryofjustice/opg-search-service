@@ -30,17 +30,14 @@ type HTTPClient interface {
 
 type ClientInterface interface {
 	DoBulk(op *BulkOp) (BulkResult, error)
-	Search(requestBody map[string]interface{}, dataType Indexable) (*SearchResult, error)
-	CreateIndex(i Indexable) (bool, error)
-	DeleteIndex(i Indexable) error
-	IndexExists(i Indexable) (bool, error)
+	Search(indexName string, requestBody map[string]interface{}) (*SearchResult, error)
+	CreateIndex(name string, config []byte, force bool) error
+	IndexExists(name string) (bool, error)
 }
 
 type Indexable interface {
 	Id() int64
-	IndexName() string
-	Json() string
-	IndexConfig() map[string]interface{}
+	IndexConfig() (string, []byte, error)
 }
 
 type Client struct {
@@ -235,8 +232,8 @@ func (c *Client) doBulkOp(op *BulkOp) (BulkResult, error) {
 }
 
 // returns an array of JSON encoded results
-func (c *Client) Search(requestBody map[string]interface{}, dataType Indexable) (*SearchResult, error) {
-	endpoint := c.domain + "/" + dataType.IndexName() + "/_search"
+func (c *Client) Search(indexName string, requestBody map[string]interface{}) (*SearchResult, error) {
+	endpoint := c.domain + "/" + indexName + "/_search"
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(requestBody); err != nil {
@@ -285,16 +282,46 @@ func (c *Client) Search(requestBody map[string]interface{}, dataType Indexable) 
 	}, nil
 }
 
-func (c *Client) IndexExists(i Indexable) (bool, error) {
-	c.logger.Printf("Checking index '%s' exists", i.IndexName())
+func (c *Client) CreateIndex(name string, config []byte, force bool) error {
+	exists, err := c.IndexExists(name)
+	if err != nil {
+		return err
+	}
 
-	endpoint := c.domain + "/" + i.IndexName()
+	if exists {
+		if !force {
+			c.logger.Printf("index '%s' already exists", name)
+			return nil
+		}
+
+		c.logger.Printf("changes are forced, deleting old index '%s'", name)
+
+		if err := c.deleteIndex(name); err != nil {
+			return err
+		}
+
+		c.logger.Printf("index '%s' deleted", name)
+	}
+
+	if err := c.createIndex(name, config); err != nil {
+		return err
+	}
+
+	c.logger.Printf("index '%s' created", name)
+	return nil
+}
+
+func (c *Client) IndexExists(name string) (bool, error) {
+	c.logger.Printf("Checking index '%s' exists", name)
+
+	endpoint := c.domain + "/" + name
 
 	body := bytes.NewReader([]byte(""))
 	resp, err := c.doRequest(http.MethodHead, endpoint, body, "")
 	if err != nil {
 		return false, err
 	}
+	defer resp.Body.Close()
 
 	switch resp.StatusCode {
 	case http.StatusOK:
@@ -303,47 +330,34 @@ func (c *Client) IndexExists(i Indexable) (bool, error) {
 		return false, nil
 	}
 
-	return false, errors.New(fmt.Sprintf(`index check failed with status code %d`, resp.StatusCode))
+	return false, fmt.Errorf("index check failed with status code %d", resp.StatusCode)
 }
 
-func (c *Client) CreateIndex(i Indexable) (bool, error) {
-	c.logger.Printf("Creating index '%s' for %T", i.IndexName(), i)
+func (c *Client) createIndex(name string, config []byte) error {
+	c.logger.Printf("Creating index '%s'", name)
 
-	endpoint := c.domain + "/" + i.IndexName()
+	endpoint := c.domain + "/" + name
 
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(i.IndexConfig()); err != nil {
-		return false, err
-	}
-	body := bytes.NewReader(buf.Bytes())
-
-	resp, err := c.doRequest(http.MethodPut, endpoint, body, "application/json")
+	resp, err := c.doRequest(http.MethodPut, endpoint, bytes.NewReader(config), "application/json")
 	if err != nil {
-		return false, err
+		return err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		buf.Reset()
-		_, _ = buf.ReadFrom(resp.Body)
-		return false, errors.New(fmt.Sprintf(`index creation failed with status code %d and response: "%s"`, resp.StatusCode, buf.String()))
+		data, _ := io.ReadAll(resp.Body)
+		return errors.New(fmt.Sprintf(`index creation failed with status code %d and response: "%s"`, resp.StatusCode, string(data)))
 	}
 
-	return true, nil
+	return nil
 }
 
-func (c *Client) DeleteIndex(i Indexable) error {
-	c.logger.Printf("Deleting index '%s' for %T", i.IndexName(), i)
+func (c *Client) deleteIndex(name string) error {
+	c.logger.Printf("Deleting index '%s'", name)
 
-	endpoint := c.domain + "/" + i.IndexName()
+	endpoint := c.domain + "/" + name
 
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(i.IndexConfig()); err != nil {
-		return err
-	}
-	body := bytes.NewReader(buf.Bytes())
-
-	resp, err := c.doRequest(http.MethodDelete, endpoint, body, "application/json")
+	resp, err := c.doRequest(http.MethodDelete, endpoint, nil, "application/json")
 	if err != nil {
 		return err
 	}

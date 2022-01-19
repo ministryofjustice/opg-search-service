@@ -20,21 +20,23 @@ type Secrets interface {
 }
 
 type indexCommand struct {
-	logger   *logrus.Logger
-	esClient index.BulkClient
-	secrets  Secrets
+	logger    *logrus.Logger
+	esClient  index.BulkClient
+	secrets   Secrets
+	indexName string
 }
 
-func NewIndex(logger *logrus.Logger, secrets Secrets) *indexCommand {
+func NewIndex(logger *logrus.Logger, secrets Secrets, indexName string) *indexCommand {
 	esClient, err := elasticsearch.NewClient(&http.Client{}, logger)
 	if err != nil {
 		logger.Fatal(err)
 	}
 
 	return &indexCommand{
-		logger:   logger,
-		esClient: esClient,
-		secrets:  secrets,
+		logger:    logger,
+		esClient:  esClient,
+		secrets:   secrets,
+		indexName: indexName,
 	}
 }
 
@@ -72,7 +74,7 @@ func (c *indexCommand) Run(args []string) error {
 		return err
 	}
 
-	indexer := index.New(conn, c.esClient, c.logger)
+	indexer := index.New(conn, c.esClient, c.logger, c.indexName)
 
 	fromTime, err := time.Parse(time.RFC3339, *fromDate)
 
