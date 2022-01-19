@@ -28,7 +28,7 @@ func TestIndex(t *testing.T) {
 	client := &mockBulkClient{
 		result: elasticsearch.BulkResult{Successful: 1, Failed: 0},
 	}
-	r := &Indexer{es: client}
+	r := &Indexer{es: client, indexName: "person"}
 
 	p := person.Person{ID: i64(1), Firstname: "A"}
 

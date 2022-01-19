@@ -11,9 +11,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type SearchClient interface {
+	Search(indexName string, requestBody map[string]interface{}) (*elasticsearch.SearchResult, error)
+}
+
 type SearchHandler struct {
 	logger *logrus.Logger
-	es     elasticsearch.ClientInterface
+	es     SearchClient
 }
 
 func NewSearchHandler(logger *logrus.Logger) (*SearchHandler, error) {
@@ -38,8 +42,6 @@ func (s SearchHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		response.WriteJSONError(rw, "request", err.Error(), http.StatusBadRequest)
 		return
 	}
-
-	var dataType Person
 
 	filters := make([]interface{}, 0)
 	for _, f := range req.PersonTypes {
@@ -79,7 +81,7 @@ func (s SearchHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 				},
 			},
 		},
-		"post_filter":  map[string]interface{}{
+		"post_filter": map[string]interface{}{
 			"bool": map[string]interface{}{
 				"should": filters,
 			},
@@ -90,7 +92,7 @@ func (s SearchHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		esReqBody["size"] = req.Size
 	}
 
-	result, err := s.es.Search(esReqBody, dataType)
+	result, err := s.es.Search(personIndexName, esReqBody)
 	if err != nil {
 		s.logger.Println(err.Error())
 		response.WriteJSONError(rw, "request", "Person search caused an unexpected error", http.StatusInternalServerError)

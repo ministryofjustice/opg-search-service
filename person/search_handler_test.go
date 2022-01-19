@@ -117,10 +117,11 @@ func (suite *SearchHandlerTestSuite) Test_ESReturnsUnexpectedError() {
 func (suite *SearchHandlerTestSuite) Test_SearchWithAllParameters() {
 	reqBody := `{"term":"testTerm","from":10,"size":20,"person_types":["type1","type2"]}`
 
-	esCall := suite.esClient.On("Search", mock.Anything, mock.AnythingOfType("Person"))
+	esCall := suite.esClient.On("Search", "person", mock.Anything)
 	esCall.RunFn = func(args mock.Arguments) {
-		esReqBody := args[0].(map[string]interface{})
-		dataType := args[1].(Person)
+		indexName := args[0].(string)
+		esReqBody := args[1].(map[string]interface{})
+
 		expectedEsReqBody := map[string]interface{}{
 			"size": 20,
 			"from": 10,
@@ -168,7 +169,7 @@ func (suite *SearchHandlerTestSuite) Test_SearchWithAllParameters() {
 			},
 		}
 		suite.Equal(expectedEsReqBody, esReqBody)
-		suite.IsType(Person{}, dataType)
+		suite.IsType("person", indexName)
 	}
 
 	result := &elasticsearch.SearchResult{
