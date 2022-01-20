@@ -3,90 +3,48 @@ package cli
 import (
 	"errors"
 	"opg-search-service/elasticsearch"
-	"opg-search-service/person"
 	"testing"
 
-	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 )
+
+var indexConfig = []byte("{json}")
 
 func TestCreateIndicesRun(t *testing.T) {
 	const esErrorMessage = "some ES error"
 
 	tests := []struct {
-		scenario    string
-		force       bool
-		esError     error
-		esExists    bool
-		esExistsErr error
-		esDeleteErr error
-		wantInLog   []string
-		wantErr     error
+		scenario string
+		force    bool
+		error    error
 	}{
 		{
-			scenario:    "Index created successfully",
-			esError:     nil,
-			esExists:    false,
-			esExistsErr: nil,
-			wantInLog:   []string{"Person index created successfully"},
-			wantErr:     nil,
+			scenario: "Index created successfully",
 		},
 		{
-			scenario:    "Error when creating index",
-			esError:     errors.New(esErrorMessage),
-			esExists:    false,
-			esExistsErr: nil,
-			wantInLog:   []string{},
-			wantErr:     errors.New(esErrorMessage),
+			scenario: "Error when creating index",
+			error:    errors.New(esErrorMessage),
 		},
 		{
-			scenario:    "Index already exists",
-			esError:     nil,
-			esExists:    true,
-			esExistsErr: nil,
-			wantInLog:   []string{"Person index already exists"},
-			wantErr:     nil,
+			scenario: "Force creating existing index",
+			force:    true,
 		},
 		{
-			scenario:    "Error when checking if index exists",
-			esError:     nil,
-			esExists:    false,
-			esExistsErr: errors.New(esErrorMessage),
-			wantInLog:   []string{},
-			wantErr:     errors.New(esErrorMessage),
-		},
-		{
-			scenario:    "Force delete existing index",
-			force:       true,
-			esError:     nil,
-			esExists:    true,
-			esExistsErr: nil,
-			wantInLog:   []string{"Person index already exists"},
-			wantErr:     nil,
-		},
-		{
-			scenario:    "Error deleting existing index",
-			force:       true,
-			esError:     nil,
-			esExists:    true,
-			esExistsErr: nil,
-			esDeleteErr: errors.New(esErrorMessage),
-			wantInLog:   []string{"Person index already exists", "Changes are forced, deleting old index"},
-			wantErr:     errors.New(esErrorMessage),
+			scenario: "Error when force creating index",
+			force:    true,
+			error:    errors.New(esErrorMessage),
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.scenario, func(t *testing.T) {
-			l, hook := test.NewNullLogger()
-
 			esClient := new(elasticsearch.MockESClient)
-			esClient.On("IndexExists", person.Person{}).Times(1).Return(tc.esExists, tc.esExistsErr)
-			esClient.On("DeleteIndex", person.Person{}).Times(1).Return(tc.esDeleteErr)
-			esClient.On("CreateIndex", person.Person{}).Times(1).Return(tc.esError == nil, tc.esError)
+			esClient.On("CreateIndex", "person", indexConfig, tc.force).Times(1).Return(nil).
+				On("CreateIndex", "person-test", indexConfig, tc.force).Times(1).Return(tc.error)
 
 			ci := createIndices{
-				logger:   l,
-				esClient: esClient,
+				esClient:    esClient,
+				indexName:   "person-test",
+				indexConfig: indexConfig,
 			}
 
 			args := []string{}
@@ -95,11 +53,47 @@ func TestCreateIndicesRun(t *testing.T) {
 			}
 
 			err := ci.Run(args)
-			assert.Equal(t, tc.wantErr, err)
+			assert.Equal(t, tc.error, err)
+		})
+	}
+}
 
-			for i, message := range tc.wantInLog {
-				assert.Contains(t, message, hook.Entries[i].Message)
+func TestCreateIndicesRunErrorInFirst(t *testing.T) {
+	const esErrorMessage = "some ES error"
+
+	tests := []struct {
+		scenario string
+		force    bool
+		error    error
+	}{
+		{
+			scenario: "Error when creating index",
+			error:    errors.New(esErrorMessage),
+		},
+		{
+			scenario: "Error when force creating index",
+			force:    true,
+			error:    errors.New(esErrorMessage),
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.scenario, func(t *testing.T) {
+			esClient := new(elasticsearch.MockESClient)
+			esClient.On("CreateIndex", "person", indexConfig, tc.force).Times(1).Return(tc.error)
+
+			ci := createIndices{
+				esClient:    esClient,
+				indexName:   "person-test",
+				indexConfig: indexConfig,
 			}
+
+			args := []string{}
+			if tc.force {
+				args = []string{"-force"}
+			}
+
+			err := ci.Run(args)
+			assert.Equal(t, tc.error, err)
 		})
 	}
 }
