@@ -1,10 +1,10 @@
 package person
 
 import (
-	"encoding/json"
-	"github.com/stretchr/testify/assert"
 	"opg-search-service/response"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPerson_Id(t *testing.T) {
@@ -31,17 +31,6 @@ func TestPerson_Id(t *testing.T) {
 	for _, test := range tests {
 		assert.Equal(t, test.expectedId, test.person.Id(), test.scenario)
 	}
-}
-
-func TestPerson_IndexName(t *testing.T) {
-	p := Person{}
-	assert.Equal(t, "person", p.IndexName())
-}
-
-func TestPerson_Json(t *testing.T) {
-	p := Person{}
-	res, _ := json.Marshal(p)
-	assert.Equal(t, string(res), p.Json())
 }
 
 func TestPerson_Validate(t *testing.T) {
@@ -87,10 +76,4 @@ func TestPerson_Validate(t *testing.T) {
 		errs := test.person.Validate()
 		assert.Equal(t, test.expectedErrs, errs, test.scenario)
 	}
-}
-
-func TestPerson_IndexConfig(t *testing.T) {
-	ic := Person{}.IndexConfig()
-	assert.IsType(t, map[string]interface{}{}, ic)
-	assert.NotEmpty(t, ic)
 }
