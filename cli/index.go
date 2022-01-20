@@ -20,21 +20,23 @@ type Secrets interface {
 }
 
 type indexCommand struct {
-	logger   *logrus.Logger
-	esClient index.BulkClient
-	secrets  Secrets
+	logger    *logrus.Logger
+	esClient  index.BulkClient
+	secrets   Secrets
+	indexName string
 }
 
-func NewIndex(logger *logrus.Logger, secrets Secrets) *indexCommand {
+func NewIndex(logger *logrus.Logger, secrets Secrets, indexName string) *indexCommand {
 	esClient, err := elasticsearch.NewClient(&http.Client{}, logger)
 	if err != nil {
 		logger.Fatal(err)
 	}
 
 	return &indexCommand{
-		logger:   logger,
-		esClient: esClient,
-		secrets:  secrets,
+		logger:    logger,
+		esClient:  esClient,
+		secrets:   secrets,
+		indexName: indexName,
 	}
 }
 
@@ -50,6 +52,7 @@ func (c *indexCommand) Run(args []string) error {
 	to := flagset.Int("to", 100, "id to index to")
 	batchSize := flagset.Int("batch-size", 10000, "batch size to read from db")
 	fromDate := flagset.String("from-date", "", "index all records updated from this date")
+	hash := flagset.Bool("hash", false, "index to the person_hash index")
 
 	if err := flagset.Parse(args); err != nil {
 		return err
@@ -72,7 +75,12 @@ func (c *indexCommand) Run(args []string) error {
 		return err
 	}
 
-	indexer := index.New(conn, c.esClient, c.logger)
+	indexName := "person"
+	if *hash {
+		indexName = c.indexName
+	}
+
+	indexer := index.New(conn, c.esClient, c.logger, indexName)
 
 	fromTime, err := time.Parse(time.RFC3339, *fromDate)
 

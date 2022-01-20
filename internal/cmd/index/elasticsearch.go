@@ -8,7 +8,7 @@ import (
 )
 
 func (r *Indexer) index(ctx context.Context, persons <-chan person.Person) (*Result, error) {
-	op := elasticsearch.NewBulkOp("person")
+	op := elasticsearch.NewBulkOp(r.indexName)
 	result := &Result{}
 
 	for p := range persons {
