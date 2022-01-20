@@ -28,13 +28,6 @@ type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
-type ClientInterface interface {
-	DoBulk(op *BulkOp) (BulkResult, error)
-	Search(indexName string, requestBody map[string]interface{}) (*SearchResult, error)
-	CreateIndex(name string, config []byte, force bool) error
-	IndexExists(name string) (bool, error)
-}
-
 type Client struct {
 	httpClient HTTPClient
 	logger     *logrus.Logger

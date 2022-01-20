@@ -23,7 +23,7 @@ import (
 type EndToEndTestSuite struct {
 	suite.Suite
 	testPeople []person.Person
-	esClient   elasticsearch.ClientInterface
+	esClient   *elasticsearch.Client
 	authHeader string
 }
 
