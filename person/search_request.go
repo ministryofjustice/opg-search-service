@@ -42,7 +42,6 @@ func CreateSearchRequestFromRequest(r *http.Request) (*searchRequest, error) {
 
 func (sr *searchRequest) sanitise() {
 	re := regexp.MustCompile(`[^’'\p{L}\d\-.@ \/_]`)
-	log.Println(re.ReplaceAllString(sr.Term, ""))
 	sr.Term = strings.TrimSpace(re.ReplaceAllString(sr.Term, ""))
 
 	for i, val := range sr.PersonTypes {
