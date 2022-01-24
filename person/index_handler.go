@@ -67,10 +67,6 @@ func (i *IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	response := &indexResponse{}
 
-	if err := i.doIndex(personIndexName, response, req.Persons); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-	}
-
 	if err := i.doIndex(i.indexName, response, req.Persons); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}

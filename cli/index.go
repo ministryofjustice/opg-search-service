@@ -52,7 +52,6 @@ func (c *indexCommand) Run(args []string) error {
 	to := flagset.Int("to", 100, "id to index to")
 	batchSize := flagset.Int("batch-size", 10000, "batch size to read from db")
 	fromDate := flagset.String("from-date", "", "index all records updated from this date")
-	hash := flagset.Bool("hash", false, "index to the person_hash index")
 
 	if err := flagset.Parse(args); err != nil {
 		return err
@@ -75,12 +74,7 @@ func (c *indexCommand) Run(args []string) error {
 		return err
 	}
 
-	indexName := "person"
-	if *hash {
-		indexName = c.indexName
-	}
-
-	indexer := index.New(conn, c.esClient, c.logger, indexName)
+	indexer := index.New(conn, c.esClient, c.logger, c.indexName)
 
 	fromTime, err := time.Parse(time.RFC3339, *fromDate)
 
