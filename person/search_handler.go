@@ -16,11 +16,12 @@ type SearchClient interface {
 }
 
 type SearchHandler struct {
-	logger *logrus.Logger
-	es     SearchClient
+	logger    *logrus.Logger
+	es        SearchClient
+	indexName string
 }
 
-func NewSearchHandler(logger *logrus.Logger) (*SearchHandler, error) {
+func NewSearchHandler(logger *logrus.Logger, indexName string) (*SearchHandler, error) {
 	client, err := elasticsearch.NewClient(&http.Client{}, logger)
 	if err != nil {
 		logger.Println(err)
@@ -28,8 +29,9 @@ func NewSearchHandler(logger *logrus.Logger) (*SearchHandler, error) {
 	}
 
 	return &SearchHandler{
-		logger,
-		client,
+		logger:    logger,
+		es:        client,
+		indexName: indexName,
 	}, nil
 }
 
@@ -92,7 +94,7 @@ func (s SearchHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		esReqBody["size"] = req.Size
 	}
 
-	result, err := s.es.Search(personIndexName, esReqBody)
+	result, err := s.es.Search(s.indexName, esReqBody)
 	if err != nil {
 		s.logger.Println(err.Error())
 		response.WriteJSONError(rw, "request", "Person search caused an unexpected error", http.StatusInternalServerError)
