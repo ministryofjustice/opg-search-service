@@ -44,6 +44,10 @@ func (c *createIndices) Run(args []string) error {
 		return err
 	}
 
+	if err := c.esClient.CreateIndex("person", c.indexConfig, *force); err != nil {
+		return err
+	}
+
 	if err := c.esClient.CreateIndex(c.indexName, c.indexConfig, *force); err != nil {
 		return err
 	}

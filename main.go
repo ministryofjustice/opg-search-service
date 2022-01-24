@@ -41,6 +41,10 @@ func main() {
 		l.Fatal(err)
 	}
 
+	if err := esClient.CreateIndex("person", personConfig, false); err != nil {
+		l.Fatal(err)
+	}
+
 	if err := esClient.CreateIndex(personName, personConfig, false); err != nil {
 		l.Fatal(err)
 	}
@@ -299,7 +303,7 @@ func main() {
 	//     description: Unexpected error occurred
 	postRouter.Handle("/persons", iph)
 
-	sph, err := person.NewSearchHandler(l, personName)
+	sph, err := person.NewSearchHandler(l)
 	if err != nil {
 		l.Fatal(err)
 	}
