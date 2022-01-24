@@ -2,6 +2,7 @@ package index
 
 import (
 	"context"
+	"fmt"
 	"opg-search-service/person"
 	"strconv"
 	"time"
@@ -168,7 +169,7 @@ func addResultToPerson(a *personAdded, p *person.Person, s rowResult) {
 	if p.ID == nil {
 		id := int64(s.ID)
 		p.ID = &id
-		p.UID = strconv.Itoa(s.UID)
+		p.UID = formatUID(s.UID)
 		p.Normalizeduid = int64(s.UID)
 		p.CaseRecNumber = s.CaseRecNumber
 		p.Email = s.Email
@@ -196,7 +197,7 @@ func addResultToPerson(a *personAdded, p *person.Person, s rowResult) {
 
 	if s.CaseID != nil && !a.hasCase(*s.CaseID) {
 		p.Cases = append(p.Cases, person.PersonCase{
-			UID:           strconv.Itoa(*s.CasesUID),
+			UID:           formatUID(*s.CasesUID),
 			Normalizeduid: int64(*s.CasesUID),
 			Caserecnumber: s.CasesCaseRecNumber,
 			OnlineLpaId:   s.CasesOnlineLpaID,
@@ -231,4 +232,13 @@ func getAddressLines(lines interface{}) []string {
 	default:
 		return nil
 	}
+}
+
+func formatUID(uid int) string {
+	s := strconv.Itoa(uid)
+	if len(s) != 12 {
+		return s
+	}
+
+	return fmt.Sprintf("%s-%s-%s", s[0:4], s[4:8], s[8:12])
 }
