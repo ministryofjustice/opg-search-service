@@ -178,7 +178,7 @@ func addResultToPerson(a *personAdded, p *person.Person, s rowResult) {
 		p.Middlenames = s.Middlenames
 		p.Surname = s.Surname
 		p.CompanyName = s.CompanyName
-		p.Persontype = s.Type
+		p.Persontype = resolvePersonType(s.Type)
 		p.OrganisationName = s.OrganisationName
 	}
 
@@ -241,4 +241,41 @@ func formatUID(uid int) string {
 	}
 
 	return fmt.Sprintf("%s-%s-%s", s[0:4], s[4:8], s[8:12])
+}
+
+func resolvePersonType(t string) string {
+	switch t {
+	case "lpa_attorney":
+		return "Attorney"
+	case "lpa_replacement_attorney":
+		return "Replacement Attorney"
+	case "lpa_trust_corporation":
+		return "Trust Corporation"
+	case "lpa_correspondent":
+		return "Correspondent"
+	case "lpa_donor":
+		return "Donor"
+	case "lpa_notified_person":
+		return "Notified Person"
+	case "lpa_certificate_provider":
+		return "Certificate Provider"
+	case "actor_non_case_contact":
+		return "Non-Case Contact"
+	case "actor_notified_relative":
+		return "Notified Relative"
+	case "actor_notified_attorney":
+		return "Notified Attorney"
+	case "actor_notified_donor":
+		return "Person Notify Donor"
+	case "actor_client":
+		return "Client"
+	case "actor_contact":
+		return "Contact"
+	case "actor_deputy":
+		return "Deputy"
+	case "actor_fee_payer":
+		return "Fee Payer"
+	}
+
+	return t
 }

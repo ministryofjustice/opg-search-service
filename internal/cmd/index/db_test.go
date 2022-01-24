@@ -112,7 +112,7 @@ INSERT INTO person_caseitem (person_id, caseitem_id) VALUES (1, 1), (1, 2);
 			Middlenames:      "J",
 			Surname:          "Johnson",
 			CompanyName:      "& co",
-			Persontype:       "lpa_donor",
+			Persontype:       "Donor",
 			OrganisationName: "Orgz",
 			Phonenumbers: []person.PersonPhonenumber{{
 				Phonenumber: "077777777",
@@ -149,7 +149,7 @@ INSERT INTO person_caseitem (person_id, caseitem_id) VALUES (1, 1), (1, 2);
 			Middlenames:      "",
 			Surname:          "Jackson",
 			CompanyName:      "",
-			Persontype:       "lpa_donor",
+			Persontype:       "Donor",
 			OrganisationName: "",
 			Phonenumbers:     nil,
 			Addresses:        nil,
@@ -180,7 +180,7 @@ func TestQueryFromDate(t *testing.T) {
 
 	_, err = conn.Exec(ctx, `
 INSERT INTO persons (id, updateddate, uid, caserecnumber, email, dob, firstname, middlenames, surname, companyname, type, organisationname)
-						 VALUES (1, '2021-01-03 12:00:00', 7000, 1010101, 'email@example.com', '2002-01-02', 'John', 'J', 'Johnson', '& co', 'lpa_donor', 'Orgz'),
+						 VALUES (1, '2021-01-03 12:00:00', 7000, 1010101, 'email@example.com', '2002-01-02', 'John', 'J', 'Johnson', '& co', 'lpa_attorney', 'Orgz'),
 										(2, '2021-01-02 12:00:00', 7002, null, null, '1990-01-02', 'Jack', null, 'Jackson', null, 'lpa_donor', null),
 										(3, '2021-01-01 12:00:00', 7003, null, null, '1990-01-02', 'J', null, 'J', null, 'lpa_donor', null);
 
@@ -223,7 +223,7 @@ INSERT INTO person_caseitem (person_id, caseitem_id) VALUES (1, 1), (1, 2);
 			Middlenames:      "J",
 			Surname:          "Johnson",
 			CompanyName:      "& co",
-			Persontype:       "lpa_donor",
+			Persontype:       "Attorney",
 			OrganisationName: "Orgz",
 			Phonenumbers: []person.PersonPhonenumber{{
 				Phonenumber: "077777777",
@@ -260,7 +260,7 @@ INSERT INTO person_caseitem (person_id, caseitem_id) VALUES (1, 1), (1, 2);
 			Middlenames:      "",
 			Surname:          "Jackson",
 			CompanyName:      "",
-			Persontype:       "lpa_donor",
+			Persontype:       "Donor",
 			OrganisationName: "",
 			Phonenumbers:     nil,
 			Addresses:        nil,
