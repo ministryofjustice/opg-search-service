@@ -2,6 +2,7 @@ package index
 
 import (
 	"context"
+	"fmt"
 	"opg-search-service/person"
 	"strconv"
 	"time"
@@ -168,7 +169,7 @@ func addResultToPerson(a *personAdded, p *person.Person, s rowResult) {
 	if p.ID == nil {
 		id := int64(s.ID)
 		p.ID = &id
-		p.UID = strconv.Itoa(s.UID)
+		p.UID = formatUID(s.UID)
 		p.Normalizeduid = int64(s.UID)
 		p.CaseRecNumber = s.CaseRecNumber
 		p.Email = s.Email
@@ -177,7 +178,7 @@ func addResultToPerson(a *personAdded, p *person.Person, s rowResult) {
 		p.Middlenames = s.Middlenames
 		p.Surname = s.Surname
 		p.CompanyName = s.CompanyName
-		p.Persontype = s.Type
+		p.Persontype = resolvePersonType(s.Type)
 		p.OrganisationName = s.OrganisationName
 	}
 
@@ -196,7 +197,7 @@ func addResultToPerson(a *personAdded, p *person.Person, s rowResult) {
 
 	if s.CaseID != nil && !a.hasCase(*s.CaseID) {
 		p.Cases = append(p.Cases, person.PersonCase{
-			UID:           strconv.Itoa(*s.CasesUID),
+			UID:           formatUID(*s.CasesUID),
 			Normalizeduid: int64(*s.CasesUID),
 			Caserecnumber: s.CasesCaseRecNumber,
 			OnlineLpaId:   s.CasesOnlineLpaID,
@@ -231,4 +232,50 @@ func getAddressLines(lines interface{}) []string {
 	default:
 		return nil
 	}
+}
+
+func formatUID(uid int) string {
+	s := strconv.Itoa(uid)
+	if len(s) != 12 {
+		return s
+	}
+
+	return fmt.Sprintf("%s-%s-%s", s[0:4], s[4:8], s[8:12])
+}
+
+func resolvePersonType(t string) string {
+	switch t {
+	case "lpa_attorney":
+		return "Attorney"
+	case "lpa_replacement_attorney":
+		return "Replacement Attorney"
+	case "lpa_trust_corporation":
+		return "Trust Corporation"
+	case "lpa_correspondent":
+		return "Correspondent"
+	case "lpa_donor":
+		return "Donor"
+	case "lpa_notified_person":
+		return "Notified Person"
+	case "lpa_certificate_provider":
+		return "Certificate Provider"
+	case "actor_non_case_contact":
+		return "Non-Case Contact"
+	case "actor_notified_relative":
+		return "Notified Relative"
+	case "actor_notified_attorney":
+		return "Notified Attorney"
+	case "actor_notified_donor":
+		return "Person Notify Donor"
+	case "actor_client":
+		return "Client"
+	case "actor_contact":
+		return "Contact"
+	case "actor_deputy":
+		return "Deputy"
+	case "actor_fee_payer":
+		return "Fee Payer"
+	}
+
+	return t
 }
