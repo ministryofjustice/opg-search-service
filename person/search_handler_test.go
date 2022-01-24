@@ -35,9 +35,8 @@ func (suite *SearchHandlerTestSuite) SetupTest() {
 	suite.logger, _ = test.NewNullLogger()
 	suite.esClient = new(elasticsearch.MockESClient)
 	suite.handler = &SearchHandler{
-		logger:    suite.logger,
-		es:        suite.esClient,
-		indexName: "person-test",
+		logger: suite.logger,
+		es:     suite.esClient,
 	}
 	suite.router = mux.NewRouter().Methods(http.MethodPost).Subrouter()
 	suite.router.Handle("/persons/search", suite.handler)
@@ -118,7 +117,7 @@ func (suite *SearchHandlerTestSuite) Test_ESReturnsUnexpectedError() {
 func (suite *SearchHandlerTestSuite) Test_SearchWithAllParameters() {
 	reqBody := `{"term":"testTerm","from":10,"size":20,"person_types":["type1","type2"]}`
 
-	esCall := suite.esClient.On("Search", "person-test", mock.Anything)
+	esCall := suite.esClient.On("Search", "person", mock.Anything)
 	esCall.RunFn = func(args mock.Arguments) {
 		indexName := args[0].(string)
 		esReqBody := args[1].(map[string]interface{})
@@ -213,7 +212,7 @@ func TestSearchHandler(t *testing.T) {
 func TestNewSearchHandler(t *testing.T) {
 	l, _ := test.NewNullLogger()
 
-	sh, err := NewSearchHandler(l, "person-test")
+	sh, err := NewSearchHandler(l)
 
 	assert.Nil(t, err)
 	assert.IsType(t, &SearchHandler{}, sh)
