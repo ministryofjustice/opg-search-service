@@ -79,7 +79,7 @@ func TestCreateIndicesRunErrorInFirst(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.scenario, func(t *testing.T) {
 			esClient := new(elasticsearch.MockESClient)
-			esClient.On("CreateIndex", "person", indexConfig, tc.force).Times(1).Return(tc.error)
+			esClient.On("CreateIndex", "person-test", indexConfig, tc.force).Times(1).Return(tc.error)
 
 			ci := createIndices{
 				esClient:    esClient,

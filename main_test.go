@@ -95,7 +95,9 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 	suite.Nil(err)
 	suite.Equal(http.StatusOK, resp.StatusCode)
 
-	exists, err := suite.esClient.IndexExists("person")
+	indexName, _, _ := person.IndexConfig()
+
+	exists, err := suite.esClient.IndexExists(indexName)
 	suite.False(exists, "Person index should not exist at this point")
 	suite.Nil(err)
 
@@ -108,7 +110,7 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 			continue
 		}
 
-		exists, err = suite.esClient.IndexExists("person")
+		exists, err = suite.esClient.IndexExists(indexName)
 		suite.True(exists, "Person index should exist at this point")
 		suite.Nil(err)
 
@@ -136,7 +138,7 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
 
 	data, _ := ioutil.ReadAll(resp.Body)
 
-	suite.Equal(`{"successful":4,"failed":0}`, string(data))
+	suite.Equal(`{"successful":2,"failed":0}`, string(data))
 
 	testCases := []struct {
 		scenario         string
