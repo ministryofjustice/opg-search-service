@@ -3,6 +3,7 @@ package cli
 import (
 	"errors"
 	"opg-search-service/elasticsearch"
+	"opg-search-service/person"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -38,21 +39,17 @@ func TestCreateIndicesRun(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.scenario, func(t *testing.T) {
 			esClient := new(elasticsearch.MockESClient)
-			esClient.On("CreateIndex", "person", indexConfig, tc.force).Times(1).Return(nil).
+			esClient.On("CreateIndex", person.AliasName, indexConfig, tc.force).Times(1).Return(nil).
 				On("CreateIndex", "person-test", indexConfig, tc.force).Times(1).Return(tc.error)
 
-			ci := createIndices{
-				esClient:    esClient,
-				indexName:   "person-test",
-				indexConfig: indexConfig,
-			}
+			command := NewCreateIndices(esClient, "person-test", indexConfig)
 
 			args := []string{}
 			if tc.force {
 				args = []string{"-force"}
 			}
 
-			err := ci.Run(args)
+			err := command.Run(args)
 			assert.Equal(t, tc.error, err)
 		})
 	}
@@ -81,18 +78,14 @@ func TestCreateIndicesRunErrorInFirst(t *testing.T) {
 			esClient := new(elasticsearch.MockESClient)
 			esClient.On("CreateIndex", "person-test", indexConfig, tc.force).Times(1).Return(tc.error)
 
-			ci := createIndices{
-				esClient:    esClient,
-				indexName:   "person-test",
-				indexConfig: indexConfig,
-			}
+			command := NewCreateIndices(esClient, "person-test", indexConfig)
 
 			args := []string{}
 			if tc.force {
 				args = []string{"-force"}
 			}
 
-			err := ci.Run(args)
+			err := command.Run(args)
 			assert.Equal(t, tc.error, err)
 		})
 	}
