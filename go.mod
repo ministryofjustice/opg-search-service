@@ -1,4 +1,4 @@
-module opg-search-service
+module github.com/ministryofjustice/opg-search-service
 
 go 1.16
 

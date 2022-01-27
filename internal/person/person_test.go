@@ -1,9 +1,9 @@
 package person
 
 import (
-	"opg-search-service/response"
 	"testing"
 
+	"github.com/ministryofjustice/opg-search-service/internal/response"
 	"github.com/stretchr/testify/assert"
 )
 

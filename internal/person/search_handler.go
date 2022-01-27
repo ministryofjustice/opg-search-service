@@ -3,10 +3,10 @@ package person
 import (
 	"encoding/json"
 	"net/http"
-	"opg-search-service/elasticsearch"
-	"opg-search-service/response"
 	"time"
 
+	"github.com/ministryofjustice/opg-search-service/internal/elasticsearch"
+	"github.com/ministryofjustice/opg-search-service/internal/response"
 	"github.com/sirupsen/logrus"
 )
 

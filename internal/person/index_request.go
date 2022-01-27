@@ -1,7 +1,7 @@
 package person
 
 import (
-	"opg-search-service/response"
+	"github.com/ministryofjustice/opg-search-service/internal/response"
 )
 
 type IndexRequest struct {

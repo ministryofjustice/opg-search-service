@@ -1,4 +1,4 @@
-package cli
+package cmd
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v4"
+	"github.com/ministryofjustice/opg-search-service/internal/elasticsearch"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 )
@@ -15,7 +16,7 @@ func TestIndex(t *testing.T) {
 	ctx := context.Background()
 
 	l, hook := test.NewNullLogger()
-	command := NewIndex(l, nil, nil, "test-index")
+	command := NewIndex(l, &elasticsearch.MockESClient{}, nil, "test-index")
 
 	os.Setenv("SEARCH_SERVICE_DB_PASS", "searchservice")
 	os.Setenv("SEARCH_SERVICE_DB_USER", "searchservice")
@@ -31,7 +32,7 @@ func TestIndex(t *testing.T) {
 	}
 	defer conn.Close(ctx)
 
-	schemaSql, _ := os.ReadFile("../testdata/schema.sql")
+	schemaSql, _ := os.ReadFile("./testdata/schema.sql")
 
 	_, err = conn.Exec(ctx, string(schemaSql))
 	if !assert.Nil(err) {

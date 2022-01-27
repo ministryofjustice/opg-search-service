@@ -3,11 +3,11 @@ package index
 import (
 	"context"
 	"fmt"
-	"opg-search-service/person"
 	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v4"
+	"github.com/ministryofjustice/opg-search-service/internal/person"
 )
 
 func (r *Indexer) getIDRange(ctx context.Context) (min int, max int, err error) {

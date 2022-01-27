@@ -2,11 +2,11 @@ package index
 
 import (
 	"context"
-	"opg-search-service/elasticsearch"
-	"opg-search-service/person"
 	"time"
 
 	"github.com/jackc/pgx/v4"
+	"github.com/ministryofjustice/opg-search-service/internal/elasticsearch"
+	"github.com/ministryofjustice/opg-search-service/internal/person"
 )
 
 type BulkClient interface {

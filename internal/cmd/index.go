@@ -1,15 +1,15 @@
-package cli
+package cmd
 
 import (
 	"context"
 	"errors"
 	"flag"
 	"fmt"
-	"opg-search-service/internal/cmd/index"
 	"os"
 	"time"
 
 	"github.com/jackc/pgx/v4"
+	"github.com/ministryofjustice/opg-search-service/internal/cmd/index"
 	"github.com/sirupsen/logrus"
 )
 

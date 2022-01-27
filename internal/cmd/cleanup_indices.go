@@ -1,10 +1,10 @@
-package cli
+package cmd
 
 import (
 	"flag"
 	"fmt"
-	"opg-search-service/person"
 
+	"github.com/ministryofjustice/opg-search-service/internal/person"
 	"github.com/sirupsen/logrus"
 )
 

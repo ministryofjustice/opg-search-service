@@ -2,12 +2,12 @@ package index
 
 import (
 	"context"
-	"opg-search-service/person"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v4"
+	"github.com/ministryofjustice/opg-search-service/internal/person"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -25,7 +25,7 @@ func TestGetIDRange(t *testing.T) {
 	}
 	defer conn.Close(ctx)
 
-	schemaSql, _ := os.ReadFile("../../../testdata/schema.sql")
+	schemaSql, _ := os.ReadFile("../testdata/schema.sql")
 
 	_, err = conn.Exec(ctx, string(schemaSql))
 	if !assert.Nil(err) {
@@ -60,7 +60,7 @@ func TestQueryByID(t *testing.T) {
 	}
 	defer conn.Close(ctx)
 
-	schemaSql, _ := os.ReadFile("../../../testdata/schema.sql")
+	schemaSql, _ := os.ReadFile("../testdata/schema.sql")
 
 	_, err = conn.Exec(ctx, string(schemaSql))
 	if !assert.Nil(err) {
@@ -171,7 +171,7 @@ func TestQueryFromDate(t *testing.T) {
 	}
 	defer conn.Close(ctx)
 
-	schemaSql, _ := os.ReadFile("../../../testdata/schema.sql")
+	schemaSql, _ := os.ReadFile("../testdata/schema.sql")
 
 	_, err = conn.Exec(ctx, string(schemaSql))
 	if !assert.Nil(err) {
