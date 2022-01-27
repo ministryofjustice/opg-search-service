@@ -14,8 +14,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -32,11 +30,7 @@ type IndexHandlerTestSuite struct {
 func (suite *IndexHandlerTestSuite) SetupTest() {
 	suite.logger, _ = test.NewNullLogger()
 	suite.esClient = new(elasticsearch.MockESClient)
-	suite.handler = &IndexHandler{
-		logger:    suite.logger,
-		client:    suite.esClient,
-		indexName: "person-test",
-	}
+	suite.handler = NewIndexHandler(suite.logger, suite.esClient, []string{"person-test", "person-new"})
 	suite.router = mux.NewRouter().Methods(http.MethodPost).Subrouter()
 	suite.router.Handle("/persons", suite.handler)
 	suite.recorder = httptest.NewRecorder()
@@ -96,34 +90,30 @@ func (suite *IndexHandlerTestSuite) Test_InvalidIndexRequestBody() {
 func (suite *IndexHandlerTestSuite) Test_Index() {
 	reqBody := `{"persons":[{"id":13},{"id":14}]}`
 
-	esCall := suite.esClient.On("DoBulk", mock.AnythingOfType("*elasticsearch.BulkOp"))
-	esCall.RunFn = func(args mock.Arguments) {
-		actual := args[0].(*elasticsearch.BulkOp)
+	var id1, id2 int64 = 13, 14
 
-		var id1, id2 int64 = 13, 14
+	firstOp := elasticsearch.NewBulkOp("person-test")
+	firstOp.Index(13, Person{ID: &id1})
+	firstOp.Index(14, Person{ID: &id2})
+	secondOp := elasticsearch.NewBulkOp("person-new")
+	secondOp.Index(13, Person{ID: &id1})
+	secondOp.Index(14, Person{ID: &id2})
 
-		expected := elasticsearch.NewBulkOp("person-test")
-		expected.Index(13, Person{ID: &id1})
-		expected.Index(14, Person{ID: &id2})
-		suite.Equal(expected, actual)
-	}
-	esCall.Return(elasticsearch.BulkResult{Successful: 2, Failed: 1}, errors.New("hmm")).Twice()
+	suite.esClient.
+		On("DoBulk", firstOp).
+		Return(elasticsearch.BulkResult{Successful: 2, Failed: 1}, errors.New("hmm")).
+		Once()
+	suite.esClient.
+		On("DoBulk", secondOp).
+		Return(elasticsearch.BulkResult{Successful: 2, Failed: 1}, errors.New("hey")).
+		Once()
 
 	suite.ServeRequest(http.MethodPost, "/persons", reqBody)
 
 	suite.Equal(http.StatusAccepted, suite.RespCode())
-	suite.Equal(`{"successful":2,"failed":1,"errors":["hmm"]}`, suite.RespBody())
+	suite.Equal(`{"successful":4,"failed":2,"errors":["hmm","hey"]}`, suite.RespBody())
 }
 
 func TestIndexHandler(t *testing.T) {
 	suite.Run(t, new(IndexHandlerTestSuite))
-}
-
-func TestNewIndexHandler(t *testing.T) {
-	l, _ := test.NewNullLogger()
-
-	ih, err := NewIndexHandler(l, "i")
-
-	assert.Nil(t, err)
-	assert.IsType(t, &IndexHandler{}, ih)
 }
