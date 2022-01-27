@@ -1,11 +1,11 @@
-package cli
+package cmd
 
 import (
 	"errors"
-	"opg-search-service/elasticsearch"
-	"opg-search-service/person"
 	"testing"
 
+	"github.com/ministryofjustice/opg-search-service/internal/elasticsearch"
+	"github.com/ministryofjustice/opg-search-service/internal/person"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -7,10 +7,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"opg-search-service/response"
 	"strings"
 
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/ministryofjustice/opg-search-service/internal/response"
 	"github.com/sirupsen/logrus"
 )
 
