@@ -30,6 +30,24 @@ End-to-end tests are executed as part of the `make test` command.
 
 Generally they sit in `main_test.go`. The test suite will start up the search service in a go-routine to run tests against it, and therefore all ENV variables required for configuring the service have to be set prior to running the test suite. This is all automated with the `make test` command.
 
+## Changing the index definition
+
+The index config is defined in [person/person.go][]. When the definition is
+changed:
+- the service will create a new index
+- normal indexing operations will then act on _both_ indices
+- `index` command operation will act on the new index only
+- search operations will contine to use the old index (because the alias will
+  not be changed automatically)
+
+When the new index has been filled it can be activated by using the
+`update-alias` command. This takes a `-set` flag if for some reason you need to
+switch the alias back.
+
+Once you are satisfied that everything is working correctly the old index can be
+removed by using the `cleanup-indices` command. Run with `-explain` first to
+show the indices to be deleted if you want.
+
 ## Swagger docs
 
 Run `make docs` or `make swagger-up` to view swagger docs at http://localhost:8383/

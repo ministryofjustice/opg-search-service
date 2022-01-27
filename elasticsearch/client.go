@@ -21,6 +21,7 @@ const maxPayloadSize = 10485760 // bytes
 const backoff = 6 * time.Second
 const maxRetries = 10
 
+var ErrAliasMissing = errors.New("alias is missing")
 var ErrOpTooLarge = errors.New("BulkOp exceeds maximum payload size")
 var errTooManyRequests = errors.New("too many requests")
 
@@ -80,7 +81,7 @@ func NewClient(httpClient HTTPClient, logger *logrus.Logger) (*Client, error) {
 }
 
 func (c *Client) doRequest(method, endpoint string, body io.ReadSeeker, contentType string) (*http.Response, error) {
-	req, err := http.NewRequest(method, endpoint, body)
+	req, err := http.NewRequest(method, c.domain+"/"+endpoint, body)
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +180,7 @@ func (c *Client) DoBulk(op *BulkOp) (BulkResult, error) {
 func (c *Client) doBulkOp(op *BulkOp) (BulkResult, error) {
 	body := bytes.NewReader(op.buf.Bytes())
 
-	endpoint := fmt.Sprintf("%s/%s/_bulk", c.domain, op.index)
+	endpoint := fmt.Sprintf("%s/_bulk", op.index)
 	resp, err := c.doRequest(http.MethodPost, endpoint, body, "application/json")
 	if err != nil {
 		c.logger.Error(err.Error())
@@ -221,7 +222,7 @@ func (c *Client) doBulkOp(op *BulkOp) (BulkResult, error) {
 
 // returns an array of JSON encoded results
 func (c *Client) Search(indexName string, requestBody map[string]interface{}) (*SearchResult, error) {
-	endpoint := c.domain + "/" + indexName + "/_search"
+	endpoint := indexName + "/_search"
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(requestBody); err != nil {
@@ -284,7 +285,7 @@ func (c *Client) CreateIndex(name string, config []byte, force bool) error {
 
 		c.logger.Printf("changes are forced, deleting old index '%s'", name)
 
-		if err := c.deleteIndex(name); err != nil {
+		if err := c.DeleteIndex(name); err != nil {
 			return err
 		}
 
@@ -302,10 +303,7 @@ func (c *Client) CreateIndex(name string, config []byte, force bool) error {
 func (c *Client) IndexExists(name string) (bool, error) {
 	c.logger.Printf("Checking index '%s' exists", name)
 
-	endpoint := c.domain + "/" + name
-
-	body := bytes.NewReader([]byte(""))
-	resp, err := c.doRequest(http.MethodHead, endpoint, body, "")
+	resp, err := c.doRequest(http.MethodHead, name, nil, "")
 	if err != nil {
 		return false, err
 	}
@@ -324,9 +322,7 @@ func (c *Client) IndexExists(name string) (bool, error) {
 func (c *Client) createIndex(name string, config []byte) error {
 	c.logger.Printf("Creating index '%s'", name)
 
-	endpoint := c.domain + "/" + name
-
-	resp, err := c.doRequest(http.MethodPut, endpoint, bytes.NewReader(config), "application/json")
+	resp, err := c.doRequest(http.MethodPut, name, bytes.NewReader(config), "application/json")
 	if err != nil {
 		return err
 	}
@@ -340,16 +336,124 @@ func (c *Client) createIndex(name string, config []byte) error {
 	return nil
 }
 
-func (c *Client) deleteIndex(name string) error {
+func (c *Client) DeleteIndex(name string) error {
 	c.logger.Printf("Deleting index '%s'", name)
 
-	endpoint := c.domain + "/" + name
-
-	resp, err := c.doRequest(http.MethodDelete, endpoint, nil, "application/json")
+	resp, err := c.doRequest(http.MethodDelete, name, nil, "application/json")
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
 
 	return nil
+}
+
+func (c *Client) ResolveAlias(name string) (string, error) {
+	resp, err := c.doRequest(http.MethodGet, "/_alias/"+name, nil, "")
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return "", ErrAliasMissing
+	}
+
+	var v map[string]struct{}
+	if err := json.NewDecoder(resp.Body).Decode(&v); err != nil {
+		return "", err
+	}
+
+	for k := range v {
+		return k, nil
+	}
+
+	return "", ErrAliasMissing
+}
+
+func (c *Client) CreateAlias(alias, index string) error {
+	resp, err := c.doRequest(http.MethodPut, fmt.Sprintf("%s/_alias/%s", index, alias), nil, "")
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	var v struct {
+		Acknowledged bool `json:"acknowledged"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&v); err != nil {
+		return err
+	}
+
+	if !v.Acknowledged {
+		return fmt.Errorf("problem creating alias '%s' for index '%s'", alias, index)
+	}
+
+	c.logger.Printf("alias '%s' for index '%s' created", alias, index)
+	return nil
+}
+
+type aliasRequest struct {
+	Actions map[string]aliasRequestAction `json:"actions"`
+}
+
+type aliasRequestAction struct {
+	Index string `json:"index,omitempty"`
+	Alias string `json:"alias,omitempty"`
+}
+
+func (c *Client) UpdateAlias(alias, index string) error {
+	request, err := json.Marshal(aliasRequest{
+		Actions: map[string]aliasRequestAction{
+			"remove": {
+				Alias: alias,
+			},
+			"add": {
+				Alias: alias,
+				Index: index,
+			},
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	resp, err := c.doRequest(http.MethodPost, "_aliases", bytes.NewReader(request), "application/json")
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	var v struct {
+		Acknowledged bool `json:"acknowledged"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&v); err != nil {
+		return err
+	}
+
+	if !v.Acknowledged {
+		return fmt.Errorf("problem updating alias '%s' for index '%s'", alias, index)
+	}
+
+	return nil
+}
+
+func (c *Client) Indices(term string) ([]string, error) {
+	resp, err := c.doRequest(http.MethodGet, term, nil, "")
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var v map[string]struct{}
+	if err := json.NewDecoder(resp.Body).Decode(&v); err != nil {
+		return nil, err
+	}
+
+	var ks []string
+	for k := range v {
+		ks = append(ks, k)
+	}
+
+	return ks, nil
 }

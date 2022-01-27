@@ -18,32 +18,48 @@ import (
 )
 
 func main() {
-	// Create a Logger
 	l := logrus.New()
 	l.SetFormatter(&logrus.JSONFormatter{})
 
-	personName, personConfig, err := person.IndexConfig()
+	personIndex, personConfig, err := person.IndexConfig()
 	if err != nil {
 		l.Fatal(err)
 	}
 
 	secretsCache := cache.New()
 
-	cli.Run(l,
-		cli.NewHealthCheck(l),
-		cli.NewCreateIndices(l, personName, personConfig),
-		cli.NewIndex(l, secretsCache, personName),
-	)
-
-	// Create persons index if it doesn't exist
 	esClient, err := elasticsearch.NewClient(&http.Client{}, l)
 	if err != nil {
 		l.Fatal(err)
 	}
 
-	if err := esClient.CreateIndex(personName, personConfig, false); err != nil {
+	cli.Run(l,
+		cli.NewHealthCheck(l),
+		cli.NewCreateIndices(esClient, personIndex, personConfig),
+		cli.NewIndex(l, esClient, secretsCache, personIndex),
+		cli.NewUpdateAlias(l, esClient, personIndex),
+		cli.NewCleanupIndices(l, esClient, personIndex),
+	)
+
+	if err := esClient.CreateIndex(personIndex, personConfig, false); err != nil {
 		l.Fatal(err)
 	}
+
+	aliasedIndex, err := esClient.ResolveAlias(person.AliasName)
+	if err == elasticsearch.ErrAliasMissing {
+		if err := esClient.CreateAlias(person.AliasName, personIndex); err != nil {
+			l.Fatal(err)
+		}
+	} else if err != nil {
+		l.Fatal(err)
+	}
+
+	indices := []string{personIndex}
+	if aliasedIndex != personIndex {
+		indices = append(indices, personIndex)
+	}
+
+	l.Println("indexing to", indices)
 
 	// Create new serveMux
 	sm := mux.NewRouter().PathPrefix(os.Getenv("PATH_PREFIX")).Subrouter()
@@ -65,10 +81,7 @@ func main() {
 	postRouter.Use(middleware.JwtVerify(secretsCache, l))
 
 	// Register protected handlers
-	iph, err := person.NewIndexHandler(l, personName)
-	if err != nil {
-		l.Fatal(err)
-	}
+
 	// swagger:operation POST /persons post-persons
 	// Index one or many Persons
 	// ---
@@ -297,13 +310,9 @@ func main() {
 	//     description: Not found
 	//   '500':
 	//     description: Unexpected error occurred
-	postRouter.Handle("/persons", iph)
+	postRouter.Handle("/persons", person.NewIndexHandler(l, esClient, indices))
 
-	sph, err := person.NewSearchHandler(l, personName)
-	if err != nil {
-		l.Fatal(err)
-	}
-	postRouter.Handle("/persons/search", sph)
+	postRouter.Handle("/persons/search", person.NewSearchHandler(l, esClient))
 
 	w := l.Writer()
 	defer w.Close()
