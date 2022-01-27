@@ -3,7 +3,6 @@ package person
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"opg-search-service/elasticsearch"
@@ -18,23 +17,17 @@ type IndexClient interface {
 }
 
 type IndexHandler struct {
-	logger    *logrus.Logger
-	client    IndexClient
-	indexName string
+	logger  *logrus.Logger
+	client  IndexClient
+	indices []string
 }
 
-func NewIndexHandler(logger *logrus.Logger, indexName string) (*IndexHandler, error) {
-	client, err := elasticsearch.NewClient(&http.Client{}, logger)
-	if err != nil {
-		logger.Println(err)
-		return nil, errors.New("unable to create a new Elasticsearch client")
-	}
-
+func NewIndexHandler(logger *logrus.Logger, client IndexClient, indices []string) *IndexHandler {
 	return &IndexHandler{
-		logger:    logger,
-		client:    client,
-		indexName: indexName,
-	}, nil
+		logger:  logger,
+		client:  client,
+		indices: indices,
+	}
 }
 
 func (i *IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -67,8 +60,10 @@ func (i *IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	response := &indexResponse{}
 
-	if err := i.doIndex(i.indexName, response, req.Persons); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	for _, index := range i.indices {
+		if err := i.doIndex(index, response, req.Persons); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		}
 	}
 
 	jsonResp, _ := json.Marshal(response)

@@ -16,7 +16,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
@@ -34,11 +33,7 @@ type SearchHandlerTestSuite struct {
 func (suite *SearchHandlerTestSuite) SetupTest() {
 	suite.logger, _ = test.NewNullLogger()
 	suite.esClient = new(elasticsearch.MockESClient)
-	suite.handler = &SearchHandler{
-		logger:    suite.logger,
-		es:        suite.esClient,
-		indexName: "person-test",
-	}
+	suite.handler = NewSearchHandler(suite.logger, suite.esClient)
 	suite.router = mux.NewRouter().Methods(http.MethodPost).Subrouter()
 	suite.router.Handle("/persons/search", suite.handler)
 	suite.recorder = httptest.NewRecorder()
@@ -118,61 +113,6 @@ func (suite *SearchHandlerTestSuite) Test_ESReturnsUnexpectedError() {
 func (suite *SearchHandlerTestSuite) Test_SearchWithAllParameters() {
 	reqBody := `{"term":"testTerm","from":10,"size":20,"person_types":["type1","type2"]}`
 
-	esCall := suite.esClient.On("Search", "person-test", mock.Anything)
-	esCall.RunFn = func(args mock.Arguments) {
-		indexName := args[0].(string)
-		esReqBody := args[1].(map[string]interface{})
-
-		expectedEsReqBody := map[string]interface{}{
-			"size": 20,
-			"from": 10,
-			"sort": map[string]interface{}{
-				"surname": map[string]string{
-					"order": "asc",
-				},
-			},
-			"query": map[string]interface{}{
-				"bool": map[string]interface{}{
-					"must": map[string]interface{}{
-						"simple_query_string": map[string]interface{}{
-							"query": "testTerm",
-							"fields": []string{
-								"searchable",
-								"caseRecNumber",
-							},
-							"default_operator": "AND",
-						},
-					},
-				},
-			},
-			"aggs": map[string]interface{}{
-				"personType": map[string]interface{}{
-					"terms": map[string]string{
-						"field": "personType",
-					},
-				},
-			},
-			"post_filter": map[string]interface{}{
-				"bool": map[string]interface{}{
-					"should": []interface{}{
-						map[string]interface{}{
-							"term": map[string]string{
-								"personType": "type1",
-							},
-						},
-						map[string]interface{}{
-							"term": map[string]string{
-								"personType": "type2",
-							},
-						},
-					},
-				},
-			},
-		}
-		suite.Equal(expectedEsReqBody, esReqBody)
-		suite.IsType("person", indexName)
-	}
-
 	result := &elasticsearch.SearchResult{
 		Hits: []json.RawMessage{
 			[]byte(`{"id":10,"firstname":"Test1","surname":"Test1"}`),
@@ -188,7 +128,56 @@ func (suite *SearchHandlerTestSuite) Test_SearchWithAllParameters() {
 		TotalExact: true,
 	}
 
-	esCall.Return(result, nil)
+	suite.esClient.
+		On("Search", AliasName, mock.MatchedBy(func(req map[string]interface{}) bool {
+			return suite.Equal(map[string]interface{}{
+				"size": 20,
+				"from": 10,
+				"sort": map[string]interface{}{
+					"surname": map[string]string{
+						"order": "asc",
+					},
+				},
+				"query": map[string]interface{}{
+					"bool": map[string]interface{}{
+						"must": map[string]interface{}{
+							"simple_query_string": map[string]interface{}{
+								"query": "testTerm",
+								"fields": []string{
+									"searchable",
+									"caseRecNumber",
+								},
+								"default_operator": "AND",
+							},
+						},
+					},
+				},
+				"aggs": map[string]interface{}{
+					"personType": map[string]interface{}{
+						"terms": map[string]string{
+							"field": "personType",
+						},
+					},
+				},
+				"post_filter": map[string]interface{}{
+					"bool": map[string]interface{}{
+						"should": []interface{}{
+							map[string]interface{}{
+								"term": map[string]string{
+									"personType": "type1",
+								},
+							},
+							map[string]interface{}{
+								"term": map[string]string{
+									"personType": "type2",
+								},
+							},
+						},
+					},
+				},
+			}, req)
+		})).
+		Return(result, nil)
 
 	suite.ServeRequest(http.MethodPost, "/persons/search", reqBody)
 
@@ -208,13 +197,4 @@ func (suite *SearchHandlerTestSuite) Test_SearchWithAllParameters() {
 
 func TestSearchHandler(t *testing.T) {
 	suite.Run(t, new(SearchHandlerTestSuite))
-}
-
-func TestNewSearchHandler(t *testing.T) {
-	l, _ := test.NewNullLogger()
-
-	sh, err := NewSearchHandler(l, "person-test")
-
-	assert.Nil(t, err)
-	assert.IsType(t, &SearchHandler{}, sh)
 }
