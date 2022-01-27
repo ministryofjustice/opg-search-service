@@ -1,9 +1,9 @@
-package cli
+package cmd
 
 import (
-	"opg-search-service/person"
 	"testing"
 
+	"github.com/ministryofjustice/opg-search-service/internal/person"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

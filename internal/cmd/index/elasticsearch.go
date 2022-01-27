@@ -3,8 +3,9 @@ package index
 import (
 	"context"
 	"fmt"
-	"opg-search-service/elasticsearch"
-	"opg-search-service/person"
+
+	"github.com/ministryofjustice/opg-search-service/internal/elasticsearch"
+	"github.com/ministryofjustice/opg-search-service/internal/person"
 )
 
 func (r *Indexer) index(ctx context.Context, persons <-chan person.Person) (*Result, error) {

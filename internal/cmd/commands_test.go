@@ -1,4 +1,4 @@
-package cli
+package cmd
 
 import (
 	"errors"
@@ -40,7 +40,7 @@ func TestCommandsRun(t *testing.T) {
 	os.Args = []string{"search-service", "2"}
 	Run(l, cmd1, cmd2)
 
-	assert.Contains(t, "Running command: *cli.MockCommand", hook.LastEntry().Message)
+	assert.Contains(t, "Running command: *cmd.MockCommand", hook.LastEntry().Message)
 	assert.Equal(t, 0, exitCode)
 }
 

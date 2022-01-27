@@ -8,14 +8,14 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"opg-search-service/elasticsearch"
-	"opg-search-service/person"
-	"opg-search-service/response"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/ministryofjustice/opg-search-service/internal/elasticsearch"
+	"github.com/ministryofjustice/opg-search-service/internal/person"
+	"github.com/ministryofjustice/opg-search-service/internal/response"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/suite"
 )

@@ -4,7 +4,8 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"opg-search-service/response"
+
+	"github.com/ministryofjustice/opg-search-service/internal/response"
 )
 
 const AliasName = "person"

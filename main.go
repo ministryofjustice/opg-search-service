@@ -4,16 +4,16 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"opg-search-service/cache"
-	"opg-search-service/cli"
-	"opg-search-service/elasticsearch"
-	"opg-search-service/middleware"
-	"opg-search-service/person"
 	"os"
 	"os/signal"
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/ministryofjustice/opg-search-service/internal/cache"
+	"github.com/ministryofjustice/opg-search-service/internal/cmd"
+	"github.com/ministryofjustice/opg-search-service/internal/elasticsearch"
+	"github.com/ministryofjustice/opg-search-service/internal/middleware"
+	"github.com/ministryofjustice/opg-search-service/internal/person"
 	"github.com/sirupsen/logrus"
 )
 
@@ -33,12 +33,12 @@ func main() {
 		l.Fatal(err)
 	}
 
-	cli.Run(l,
-		cli.NewHealthCheck(l),
-		cli.NewCreateIndices(esClient, personIndex, personConfig),
-		cli.NewIndex(l, esClient, secretsCache, personIndex),
-		cli.NewUpdateAlias(l, esClient, personIndex),
-		cli.NewCleanupIndices(l, esClient, personIndex),
+	cmd.Run(l,
+		cmd.NewHealthCheck(l),
+		cmd.NewCreateIndices(esClient, personIndex, personConfig),
+		cmd.NewIndex(l, esClient, secretsCache, personIndex),
+		cmd.NewUpdateAlias(l, esClient, personIndex),
+		cmd.NewCleanupIndices(l, esClient, personIndex),
 	)
 
 	if err := esClient.CreateIndex(personIndex, personConfig, false); err != nil {

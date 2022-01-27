@@ -1,9 +1,10 @@
 package person
 
 import (
-	"github.com/stretchr/testify/assert"
-	"opg-search-service/response"
 	"testing"
+
+	"github.com/ministryofjustice/opg-search-service/internal/response"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestIndexRequest_Validate(t *testing.T) {
