@@ -5,8 +5,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"net/http"
-	"opg-search-service/elasticsearch"
 	"opg-search-service/internal/cmd/index"
 	"os"
 	"time"
@@ -26,12 +24,7 @@ type indexCommand struct {
 	indexName string
 }
 
-func NewIndex(logger *logrus.Logger, secrets Secrets, indexName string) *indexCommand {
-	esClient, err := elasticsearch.NewClient(&http.Client{}, logger)
-	if err != nil {
-		logger.Fatal(err)
-	}
-
+func NewIndex(logger *logrus.Logger, esClient index.BulkClient, secrets Secrets, indexName string) *indexCommand {
 	return &indexCommand{
 		logger:    logger,
 		esClient:  esClient,
