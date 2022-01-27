@@ -38,7 +38,7 @@ func TestHealthCheckRun(t *testing.T) {
 				w.WriteHeader(tc.responseCode)
 			}))
 
-			hc := &healthCheck{
+			hc := &healthCheckCommand{
 				logger:   l,
 				checkUrl: s.URL,
 			}

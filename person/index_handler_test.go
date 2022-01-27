@@ -14,7 +14,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
@@ -32,11 +31,7 @@ type IndexHandlerTestSuite struct {
 func (suite *IndexHandlerTestSuite) SetupTest() {
 	suite.logger, _ = test.NewNullLogger()
 	suite.esClient = new(elasticsearch.MockESClient)
-	suite.handler = &IndexHandler{
-		logger:    suite.logger,
-		client:    suite.esClient,
-		indexName: "person-test",
-	}
+	suite.handler = NewIndexHandler(suite.logger, suite.esClient, []string{"person-test"})
 	suite.router = mux.NewRouter().Methods(http.MethodPost).Subrouter()
 	suite.router.Handle("/persons", suite.handler)
 	suite.recorder = httptest.NewRecorder()
@@ -117,13 +112,4 @@ func (suite *IndexHandlerTestSuite) Test_Index() {
 
 func TestIndexHandler(t *testing.T) {
 	suite.Run(t, new(IndexHandlerTestSuite))
-}
-
-func TestNewIndexHandler(t *testing.T) {
-	l, _ := test.NewNullLogger()
-
-	ih, err := NewIndexHandler(l, "i")
-
-	assert.Nil(t, err)
-	assert.IsType(t, &IndexHandler{}, ih)
 }

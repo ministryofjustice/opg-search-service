@@ -7,6 +7,8 @@ import (
 	"opg-search-service/response"
 )
 
+const AliasName = "person"
+
 type Person struct {
 	ID               *int64              `json:"id"`
 	UID              string              `json:"uId"`
@@ -212,5 +214,5 @@ func IndexConfig() (name string, config []byte, err error) {
 
 	sum := sha256.Sum256(data)
 
-	return fmt.Sprintf("person_%x", sum[:8]), data, err
+	return fmt.Sprintf("%s_%x", AliasName, sum[:8]), data, err
 }
