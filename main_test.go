@@ -138,7 +138,7 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
 
 	data, _ := ioutil.ReadAll(resp.Body)
 
-	suite.Equal(`{"successful":2,"failed":0}`, string(data))
+	suite.Equal(`{"successful":4,"failed":0}`, string(data))
 
 	testCases := []struct {
 		scenario         string
