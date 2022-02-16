@@ -26,6 +26,11 @@ func main() {
 		l.Fatal(err)
 	}
 
+	firmIndex, firmConfig, err := person.IndexConfigFirm()
+	if err != nil {
+		l.Fatal(err)
+	}
+
 	secretsCache := cache.New()
 
 	esClient, err := elasticsearch.NewClient(&http.Client{}, l)
@@ -39,6 +44,10 @@ func main() {
 		cmd.NewIndex(l, esClient, secretsCache, personIndex),
 		cmd.NewUpdateAlias(l, esClient, personIndex),
 		cmd.NewCleanupIndices(l, esClient, personIndex),
+		cmd.NewCreateIndices(esClient, firmIndex, firmConfig),
+		cmd.NewIndex(l, esClient, secretsCache, firmIndex),
+		cmd.NewUpdateAlias(l, esClient, firmIndex),
+		cmd.NewCleanupIndices(l, esClient, firmIndex),
 	)
 
 	if err := esClient.CreateIndex(personIndex, personConfig, false); err != nil {
@@ -61,6 +70,28 @@ func main() {
 	}
 
 	l.Println("indexing to", indices)
+
+	//firm specific
+	if err := esClient.CreateIndex(firmIndex, firmConfig, false); err != nil {
+		l.Fatal(err)
+	}
+
+	aliasedIndexFirm, err := esClient.ResolveAlias(person.AliasName)
+	if err == elasticsearch.ErrAliasMissing {
+		if err := esClient.CreateAlias(person.AliasName, firmIndex); err != nil {
+			l.Fatal(err)
+		}
+		aliasedIndexFirm = firmIndex
+	} else if err != nil {
+		l.Fatal(err)
+	}
+
+	indicesFirm := []string{person.AliasName}
+	if aliasedIndexFirm != firmIndex {
+		indicesFirm = append(indicesFirm, firmIndex)
+	}
+
+	l.Println("indexing to", indicesFirm)
 
 	// Create new serveMux
 	sm := mux.NewRouter().PathPrefix(os.Getenv("PATH_PREFIX")).Subrouter()
@@ -314,6 +345,8 @@ func main() {
 	postRouter.Handle("/persons", person.NewIndexHandler(l, esClient, indices))
 
 	postRouter.Handle("/persons/search", person.NewSearchHandler(l, esClient))
+
+	postRouter.Handle("/firms", person.NewIndexHandler(l, esClient, indices))
 
 	w := l.Writer()
 	defer w.Close()
