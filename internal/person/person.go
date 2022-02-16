@@ -114,36 +114,29 @@ func IndexConfig() (name string, config []byte, err error) {
 					"type":     "text",
 					"analyzer": "whitespace",
 					"copy_to":  "searchable",
-					"boost":    4.0,
 				},
 				"email": map[string]interface{}{
 					"type":  "text",
-					"boost": 4.0,
 				},
 				"firstname": map[string]interface{}{
 					"type":    "text",
 					"copy_to": "searchable",
-					"boost":   4.0,
 				},
 				"middlenames": map[string]interface{}{
 					"type":    "text",
 					"copy_to": "searchable",
-					"boost":   4.0,
 				},
 				"surname": map[string]interface{}{
 					"type":    "keyword",
 					"copy_to": "searchable",
-					"boost":   4.0,
 				},
 				"companyName": map[string]interface{}{
 					"type":    "text",
 					"copy_to": "searchable",
-					"boost":   4.0,
 				},
 				"className": map[string]interface{}{
 					"type":    "text",
 					"copy_to": "searchable",
-					"boost":   4.0,
 				},
 				"phoneNumbers": map[string]interface{}{
 					"properties": map[string]interface{}{
@@ -158,7 +151,6 @@ func IndexConfig() (name string, config []byte, err error) {
 						"addressLines": map[string]interface{}{
 							"type":    "text",
 							"copy_to": "searchable",
-							"boost":   4.0,
 						},
 						"postcode": map[string]interface{}{
 							"type":    "keyword",
@@ -202,7 +194,6 @@ func IndexConfig() (name string, config []byte, err error) {
 				"organisationName": map[string]interface{}{
 					"type":    "text",
 					"copy_to": "searchable",
-					"boost":   4.0,
 				},
 			},
 		},
