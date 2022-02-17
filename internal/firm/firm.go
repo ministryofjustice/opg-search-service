@@ -1,4 +1,4 @@
-package person
+package firm
 
 import (
 	"crypto/sha256"
@@ -8,13 +8,16 @@ import (
 	"github.com/ministryofjustice/opg-search-service/internal/response"
 )
 
+const AliasName = "firm"
+
 type Firm struct {
-	ID               *int64              `json:"id"`
-	Persontype       string              `json:"personType"`
-	Email            string              `json:"email"`
-	FirmName		 string              `json:"firmName"`
-	Addresses        []FirmAddress     	 `json:"addresses"`
-	Phonenumbers     []FirmPhoneNumber   `json:"phoneNumbers"`
+	ID           *int64            `json:"id"`
+	Persontype   string            `json:"personType"`
+	Email        string            `json:"email"`
+	FirmName     string            `json:"firmName"`
+	FirmNumber   int64             `json:"firmNumber"`
+	Addresses    []FirmAddress     `json:"addresses"`
+	Phonenumbers []FirmPhoneNumber `json:"phoneNumbers"`
 }
 
 type FirmAddress struct {
@@ -76,9 +79,13 @@ func IndexConfigFirm() (name string, config []byte, err error) {
 					"type": "keyword",
 				},
 				"email": map[string]interface{}{
-					"type":  "text",
+					"type": "text",
 				},
 				"firmName": map[string]interface{}{
+					"type":    "keyword",
+					"copy_to": "searchable",
+				},
+				"firmNumber": map[string]interface{}{
 					"type":    "text",
 					"copy_to": "searchable",
 				},

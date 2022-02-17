@@ -1,6 +1,13 @@
 .PHONY: test test-up test-run test-down build go-test gosec swagger-generate swagger-up swagger-down docs
 test: test-up test-run test-down
 
+build-search:
+		docker-compose --project-name search-service up -d localstack
+    	docker-compose --project-name search-service run --rm wait-for-it -address=localstack:4571 --timeout=30
+    	docker-compose --project-name search-service up -d postgres
+    	docker-compose --project-name search-service run --rm wait-for-it -address=postgres:5432 --timeout=30
+    	docker-compose --project-name search-service up
+
 test-up:
 	docker-compose --project-name search-service-test up -d localstack
 	docker-compose --project-name search-service-test run --rm wait-for-it -address=localstack:4571 --timeout=30

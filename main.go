@@ -14,6 +14,7 @@ import (
 	"github.com/ministryofjustice/opg-search-service/internal/elasticsearch"
 	"github.com/ministryofjustice/opg-search-service/internal/middleware"
 	"github.com/ministryofjustice/opg-search-service/internal/person"
+	"github.com/ministryofjustice/opg-search-service/internal/firm"
 	"github.com/sirupsen/logrus"
 )
 
@@ -26,7 +27,7 @@ func main() {
 		l.Fatal(err)
 	}
 
-	firmIndex, firmConfig, err := person.IndexConfigFirm()
+	firmIndex, firmConfig, err := firm.IndexConfigFirm()
 	if err != nil {
 		l.Fatal(err)
 	}
@@ -76,9 +77,9 @@ func main() {
 		l.Fatal(err)
 	}
 
-	aliasedIndexFirm, err := esClient.ResolveAlias(person.AliasName)
+	aliasedIndexFirm, err := esClient.ResolveAlias(firm.AliasName)
 	if err == elasticsearch.ErrAliasMissing {
-		if err := esClient.CreateAlias(person.AliasName, firmIndex); err != nil {
+		if err := esClient.CreateAlias(firm.AliasName, firmIndex); err != nil {
 			l.Fatal(err)
 		}
 		aliasedIndexFirm = firmIndex
@@ -86,7 +87,7 @@ func main() {
 		l.Fatal(err)
 	}
 
-	indicesFirm := []string{person.AliasName}
+	indicesFirm := []string{firm.AliasName}
 	if aliasedIndexFirm != firmIndex {
 		indicesFirm = append(indicesFirm, firmIndex)
 	}
@@ -346,7 +347,9 @@ func main() {
 
 	postRouter.Handle("/persons/search", person.NewSearchHandler(l, esClient))
 
-	postRouter.Handle("/firms", person.NewIndexHandler(l, esClient, indices))
+	postRouter.Handle("/firms", firm.NewIndexHandler(l, esClient, indices))
+
+	postRouter.Handle("/firms/search", firm.NewSearchHandler(l, esClient))
 
 	w := l.Writer()
 	defer w.Close()
