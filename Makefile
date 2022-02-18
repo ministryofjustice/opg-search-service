@@ -2,11 +2,14 @@
 test: test-up test-run test-down
 
 build-search:
+		docker-compose --project-name search-service down
 		docker-compose --project-name search-service up -d localstack
-    	docker-compose --project-name search-service run --rm wait-for-it -address=localstack:4571 --timeout=30
-    	docker-compose --project-name search-service up -d postgres
-    	docker-compose --project-name search-service run --rm wait-for-it -address=postgres:5432 --timeout=30
-    	docker-compose --project-name search-service up
+		docker-compose --project-name search-service run --rm wait-for-it -address=localstack:4571 --timeout=30
+		docker-compose --project-name search-service up -d postgres
+		docker-compose --project-name search-service run --rm wait-for-it -address=postgres:5432 --timeout=30
+		docker-compose --project-name search-service up -d swagger-ui
+		docker-compose --project-name search-service build search_service
+		docker-compose --project-name search-service up search_service
 
 test-up:
 	docker-compose --project-name search-service-test up -d localstack

@@ -86,7 +86,7 @@ func IndexConfigFirm() (name string, config []byte, err error) {
 					"copy_to": "searchable",
 				},
 				"firmNumber": map[string]interface{}{
-					"type":    "text",
+					"type":    "keyword",
 					"copy_to": "searchable",
 				},
 				"phoneNumbers": map[string]interface{}{
