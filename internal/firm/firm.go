@@ -15,7 +15,7 @@ type Firm struct {
 	Persontype   string            `json:"personType"`
 	Email        string            `json:"email"`
 	FirmName     string            `json:"firmName"`
-	FirmNumber   int64             `json:"firmNumber"`
+	FirmNumber   string            `json:"firmNumber"`
 	Addresses    []FirmAddress     `json:"addresses"`
 	Phonenumbers []FirmPhoneNumber `json:"phoneNumbers"`
 }
@@ -56,25 +56,9 @@ func IndexConfigFirm() (name string, config []byte, err error) {
 			"number_of_shards":   1,
 			"number_of_replicas": 1,
 			"refresh_interval":   "1s",
-			"analysis": map[string]interface{}{
-				"analyzer": map[string]interface{}{
-					"quick_search": map[string]interface{}{
-						"type":      "custom",
-						"tokenizer": "whitespace",
-						"filter": []string{
-							"asciifolding",
-							"lowercase",
-						},
-					},
-				},
-			},
 		},
 		"mappings": map[string]interface{}{
 			"properties": map[string]interface{}{
-				"searchable": map[string]interface{}{
-					"type":     "text",
-					"analyzer": "quick_search",
-				},
 				"personType": map[string]interface{}{
 					"type": "keyword",
 				},
@@ -83,17 +67,14 @@ func IndexConfigFirm() (name string, config []byte, err error) {
 				},
 				"firmName": map[string]interface{}{
 					"type":    "keyword",
-					"copy_to": "searchable",
 				},
 				"firmNumber": map[string]interface{}{
 					"type":    "keyword",
-					"copy_to": "searchable",
 				},
 				"phoneNumbers": map[string]interface{}{
 					"properties": map[string]interface{}{
 						"phoneNumber": map[string]interface{}{
 							"type":    "keyword",
-							"copy_to": "searchable",
 						},
 					},
 				},
@@ -101,11 +82,9 @@ func IndexConfigFirm() (name string, config []byte, err error) {
 					"properties": map[string]interface{}{
 						"addressLines": map[string]interface{}{
 							"type":    "text",
-							"copy_to": "searchable",
 						},
 						"postcode": map[string]interface{}{
 							"type":    "keyword",
-							"copy_to": "searchable",
 						},
 					},
 				},
