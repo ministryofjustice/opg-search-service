@@ -66,13 +66,23 @@ func (i *IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	response := &indexResponse{}
 
+	i.logger.Println("Response")
+	i.logger.Println(response)
+
 	for _, index := range i.indices {
+		i.logger.Println("index in for loop")
+		i.logger.Print(index)
+		i.logger.Println("req.Firms")
+		i.logger.Println(req.Firms)
 		if err := i.doIndex(index, response, req.Firms); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 		}
 	}
 
 	jsonResp, _ := json.Marshal(response)
+	i.logger.Println("jsonResp")
+	i.logger.Println(jsonResp)
+
 
 	w.WriteHeader(http.StatusAccepted)
 
@@ -82,8 +92,10 @@ func (i *IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (i *IndexHandler) doIndex(indexName string, response *indexResponse, firms []Firm) error {
+	i.logger.Println("In the doIndex")
 	op := elasticsearch.NewBulkOp(indexName)
-
+	i.logger.Println("op")
+	i.logger.Println(op)
 	for _, f := range firms {
 		err := op.Index(f.Id(), f)
 

@@ -131,6 +131,7 @@ func NewBulkOp(index string) *BulkOp {
 }
 
 func (op *BulkOp) Index(id int64, v interface{}) error {
+	fmt.Println("in client index")
 	if err := op.enc.Encode(bulkOp{Index: indexOp{ID: strconv.Itoa(int(id))}}); err != nil {
 		return err
 	}

@@ -15,19 +15,19 @@ type Firm struct {
 	Persontype   string            `json:"personType"`
 	Email        string            `json:"email"`
 	FirmName     string            `json:"firmName"`
-	FirmNumber   int64            `json:"firmNumber"`
-	Addresses    []FirmAddress     `json:"addresses"`
-	Phonenumbers []FirmPhoneNumber `json:"phoneNumbers"`
+	FirmNumber   int64             `json:"firmNumber"`
+	//Addresses    []FirmAddress     `json:"addresses"`
+	//Phonenumbers []FirmPhoneNumber `json:"phoneNumbers"`
 }
 
-type FirmAddress struct {
-	Addresslines []string `json:"addressLines"`
-	Postcode     string   `json:"postcode"`
-}
-
-type FirmPhoneNumber struct {
-	Phonenumber string `json:"phoneNumber"`
-}
+//type FirmAddress struct {
+//	Addresslines []string `json:"addressLines"`
+//	Postcode     string   `json:"postcode"`
+//}
+//
+//type FirmPhoneNumber struct {
+//	Phonenumber string `json:"phoneNumber"`
+//}
 
 func (f Firm) Id() int64 {
 	val := int64(0)
@@ -71,23 +71,23 @@ func IndexConfigFirm() (name string, config []byte, err error) {
 				"firmNumber": map[string]interface{}{
 					"type":    "keyword",
 				},
-				"phoneNumbers": map[string]interface{}{
-					"properties": map[string]interface{}{
-						"phoneNumber": map[string]interface{}{
-							"type":    "keyword",
-						},
-					},
-				},
-				"addresses": map[string]interface{}{
-					"properties": map[string]interface{}{
-						"addressLines": map[string]interface{}{
-							"type":    "text",
-						},
-						"postcode": map[string]interface{}{
-							"type":    "keyword",
-						},
-					},
-				},
+				//"phoneNumbers": map[string]interface{}{
+				//	"properties": map[string]interface{}{
+				//		"phoneNumber": map[string]interface{}{
+				//			"type":    "keyword",
+				//		},
+				//	},
+				//},
+				//"addresses": map[string]interface{}{
+				//	"properties": map[string]interface{}{
+				//		"addressLines": map[string]interface{}{
+				//			"type":    "text",
+				//		},
+				//		"postcode": map[string]interface{}{
+				//			"type":    "keyword",
+				//		},
+				//	},
+				//},
 			},
 		},
 	}
