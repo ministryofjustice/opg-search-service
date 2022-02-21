@@ -45,6 +45,12 @@ func (i *IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err := json.Unmarshal(bodyBuf.Bytes(), &req)
+	i.logger.Println("&req")
+	i.logger.Println(&req)
+	i.logger.Println("r.Body")
+	i.logger.Println(r.Body)
+	i.logger.Println("bodyBuf.Bytes()")
+	i.logger.Println(bodyBuf.Bytes())
 	if err != nil {
 		i.logger.Println(err.Error())
 		response.WriteJSONError(w, "request", "Unable to unmarshal JSON request", http.StatusBadRequest)

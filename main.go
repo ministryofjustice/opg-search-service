@@ -38,7 +38,7 @@ func main() {
 	if err != nil {
 		l.Fatal(err)
 	}
-
+	l.Println("kate just in front of cmd run")
 	cmd.Run(l,
 		cmd.NewHealthCheck(l),
 		cmd.NewCreateIndices(esClient, personIndex, personConfig),
