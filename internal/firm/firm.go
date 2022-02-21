@@ -11,23 +11,19 @@ import (
 const AliasName = "firm"
 
 type Firm struct {
-	ID           *int64            `json:"id"`
-	Persontype   string            `json:"personType"`
-	Email        string            `json:"email"`
-	FirmName     string            `json:"firmName"`
-	FirmNumber   int64             `json:"firmNumber"`
-	//Addresses    []FirmAddress     `json:"addresses"`
-	//Phonenumbers []FirmPhoneNumber `json:"phoneNumbers"`
+	ID           *int64 `json:"id"`
+	Persontype   string `json:"personType"`
+	Email        string `json:"email"`
+	FirmName     string `json:"firmName"`
+	FirmNumber   int64  `json:"firmNumber"`
+	AddressLine1 string `json:"addressLine1"`
+	AddressLine2 string `json:"addressLine2"`
+	AddressLine3 string `json:"addressLine3"`
+	Town         string `json:"town"`
+	County       string `json:"county"`
+	Postcode     string `json:"postcode"`
+	Phonenumber  string `json:"phoneNumber"`
 }
-
-//type FirmAddress struct {
-//	Addresslines []string `json:"addressLines"`
-//	Postcode     string   `json:"postcode"`
-//}
-//
-//type FirmPhoneNumber struct {
-//	Phonenumber string `json:"phoneNumber"`
-//}
 
 func (f Firm) Id() int64 {
 	val := int64(0)
@@ -66,28 +62,32 @@ func IndexConfigFirm() (name string, config []byte, err error) {
 					"type": "text",
 				},
 				"firmName": map[string]interface{}{
-					"type":    "keyword",
+					"type": "keyword",
 				},
 				"firmNumber": map[string]interface{}{
-					"type":    "keyword",
+					"type": "keyword",
 				},
-				//"phoneNumbers": map[string]interface{}{
-				//	"properties": map[string]interface{}{
-				//		"phoneNumber": map[string]interface{}{
-				//			"type":    "keyword",
-				//		},
-				//	},
-				//},
-				//"addresses": map[string]interface{}{
-				//	"properties": map[string]interface{}{
-				//		"addressLines": map[string]interface{}{
-				//			"type":    "text",
-				//		},
-				//		"postcode": map[string]interface{}{
-				//			"type":    "keyword",
-				//		},
-				//	},
-				//},
+				"phoneNumber": map[string]interface{}{
+					"type": "keyword",
+				},
+				"addressLine1": map[string]interface{}{
+					"type": "text",
+				},
+				"addressLine2": map[string]interface{}{
+					"type": "text",
+				},
+				"addressLine3": map[string]interface{}{
+					"type": "text",
+				},
+				"town": map[string]interface{}{
+					"type": "text",
+				},
+				"county": map[string]interface{}{
+					"type": "text",
+				},
+				"postcode": map[string]interface{}{
+					"type": "keyword",
+				},
 			},
 		},
 	}
