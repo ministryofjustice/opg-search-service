@@ -12,9 +12,9 @@ import (
 	"github.com/ministryofjustice/opg-search-service/internal/cache"
 	"github.com/ministryofjustice/opg-search-service/internal/cmd"
 	"github.com/ministryofjustice/opg-search-service/internal/elasticsearch"
+	"github.com/ministryofjustice/opg-search-service/internal/firm"
 	"github.com/ministryofjustice/opg-search-service/internal/middleware"
 	"github.com/ministryofjustice/opg-search-service/internal/person"
-	"github.com/ministryofjustice/opg-search-service/internal/firm"
 	"github.com/sirupsen/logrus"
 )
 
@@ -347,7 +347,7 @@ func main() {
 
 	postRouter.Handle("/persons/search", person.NewSearchHandler(l, esClient))
 
-	postRouter.Handle("/firms", firm.NewIndexHandler(l, esClient, indices))
+	postRouter.Handle("/firms", firm.NewIndexHandler(l, esClient, indicesFirm))
 
 	postRouter.Handle("/firms/search", firm.NewSearchHandler(l, esClient))
 
