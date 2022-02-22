@@ -118,7 +118,7 @@ func makeQueryFirm(whereClause string) string {
 	return `SELECT f.id, f.firmname, coalesce(f.email, ''), 
 		coalesce(f.addressline1, ''), coalesce(f.addressline2, ''), coalesce(f.addressline3, ''), 
 		coalesce(f.town, ''), coalesce(f.county, ''), coalesce(f.postcode, ''),
-		coalesce(f.phonenumber, ''), coalesce(f.firmnumber, '')
+		coalesce(f.phonenumber, ''), coalesce(f.firmnumber, null)
 FROM firm f
 WHERE ` + whereClause + `
 ORDER BY f.id`
