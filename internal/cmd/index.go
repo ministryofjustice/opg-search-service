@@ -79,13 +79,23 @@ func (c *indexCommand) Run(args []string) error {
 
 	if !fromTime.IsZero() {
 		c.logger.Printf("indexing by date from=%v batchSize=%d", fromTime, *batchSize)
-		result, err = indexer.FromDate(ctx, fromTime, *batchSize, c.indexName)
+		result, err = indexer.FromDatePerson(ctx, fromTime, *batchSize)
+		//
+		//if c.indexName == "person" {
+		//	result, err = indexer.FromDatePerson(ctx, fromTime, *batchSize)
+		//} else {
+		//	result, err = indexer.FromDateFirm(ctx, fromTime, *batchSize)
+		//}
 	} else if *all {
 		c.logger.Printf("indexing all records batchSize=%d", *batchSize)
-		result, err = indexer.All(ctx, *batchSize)
+		result, err = indexer.All(ctx, *batchSize, c.indexName)
 	} else {
 		c.logger.Printf("indexing by id from=%d to=%d batchSize=%d", *from, *to, *batchSize)
-		result, err = indexer.ByID(ctx, *from, *to, *batchSize)
+		if c.indexName == "person" {
+			result, err = indexer.ByIDPerson(ctx, *from, *to, *batchSize)
+		} else {
+			result, err = indexer.ByIDFirm(ctx, *from, *to, *batchSize)
+		}
 	}
 
 	if err != nil {

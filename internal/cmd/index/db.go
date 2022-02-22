@@ -3,15 +3,28 @@ package index
 import (
 	"context"
 	"fmt"
+	"github.com/ministryofjustice/opg-search-service/internal/firm"
 	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/ministryofjustice/opg-search-service/internal/person"
+	"github.com/sirupsen/logrus"
 )
 
-func (r *Indexer) getIDRange(ctx context.Context) (min int, max int, err error) {
+func (r *Indexer) getIDRangePerson(ctx context.Context) (min int, max int, err error) {
 	err = r.conn.QueryRow(ctx, "SELECT MIN(id), MAX(id) FROM persons").Scan(&min, &max)
+
+	return min, max, err
+}
+
+func (r *Indexer) getIDRangeFirm(ctx context.Context) (min int, max int, err error) {
+	l := logrus.New()
+	l.SetFormatter(&logrus.JSONFormatter{})
+	l.Println("in get range firm function")
+
+	err = r.conn.QueryRow(ctx, "SELECT MIN(id), MAX(id) FROM firm").Scan(&min, &max)
+	l.Println(min, max, err)
 
 	return min, max, err
 }
@@ -37,6 +50,32 @@ func (r *Indexer) queryByID(ctx context.Context, results chan<- person.Person, s
 	return nil
 }
 
+
+func (r *Indexer) queryByIDFirm(ctx context.Context, results chan<- firm.Firm, start, end, batchSize int) error {
+	l := logrus.New()
+	l.SetFormatter(&logrus.JSONFormatter{})
+	l.Println("in query by id firm function")
+	defer func() { close(results) }()
+
+	batch := &batchIter{start: start, end: end, size: batchSize}
+
+	for batch.Next() {
+		r.log.Printf("reading range from db (%d, %d)", batch.From(), batch.To())
+
+		rows, err := r.conn.Query(ctx, makeQueryFirm(`f.id >= $1 AND f.id <= $2`), batch.From(), batch.To())
+		if err != nil {
+			return err
+		}
+
+		if err := scanFirm(ctx, rows, results); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+
 func (r *Indexer) queryFromDate(ctx context.Context, results chan<- person.Person, from time.Time) error {
 	defer func() { close(results) }()
 
@@ -48,16 +87,16 @@ func (r *Indexer) queryFromDate(ctx context.Context, results chan<- person.Perso
 	return scan(ctx, rows, results)
 }
 
-func (r *Indexer) queryFromDateFirm(ctx context.Context, results chan<- person.Person, from time.Time) error {
-	defer func() { close(results) }()
-
-	rows, err := r.conn.Query(ctx, makeQuery(`p.updatedDate >= $1`), from)
-	if err != nil {
-		return err
-	}
-
-	return scan(ctx, rows, results)
-}
+//func (r *Indexer) queryFromDateFirm(ctx context.Context, results chan<- person.Person, from time.Time) error {
+//	defer func() { close(results) }()
+//
+//	rows, err := r.conn.Query(ctx, makeQuery(`f.updatedDate >= $1`), from)
+//	if err != nil {
+//		return err
+//	}
+//
+//	return scan(ctx, rows, results)
+//}
 
 
 func makeQuery(whereClause string) string {
@@ -73,6 +112,16 @@ LEFT JOIN person_caseitem ON p.id = person_caseitem.person_id
 LEFT JOIN cases ON person_caseitem.caseitem_id = cases.id
 WHERE ` + whereClause + `
 ORDER BY p.id`
+}
+
+func makeQueryFirm(whereClause string) string {
+	return `SELECT f.id, f.firmname, coalesce(f.email, ''), 
+		coalesce(f.addressline1, ''), coalesce(f.addressline2, ''), coalesce(f.addressline3, ''), 
+		coalesce(f.town, ''), coalesce(f.county, ''), coalesce(f.postcode, ''),
+		coalesce(f.phonenumber, ''), coalesce(f.firmnumber, '')
+FROM firm f
+WHERE ` + whereClause + `
+ORDER BY f.id`
 }
 
 func scan(ctx context.Context, rows pgx.Rows, results chan<- person.Person) error {
@@ -153,6 +202,70 @@ type personAdded struct {
 	cases        map[int]struct{}
 }
 
+type rowResultFirm struct {
+	ID           int
+	Email        string
+	FirmName     string
+	FirmNumber   int
+	AddressLine1 string
+	AddressLine2 string
+	AddressLine3 string
+	Town         string
+	County       string
+	Postcode     string
+	PhoneNumber  string
+}
+
+
+func scanFirm(ctx context.Context, rows pgx.Rows, results chan<- firm.Firm) error {
+	l := logrus.New()
+	l.SetFormatter(&logrus.JSONFormatter{})
+
+	var err error
+	lastID := -1
+	var f *firm.Firm
+
+	l.Println("in scan firm")
+	l.Println("results", results)
+	l.Println("rows", rows)
+
+	for rows.Next() {
+		var v rowResultFirm
+
+		err = rows.Scan(&v.ID, &v.Email, &v.FirmName,
+			&v.FirmNumber, &v.AddressLine1, &v.AddressLine2, &v.AddressLine3, &v.Town, &v.County,
+			&v.Postcode, &v.PhoneNumber)
+		if err != nil {
+			break
+		}
+
+		if v.ID != lastID {
+			if f != nil {
+				results <- *f
+			}
+
+			f = &firm.Firm{}
+			lastID = v.ID
+		}
+
+		addResultToFirm(f, v)
+	}
+
+	if f != nil {
+		results <- *f
+	}
+
+	if err != nil {
+		return err
+	}
+
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
+	return err
+}
+
 func (a *personAdded) hasAddress(id int) bool {
 	_, ok := a.addresses[id]
 	a.addresses[id] = struct{}{}
@@ -219,6 +332,29 @@ func addResultToPerson(a *personAdded, p *person.Person, s rowResult) {
 		})
 	}
 }
+
+
+func addResultToFirm(f *firm.Firm, s rowResultFirm) {
+	l := logrus.New()
+	l.SetFormatter(&logrus.JSONFormatter{})
+	l.Println("in add result to firm")
+
+	if f.ID == nil {
+		id := int64(s.ID)
+		f.ID = &id
+		f.Email = s.Email
+		f.FirmName = s.FirmName
+		f.FirmNumber = int64(s.FirmNumber)
+		f.AddressLine1 = s.AddressLine1
+		f.AddressLine2 = s.AddressLine2
+		f.AddressLine3 = s.AddressLine3
+		f.Town = s.Town
+		f.County = s.County
+		f.Postcode = s.Postcode
+		f.Phonenumber = s.PhoneNumber
+	}
+}
+
 
 func getAddressLines(lines interface{}) []string {
 	switch v := lines.(type) {
