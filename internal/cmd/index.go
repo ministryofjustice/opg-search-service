@@ -79,7 +79,7 @@ func (c *indexCommand) Run(args []string) error {
 
 	if !fromTime.IsZero() {
 		c.logger.Printf("indexing by date from=%v batchSize=%d", fromTime, *batchSize)
-		result, err = indexer.FromDate(ctx, fromTime, *batchSize)
+		result, err = indexer.FromDate(ctx, fromTime, *batchSize, c.indexName)
 	} else if *all {
 		c.logger.Printf("indexing all records batchSize=%d", *batchSize)
 		result, err = indexer.All(ctx, *batchSize)

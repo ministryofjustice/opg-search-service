@@ -48,6 +48,18 @@ func (r *Indexer) queryFromDate(ctx context.Context, results chan<- person.Perso
 	return scan(ctx, rows, results)
 }
 
+func (r *Indexer) queryFromDateFirm(ctx context.Context, results chan<- person.Person, from time.Time) error {
+	defer func() { close(results) }()
+
+	rows, err := r.conn.Query(ctx, makeQuery(`p.updatedDate >= $1`), from)
+	if err != nil {
+		return err
+	}
+
+	return scan(ctx, rows, results)
+}
+
+
 func makeQuery(whereClause string) string {
 	return `SELECT p.id, p.uid, coalesce(p.caseRecNumber, ''), coalesce(p.email, ''), coalesce(to_char(p.dob, 'DD/MM/YYYY'), ''),
 		coalesce(p.firstname, ''), coalesce(p.middlenames, ''), coalesce(p.surname, ''), coalesce(p.companyname, ''), p.type, coalesce(p.organisationname, ''),
