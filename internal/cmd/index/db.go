@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/ministryofjustice/opg-search-service/internal/firm"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -118,7 +119,7 @@ func makeQueryFirm(whereClause string) string {
 	return `SELECT f.id, f.firmname, coalesce(f.email, ''), 
 		coalesce(f.addressline1, ''), coalesce(f.addressline2, ''), coalesce(f.addressline3, ''), 
 		coalesce(f.town, ''), coalesce(f.county, ''), coalesce(f.postcode, ''),
-		coalesce(f.phonenumber, ''), coalesce(f.firmnumber, null)
+		coalesce(f.phonenumber, ''), f.firmnumber
 FROM firm f
 WHERE ` + whereClause + `
 ORDER BY f.id`
@@ -231,11 +232,21 @@ func scanFirm(ctx context.Context, rows pgx.Rows, results chan<- firm.Firm) erro
 
 	for rows.Next() {
 		var v rowResultFirm
+		l.Println("v before", v)
+		l.Println("rows", rows)
 
+		l.Println("firm number", v.FirmNumber)
+		l.Println(reflect.TypeOf(&v.FirmNumber))
 		err = rows.Scan(&v.ID, &v.Email, &v.FirmName,
 			&v.FirmNumber, &v.AddressLine1, &v.AddressLine2, &v.AddressLine3, &v.Town, &v.County,
 			&v.Postcode, &v.PhoneNumber)
+		l.Println("error", err)
+		l.Println("v after", v)
+		l.Println("v firm number after", v.FirmNumber)
+		l.Println(reflect.TypeOf(&v.FirmNumber))
+
 		if err != nil {
+			l.Println(err)
 			break
 		}
 
@@ -338,13 +349,15 @@ func addResultToFirm(f *firm.Firm, s rowResultFirm) {
 	l := logrus.New()
 	l.SetFormatter(&logrus.JSONFormatter{})
 	l.Println("in add result to firm")
+	l.Println("s.firmnumber", s.FirmNumber)
+	l.Println(reflect.TypeOf(s.FirmNumber))
 
 	if f.ID == nil {
 		id := int64(s.ID)
 		f.ID = &id
 		f.Email = s.Email
 		f.FirmName = s.FirmName
-		f.FirmNumber = int64(s.FirmNumber)
+		f.FirmNumber = s.FirmNumber
 		f.AddressLine1 = s.AddressLine1
 		f.AddressLine2 = s.AddressLine2
 		f.AddressLine3 = s.AddressLine3
