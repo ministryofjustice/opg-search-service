@@ -116,10 +116,10 @@ ORDER BY p.id`
 }
 
 func makeQueryFirm(whereClause string) string {
-	return `SELECT f.id, f.firmname, coalesce(f.email, ''), 
+	return `SELECT f.id, coalesce(f.email, ''), f.firmname, f.firmNumber,
 		coalesce(f.addressline1, ''), coalesce(f.addressline2, ''), coalesce(f.addressline3, ''), 
 		coalesce(f.town, ''), coalesce(f.county, ''), coalesce(f.postcode, ''),
-		coalesce(f.phonenumber, ''), f.firmnumber
+		coalesce(f.phonenumber, '')
 FROM firm f
 WHERE ` + whereClause + `
 ORDER BY f.id`
@@ -236,7 +236,7 @@ func scanFirm(ctx context.Context, rows pgx.Rows, results chan<- firm.Firm) erro
 		l.Println("rows", rows)
 
 		l.Println("firm number", v.FirmNumber)
-		l.Println(reflect.TypeOf(&v.FirmNumber))
+		l.Println(reflect.TypeOf(v.FirmNumber))
 		err = rows.Scan(&v.ID, &v.Email, &v.FirmName,
 			&v.FirmNumber, &v.AddressLine1, &v.AddressLine2, &v.AddressLine3, &v.Town, &v.County,
 			&v.Postcode, &v.PhoneNumber)
