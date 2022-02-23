@@ -133,11 +133,6 @@ func (suite *SearchHandlerTestSuite) Test_SearchWithAllParameters() {
 			return suite.Equal(map[string]interface{}{
 				"size": 20,
 				"from": 10,
-				"sort": map[string]interface{}{
-					"surname": map[string]string{
-						"order": "asc",
-					},
-				},
 				"query": map[string]interface{}{
 					"bool": map[string]interface{}{
 						"must": map[string]interface{}{
