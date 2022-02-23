@@ -3,6 +3,8 @@ package cmd
 import (
 	"flag"
 	"fmt"
+	"github.com/ministryofjustice/opg-search-service/internal/firm"
+	"strings"
 
 	"github.com/ministryofjustice/opg-search-service/internal/person"
 	"github.com/sirupsen/logrus"
@@ -41,15 +43,23 @@ func (c *cleanupIndicesCommand) Run(args []string) error {
 		return err
 	}
 
-	aliasedIndex, err := c.client.ResolveAlias(person.AliasName)
+	indexName := strings.Split(c.index, "_")[0]
+	var aliasName string
+	if indexName == person.AliasName {
+		aliasName = person.AliasName
+	} else {
+		aliasName = firm.AliasName
+	}
+
+	aliasedIndex, err := c.client.ResolveAlias(aliasName)
 	if err != nil {
 		return err
 	}
 	if aliasedIndex != c.index {
-		return fmt.Errorf("alias '%s' does not match current index '%s'", person.AliasName, c.index)
+		return fmt.Errorf("alias '%s' does not match current index '%s'", aliasName, c.index)
 	}
 
-	indices, err := c.client.Indices("person_*")
+	indices, err := c.client.Indices(aliasName + "_*")
 	if err != nil {
 		return err
 	}

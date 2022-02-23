@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v4"
@@ -76,6 +77,7 @@ func (c *indexCommand) Run(args []string) error {
 	}
 
 	var result *index.Result
+	index := strings.Split(c.indexName, "_")[0]
 
 	if !fromTime.IsZero() {
 		c.logger.Printf("indexing by date from=%v batchSize=%d", fromTime, *batchSize)
@@ -94,7 +96,7 @@ func (c *indexCommand) Run(args []string) error {
 		result, err = indexer.All(ctx, *batchSize, c.indexName)
 	} else {
 		c.logger.Printf("indexing by id from=%d to=%d batchSize=%d", *from, *to, *batchSize)
-		if c.indexName == "person" {
+		if index == "person" {
 			result, err = indexer.ByIDPerson(ctx, *from, *to, *batchSize)
 		} else {
 			result, err = indexer.ByIDFirm(ctx, *from, *to, *batchSize)

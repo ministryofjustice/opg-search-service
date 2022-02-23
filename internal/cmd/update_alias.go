@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"flag"
+	"github.com/ministryofjustice/opg-search-service/internal/firm"
+	"strings"
 
 	"github.com/ministryofjustice/opg-search-service/internal/person"
 	"github.com/sirupsen/logrus"
@@ -37,22 +39,28 @@ func (c *updateAliasCommand) Run(args []string) error {
 	l.SetFormatter(&logrus.JSONFormatter{})
 	l.Println("in update alias")
 	l.Println(c.index)
+	indexName := strings.Split(c.index, "_")[0]
 
 	set := flagset.String("set", c.index, "index to point the alias at")
 
 	if err := flagset.Parse(args); err != nil {
 		return err
 	}
-
-	aliasedIndex, err := c.client.ResolveAlias(person.AliasName)
+	var aliasName string
+	if indexName == person.AliasName {
+		aliasName = person.AliasName
+	} else {
+		aliasName = firm.AliasName
+	}
+	aliasedIndex, err := c.client.ResolveAlias(aliasName)
 	if err != nil {
 		return err
 	}
 
 	if aliasedIndex == *set {
-		c.logger.Printf("alias '%s' is already set to '%s'", person.AliasName, *set)
+		c.logger.Printf("alias '%s' is already set to '%s'", aliasName, *set)
 		return nil
 	}
 
-	return c.client.UpdateAlias(person.AliasName, aliasedIndex, *set)
+	return c.client.UpdateAlias(aliasName, aliasedIndex, *set)
 }

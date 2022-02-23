@@ -39,12 +39,11 @@ type Indexer struct {
 func (r *Indexer) All(ctx context.Context, batchSize int, indexName string) (*Result, error) {
 	l := logrus.New()
 	l.SetFormatter(&logrus.JSONFormatter{})
-	index := strings.Split(indexName, "_")
+	index := strings.Split(indexName, "_")[0]
 	l.Println("index name", indexName)
 	l.Println(index)
-	l.Println(index[0])
 
-	if index[0] == "person"{
+	if index == "person"{
 		min, max, err := r.getIDRangePerson(ctx)
 		if err != nil {
 			return nil, err
