@@ -35,6 +35,13 @@ func (c *cleanupIndicesCommand) Name() string {
 }
 
 func (c *cleanupIndicesCommand) Run(args []string) error {
+
+	l := logrus.New()
+	l.SetFormatter(&logrus.JSONFormatter{})
+
+	l.Println("Running cleanup indices")
+	l.Println(c.index)
+
 	flagset := flag.NewFlagSet("cleanup-indices", flag.ExitOnError)
 
 	explain := flagset.Bool("explain", false, "explain the changes that will be made")
@@ -50,6 +57,8 @@ func (c *cleanupIndicesCommand) Run(args []string) error {
 	} else {
 		aliasName = firm.AliasName
 	}
+
+	l.Println(aliasName)
 
 	aliasedIndex, err := c.client.ResolveAlias(aliasName)
 	if err != nil {

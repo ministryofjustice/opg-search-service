@@ -38,22 +38,18 @@ func main() {
 	if err != nil {
 		l.Fatal(err)
 	}
-	l.Println("kate just in front of cmd run")
-	l.Println(firmIndex)
+	l.Println("Running the commands")
 	cmd.Run(l,
 		cmd.NewHealthCheck(l),
-		cmd.NewCreateIndices(esClient, personIndex, personConfig),
-		cmd.NewIndex(l, esClient, secretsCache, personIndex),
+		cmd.NewCreateIndicesForPersonAndFirm(esClient, personIndex, personConfig, firmIndex, firmConfig),
+		cmd.NewIndexForPersonAndFirm(l, esClient, secretsCache, personIndex, firmIndex),
 		cmd.NewUpdateAlias(l, esClient, personIndex),
 		cmd.NewCleanupIndices(l, esClient, personIndex),
-	)
-
-	cmd.Run(l,
-		cmd.NewHealthCheck(l),
-		cmd.NewCreateIndices(esClient, firmIndex, firmConfig),
-		cmd.NewIndex(l, esClient, secretsCache, firmIndex),
-		cmd.NewUpdateAlias(l, esClient, firmIndex),
-		cmd.NewCleanupIndices(l, esClient, firmIndex),
+		//
+		//cmd.NewCreateIndices(esClient, firmIndex, firmConfig),
+		//cmd.NewIndex(l, esClient, secretsCache, firmIndex),
+		//cmd.NewUpdateAlias(l, esClient, firmIndex),
+		//cmd.NewCleanupIndices(l, esClient, firmIndex),
 	)
 
 	if err := esClient.CreateIndex(personIndex, personConfig, false); err != nil {
@@ -81,6 +77,8 @@ func main() {
 	if err := esClient.CreateIndex(firmIndex, firmConfig, false); err != nil {
 		l.Fatal(err)
 	}
+
+	l.Println("Error after create index firm in main.go" , err)
 
 	aliasedIndexFirm, err := esClient.ResolveAlias(firm.AliasName)
 	if err == elasticsearch.ErrAliasMissing {

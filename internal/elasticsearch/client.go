@@ -320,6 +320,9 @@ func (c *Client) IndexExists(name string) (bool, error) {
 }
 
 func (c *Client) createIndex(name string, config []byte) error {
+	c.logger.Println("Running createIndex in Client")
+	c.logger.Println(name)
+
 	c.logger.Printf("Creating index '%s'", name)
 
 	resp, err := c.doRequest(http.MethodPut, name, bytes.NewReader(config), "application/json")
@@ -338,6 +341,8 @@ func (c *Client) createIndex(name string, config []byte) error {
 
 func (c *Client) DeleteIndex(name string) error {
 	c.logger.Printf("Deleting index '%s'", name)
+	c.logger.Println("Running deleteIndex in Client")
+	c.logger.Println(name)
 
 	resp, err := c.doRequest(http.MethodDelete, name, nil, "application/json")
 	if err != nil {
@@ -349,6 +354,8 @@ func (c *Client) DeleteIndex(name string) error {
 }
 
 func (c *Client) ResolveAlias(name string) (string, error) {
+	c.logger.Println("Running resolveAlias in Client")
+	c.logger.Println(name)
 	resp, err := c.doRequest(http.MethodGet, "/_alias/"+name, nil, "")
 	if err != nil {
 		return "", err
@@ -404,6 +411,9 @@ type aliasRequestAction struct {
 
 func (c *Client) UpdateAlias(alias, oldIndex, newIndex string) error {
 	c.logger.Printf("Updating alias '%s' from index '%s' to '%s'", alias, oldIndex, newIndex)
+	c.logger.Println("Running resolveAlias in Client")
+	c.logger.Println(oldIndex)
+	c.logger.Println(newIndex)
 
 	request, err := json.Marshal(aliasRequest{
 		Actions: []map[string]aliasRequestAction{
@@ -442,6 +452,8 @@ func (c *Client) UpdateAlias(alias, oldIndex, newIndex string) error {
 }
 
 func (c *Client) Indices(term string) ([]string, error) {
+	c.logger.Println("Running indices in Client")
+	c.logger.Println(term)
 	resp, err := c.doRequest(http.MethodGet, term, nil, "")
 	if err != nil {
 		return nil, err
