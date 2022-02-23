@@ -39,16 +39,17 @@ func main() {
 		l.Fatal(err)
 	}
 	l.Println("kate just in front of cmd run")
+	l.Println(firmIndex)
 	cmd.Run(l,
 		cmd.NewHealthCheck(l),
-		cmd.NewCreateIndices(esClient, personIndex, personConfig),
-		cmd.NewIndex(l, esClient, secretsCache, personIndex),
-		cmd.NewUpdateAlias(l, esClient, personIndex),
-		cmd.NewCleanupIndices(l, esClient, personIndex),
 		cmd.NewCreateIndices(esClient, firmIndex, firmConfig),
 		cmd.NewIndex(l, esClient, secretsCache, firmIndex),
 		cmd.NewUpdateAlias(l, esClient, firmIndex),
 		cmd.NewCleanupIndices(l, esClient, firmIndex),
+		cmd.NewCreateIndices(esClient, personIndex, personConfig),
+		cmd.NewIndex(l, esClient, secretsCache, personIndex),
+		cmd.NewUpdateAlias(l, esClient, personIndex),
+		cmd.NewCleanupIndices(l, esClient, personIndex),
 	)
 
 	if err := esClient.CreateIndex(personIndex, personConfig, false); err != nil {

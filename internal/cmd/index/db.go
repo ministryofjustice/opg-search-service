@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/ministryofjustice/opg-search-service/internal/firm"
-	"reflect"
 	"strconv"
 	"time"
 
@@ -53,9 +52,6 @@ func (r *Indexer) queryByID(ctx context.Context, results chan<- person.Person, s
 
 
 func (r *Indexer) queryByIDFirm(ctx context.Context, results chan<- firm.Firm, start, end, batchSize int) error {
-	l := logrus.New()
-	l.SetFormatter(&logrus.JSONFormatter{})
-	l.Println("in query by id firm function")
 	defer func() { close(results) }()
 
 	batch := &batchIter{start: start, end: end, size: batchSize}
@@ -219,34 +215,17 @@ type rowResultFirm struct {
 
 
 func scanFirm(ctx context.Context, rows pgx.Rows, results chan<- firm.Firm) error {
-	l := logrus.New()
-	l.SetFormatter(&logrus.JSONFormatter{})
-
 	var err error
 	lastID := -1
 	var f *firm.Firm
 
-	l.Println("in scan firm")
-	l.Println("results", results)
-	l.Println("rows", rows)
-
 	for rows.Next() {
 		var v rowResultFirm
-		l.Println("v before", v)
-		l.Println("rows", rows)
-
-		l.Println("firm number", v.FirmNumber)
-		l.Println(reflect.TypeOf(v.FirmNumber))
 		err = rows.Scan(&v.ID, &v.Email, &v.FirmName,
 			&v.FirmNumber, &v.AddressLine1, &v.AddressLine2, &v.AddressLine3, &v.Town, &v.County,
 			&v.Postcode, &v.PhoneNumber)
-		l.Println("error", err)
-		l.Println("v after", v)
-		l.Println("v firm number after", v.FirmNumber)
-		l.Println(reflect.TypeOf(&v.FirmNumber))
 
 		if err != nil {
-			l.Println(err)
 			break
 		}
 
@@ -346,12 +325,6 @@ func addResultToPerson(a *personAdded, p *person.Person, s rowResult) {
 
 
 func addResultToFirm(f *firm.Firm, s rowResultFirm) {
-	l := logrus.New()
-	l.SetFormatter(&logrus.JSONFormatter{})
-	l.Println("in add result to firm")
-	l.Println("s.firmnumber", s.FirmNumber)
-	l.Println(reflect.TypeOf(s.FirmNumber))
-
 	if f.ID == nil {
 		id := int64(s.ID)
 		f.ID = &id

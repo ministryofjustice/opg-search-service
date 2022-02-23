@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/ministryofjustice/opg-search-service/internal/firm"
+	"github.com/sirupsen/logrus"
 
 	"github.com/ministryofjustice/opg-search-service/internal/elasticsearch"
 	"github.com/ministryofjustice/opg-search-service/internal/person"
@@ -57,6 +58,10 @@ func (r *Result) Add(result elasticsearch.BulkResult, err error) {
 }
 
 func (r *Indexer) indexFirm(ctx context.Context, firms <-chan firm.Firm) (*Result, error) {
+	l := logrus.New()
+	l.SetFormatter(&logrus.JSONFormatter{})
+	l.Println("in index firm")
+	l.Println("index name", r.indexName)
 	op := elasticsearch.NewBulkOp(r.indexName)
 	result := &Result{}
 

@@ -88,6 +88,9 @@ func (c *indexCommand) Run(args []string) error {
 		//}
 	} else if *all {
 		c.logger.Printf("indexing all records batchSize=%d", *batchSize)
+		c.logger.Println("index name", c.indexName)
+		c.logger.Println("context", ctx)
+
 		result, err = indexer.All(ctx, *batchSize, c.indexName)
 	} else {
 		c.logger.Printf("indexing by id from=%d to=%d batchSize=%d", *from, *to, *batchSize)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/ministryofjustice/opg-search-service/internal/firm"
 	"github.com/sirupsen/logrus"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v4"
@@ -38,15 +39,19 @@ type Indexer struct {
 func (r *Indexer) All(ctx context.Context, batchSize int, indexName string) (*Result, error) {
 	l := logrus.New()
 	l.SetFormatter(&logrus.JSONFormatter{})
+	index := strings.Split(indexName, "_")
+	l.Println("index name", indexName)
+	l.Println(index)
+	l.Println(index[0])
 
-	if indexName == "person"{
+	if index[0] == "person"{
 		min, max, err := r.getIDRangePerson(ctx)
 		if err != nil {
 			return nil, err
 		}
 		return r.ByIDPerson(ctx, min, max, batchSize)
 	} else {
-		l.Println("in all firm function")
+		l.Println("in all firm function", indexName)
 		min, max, err := r.getIDRangeFirm(ctx)
 		if err != nil {
 			return nil, err

@@ -27,6 +27,7 @@ func (c *createIndicesCommand) Name() string {
 }
 
 func (c *createIndicesCommand) Run(args []string) error {
+
 	flagset := flag.NewFlagSet("create-indices", flag.ExitOnError)
 
 	force := flagset.Bool("force", false, "force recreation if index already exists")

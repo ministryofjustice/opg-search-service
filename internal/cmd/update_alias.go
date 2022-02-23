@@ -33,6 +33,11 @@ func (c *updateAliasCommand) Name() string {
 func (c *updateAliasCommand) Run(args []string) error {
 	flagset := flag.NewFlagSet("update-alias", flag.ExitOnError)
 
+	l := logrus.New()
+	l.SetFormatter(&logrus.JSONFormatter{})
+	l.Println("in update alias")
+	l.Println(c.index)
+
 	set := flagset.String("set", c.index, "index to point the alias at")
 
 	if err := flagset.Parse(args); err != nil {
