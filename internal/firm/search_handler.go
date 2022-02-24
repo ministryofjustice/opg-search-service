@@ -30,7 +30,11 @@ func NewSearchHandler(logger *logrus.Logger, client SearchClient) *SearchHandler
 func (s *SearchHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 
+	s.logger.Println("in firm search handler")
+
 	req, err := person.CreateSearchRequestFromRequest(r)
+	s.logger.Println("after create search request")
+
 	if err != nil {
 		s.logger.Println(err)
 		response.WriteJSONError(rw, "request", err.Error(), http.StatusBadRequest)
@@ -45,25 +49,24 @@ func (s *SearchHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			},
 		})
 	}
+	s.logger.Println("before es req body")
 
 	// construct ES request body
 	esReqBody := map[string]interface{}{
 		"from": req.From,
-		"sort": map[string]interface{}{
-			"firmName": map[string]string{
-				"order": "asc",
-			},
-		},
+		//"sort": map[string]interface{}{
+		//	"firmName": map[string]string{
+		//		"order": "asc",
+		//	},
+		//},
 		"query": map[string]interface{}{
 			"bool": map[string]interface{}{
 				"must": map[string]interface{}{
 					"simple_query_string": map[string]interface{}{
 						"query": req.Term,
 						"fields": []string{
-							"searchable",
 							"firmName",
 						},
-						"default_operator": "AND",
 					},
 				},
 			},
@@ -71,7 +74,7 @@ func (s *SearchHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		"aggs": map[string]interface{}{
 			"personType": map[string]interface{}{
 				"terms": map[string]string{
-					"field": "personType",
+					"field": "personType.keyword",
 				},
 			},
 		},
@@ -87,6 +90,9 @@ func (s *SearchHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	result, err := s.client.Search(AliasName, esReqBody)
+	s.logger.Println("after result")
+	s.logger.Println(result)
+
 	if err != nil {
 		s.logger.Println(err.Error())
 		response.WriteJSONError(rw, "request", "Firm search caused an unexpected error", http.StatusInternalServerError)
@@ -105,6 +111,9 @@ func (s *SearchHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	jsonResp, _ := json.Marshal(resp)
 	rw.WriteHeader(http.StatusOK)
 	_, _ = rw.Write(jsonResp)
+	s.logger.Println("json response")
+	s.logger.Println(jsonResp)
+
 
 	s.logger.Printf("Request took: %d", time.Since(start))
 }
