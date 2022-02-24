@@ -22,6 +22,13 @@ type cleanupIndicesCommand struct {
 	index  string
 }
 
+type cleanupIndicesCommandPersonAndFirm struct {
+	logger 			*logrus.Logger
+	client 			CleanupIndicesClient
+	personIndex  	string
+	firmIndex 		string
+}
+
 func NewCleanupIndices(logger *logrus.Logger, client CleanupIndicesClient, index string) *cleanupIndicesCommand {
 	return &cleanupIndicesCommand{
 		logger: logger,
@@ -30,60 +37,130 @@ func NewCleanupIndices(logger *logrus.Logger, client CleanupIndicesClient, index
 	}
 }
 
-func (c *cleanupIndicesCommand) Name() string {
+func NewCleanupIndicesForPersonAndFirm(logger *logrus.Logger, client CleanupIndicesClient, personIndex string, firmIndex string) *cleanupIndicesCommandPersonAndFirm {
+	return &cleanupIndicesCommandPersonAndFirm{
+		logger: 		logger,
+		client: 		client,
+		personIndex:  	personIndex,
+		firmIndex: 		firmIndex,
+	}
+}
+
+func (c *cleanupIndicesCommandPersonAndFirm) Name() string {
 	return "cleanup-indices"
 }
 
-func (c *cleanupIndicesCommand) Run(args []string) error {
+//func (c *cleanupIndicesCommand) Name() string {
+//	return "cleanup-indices"
+//}
+
+func (c *cleanupIndicesCommandPersonAndFirm) Run(args []string) error {
 
 	l := logrus.New()
 	l.SetFormatter(&logrus.JSONFormatter{})
 
 	l.Println("Running cleanup indices")
-	l.Println(c.index)
 
-	flagset := flag.NewFlagSet("cleanup-indices", flag.ExitOnError)
+	var indexes = []string{c.personIndex, c.firmIndex}
 
-	explain := flagset.Bool("explain", false, "explain the changes that will be made")
+	for _, currentIndex := range indexes {
+		flagset := flag.NewFlagSet("cleanup-indices", flag.ExitOnError)
 
-	if err := flagset.Parse(args); err != nil {
-		return err
-	}
+		explain := flagset.Bool("explain", false, "explain the changes that will be made")
 
-	indexName := strings.Split(c.index, "_")[0]
-	var aliasName string
-	if indexName == person.AliasName {
-		aliasName = person.AliasName
-	} else {
-		aliasName = firm.AliasName
-	}
+		if err := flagset.Parse(args); err != nil {
+			return err
+		}
 
-	l.Println(aliasName)
+		indexName := strings.Split(currentIndex, "_")[0]
+		var aliasName string
+		if indexName == person.AliasName {
+			aliasName = person.AliasName
+		} else {
+			aliasName = firm.AliasName
+		}
 
-	aliasedIndex, err := c.client.ResolveAlias(aliasName)
-	if err != nil {
-		return err
-	}
-	if aliasedIndex != c.index {
-		return fmt.Errorf("alias '%s' does not match current index '%s'", aliasName, c.index)
-	}
+		l.Println(aliasName)
 
-	indices, err := c.client.Indices(aliasName + "_*")
-	if err != nil {
-		return err
-	}
+		aliasedIndex, err := c.client.ResolveAlias(aliasName)
+		if err != nil {
+			return err
+		}
+		if aliasedIndex != currentIndex {
+			return fmt.Errorf("alias '%s' does not match current index '%s'", aliasName, currentIndex)
+		}
 
-	for _, index := range indices {
-		if index != c.index {
-			if *explain {
-				c.logger.Println("will delete", index)
-			} else {
-				if err := c.client.DeleteIndex(index); err != nil {
-					return err
+		indices, err := c.client.Indices(aliasName + "_*")
+		if err != nil {
+			return err
+		}
+
+		for _, index := range indices {
+			if index != currentIndex {
+				if *explain {
+					c.logger.Println("will delete", index)
+				} else {
+					if err := c.client.DeleteIndex(index); err != nil {
+						return err
+					}
 				}
 			}
 		}
-	}
 
+	}
 	return nil
 }
+
+//func (c *cleanupIndicesCommand) Run(args []string) error {
+//
+//	l := logrus.New()
+//	l.SetFormatter(&logrus.JSONFormatter{})
+//
+//	l.Println("Running cleanup indices")
+//	l.Println(c.index)
+//
+//	flagset := flag.NewFlagSet("cleanup-indices", flag.ExitOnError)
+//
+//	explain := flagset.Bool("explain", false, "explain the changes that will be made")
+//
+//	if err := flagset.Parse(args); err != nil {
+//		return err
+//	}
+//
+//	indexName := strings.Split(c.index, "_")[0]
+//	var aliasName string
+//	if indexName == person.AliasName {
+//		aliasName = person.AliasName
+//	} else {
+//		aliasName = firm.AliasName
+//	}
+//
+//	l.Println(aliasName)
+//
+//	aliasedIndex, err := c.client.ResolveAlias(aliasName)
+//	if err != nil {
+//		return err
+//	}
+//	if aliasedIndex != c.index {
+//		return fmt.Errorf("alias '%s' does not match current index '%s'", aliasName, c.index)
+//	}
+//
+//	indices, err := c.client.Indices(aliasName + "_*")
+//	if err != nil {
+//		return err
+//	}
+//
+//	for _, index := range indices {
+//		if index != c.index {
+//			if *explain {
+//				c.logger.Println("will delete", index)
+//			} else {
+//				if err := c.client.DeleteIndex(index); err != nil {
+//					return err
+//				}
+//			}
+//		}
+//	}
+//
+//	return nil
+//}

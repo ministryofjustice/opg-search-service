@@ -18,9 +18,13 @@ func Run(logger *logrus.Logger, cmds ...Command) {
 		fmt.Fprintf(flag.CommandLine.Output(), `Usage of %s <command> [arguments]:
 
 Commands:
-	hc                run healthcheck on the search service
-	create-indices    create elasticsearch indices
-	index             index person records
+	hc                	run healthcheck on the search service
+	create-indices    	create elasticsearch indices
+	create-index person	create person index
+	create-index firm	create firm index
+	index             	index all records
+	index person		index person records
+	index firm			index firm records
 `, os.Args[0])
 	}
 	flag.Parse()
@@ -32,6 +36,12 @@ Commands:
 			logger.Println(cmd.Name())
 			if cmd.Name() == args[0] {
 				logger.Printf("Running command: %T", cmd)
+
+				//potentially a way to check for args after create indices to allow for certain indexes to be created or be populated
+				if (len(args)>1){
+					logger.Println(args[1])
+					logger.Println(args[1:])
+				}
 				if err := cmd.Run(args[1:]); err != nil {
 					logger.Errorln(err)
 					logger.Exit(1)

@@ -38,18 +38,20 @@ func main() {
 	if err != nil {
 		l.Fatal(err)
 	}
-	l.Println("Running the commands")
+
+	//potentially we could split these out into various commands which will allow us to run each individually so have
+	/**
+	cmd.NewCreatesIndicesAll
+	cmd.NewCreateIndicesPerson
+	cmd.NewCreateIndicesFirm
+	would mean a lot of duplication but these are only ran on bulk operations
+	 */
 	cmd.Run(l,
 		cmd.NewHealthCheck(l),
 		cmd.NewCreateIndicesForPersonAndFirm(esClient, personIndex, personConfig, firmIndex, firmConfig),
 		cmd.NewIndexForPersonAndFirm(l, esClient, secretsCache, personIndex, firmIndex),
-		cmd.NewUpdateAlias(l, esClient, personIndex),
-		cmd.NewCleanupIndices(l, esClient, personIndex),
-		//
-		//cmd.NewCreateIndices(esClient, firmIndex, firmConfig),
-		//cmd.NewIndex(l, esClient, secretsCache, firmIndex),
-		//cmd.NewUpdateAlias(l, esClient, firmIndex),
-		//cmd.NewCleanupIndices(l, esClient, firmIndex),
+		cmd.NewUpdateAliasForPersonAndFirm(l, esClient, personIndex, firmIndex),
+		cmd.NewCleanupIndicesForPersonAndFirm(l, esClient, personIndex, firmIndex),
 	)
 
 	if err := esClient.CreateIndex(personIndex, personConfig, false); err != nil {
@@ -77,8 +79,6 @@ func main() {
 	if err := esClient.CreateIndex(firmIndex, firmConfig, false); err != nil {
 		l.Fatal(err)
 	}
-
-	l.Println("Error after create index firm in main.go" , err)
 
 	aliasedIndexFirm, err := esClient.ResolveAlias(firm.AliasName)
 	if err == elasticsearch.ErrAliasMissing {
