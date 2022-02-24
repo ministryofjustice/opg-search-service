@@ -246,6 +246,11 @@ func (c *Client) Search(indexName string, requestBody map[string]interface{}) (*
 	if err := json.NewDecoder(resp.Body).Decode(&esResponse); err != nil {
 		return nil, fmt.Errorf("error parsing the response body: %w", err)
 	}
+	c.logger.Println("Logging elastic search response here")
+	c.logger.Println(esResponse.Hits.Total)
+	c.logger.Println(esResponse.Hits.Total.Value)
+	c.logger.Println(esResponse.Hits.Total.Relation)
+	c.logger.Println(esResponse.Aggregations)
 
 	hits := make([]json.RawMessage, len(esResponse.Hits.Hits))
 	for i, hit := range esResponse.Hits.Hits {

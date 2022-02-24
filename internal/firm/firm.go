@@ -62,7 +62,12 @@ func IndexConfigFirm() (name string, config []byte, err error) {
 					"type": "text",
 				},
 				"firmName": map[string]interface{}{
-					"type": "keyword",
+					"type": "text",
+					"fields": map[string]interface{}{
+						"raw": map[string]interface{}{
+							"type": "keyword",
+						},
+					},
 				},
 				"firmNumber": map[string]interface{}{
 					"type": "keyword",

@@ -54,22 +54,28 @@ func (s *SearchHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	// construct ES request body
 	esReqBody := map[string]interface{}{
 		"from": req.From,
-		//"sort": map[string]interface{}{
-		//	"firmName": map[string]string{
-		//		"order": "asc",
-		//	},
-		//},
-		"query": map[string]interface{}{
-			"bool": map[string]interface{}{
-				"must": map[string]interface{}{
-					"simple_query_string": map[string]interface{}{
-						"query": req.Term,
-						"fields": []string{
-							"firmName",
-						},
-					},
-				},
+		"sort": map[string]interface{}{
+			"firmName.raw": map[string]string{
+				"order": "asc",
 			},
+		},
+		"query": map[string]interface{}{
+			"multi_match" : map[string]interface{}{
+				"query":  req.Term,
+				"fields": []string{ "firmName", "firmNumber" },
+			},
+			//"bool": map[string]interface{}{
+			//	"must": map[string]interface{}{
+			//		"simple_query_string": map[string]interface{}{
+			//			"query": req.Term,
+			//			"fields": []string{
+			//				"firmName",
+			//				"firmNumber",
+			//			},
+			//			"default_operator": "OR",
+			//		},
+			//	},
+			//},
 		},
 		"aggs": map[string]interface{}{
 			"personType": map[string]interface{}{
@@ -111,8 +117,15 @@ func (s *SearchHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	jsonResp, _ := json.Marshal(resp)
 	rw.WriteHeader(http.StatusOK)
 	_, _ = rw.Write(jsonResp)
-	s.logger.Println("json response")
-	s.logger.Println(jsonResp)
+	s.logger.Printf("json response")
+	s.logger.Printf(string(jsonResp))
+	s.logger.Printf("response")
+	s.logger.Printf("%v", resp)
+	s.logger.Printf("%v", resp.Aggregations)
+	s.logger.Printf("%s", resp.Results)
+	s.logger.Printf(string(rune(resp.Total.Count)))
+	s.logger.Printf("%t", resp.Total.Exact)
+
 
 
 	s.logger.Printf("Request took: %d", time.Since(start))
