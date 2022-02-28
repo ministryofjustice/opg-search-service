@@ -80,7 +80,7 @@ func (s *SearchHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		"aggs": map[string]interface{}{
 			"personType": map[string]interface{}{
 				"terms": map[string]string{
-					"field": "personType.keyword",
+					"field": "personType",
 				},
 			},
 		},
@@ -97,7 +97,7 @@ func (s *SearchHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	result, err := s.client.Search(AliasName, esReqBody)
 	s.logger.Println("after result")
-	s.logger.Println(result)
+	s.logger.Println(result.Aggregations)
 
 	if err != nil {
 		s.logger.Println(err.Error())
