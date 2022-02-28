@@ -66,6 +66,7 @@ func (r *Indexer) indexFirm(ctx context.Context, firms <-chan firm.Firm) (*Resul
 	result := &Result{}
 
 	for f := range firms {
+		f.Persontype = "Firm"
 		err := op.Index(f.Id(), f)
 
 		if err == elasticsearch.ErrOpTooLarge {

@@ -97,6 +97,7 @@ func (i *IndexHandler) doIndex(indexName string, response *indexResponse, firms 
 	i.logger.Println("op")
 	i.logger.Println(op)
 	for _, f := range firms {
+		f.Persontype = "Firm"
 		err := op.Index(f.Id(), f)
 
 		if err == elasticsearch.ErrOpTooLarge {

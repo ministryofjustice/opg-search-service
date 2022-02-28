@@ -15,7 +15,7 @@ type Firm struct {
 	Persontype   string `json:"personType"`
 	Email        string `json:"email"`
 	FirmName     string `json:"firmName"`
-	FirmNumber   int  `json:"firmNumber"`
+	FirmNumber   int  	`json:"firmNumber"`
 	AddressLine1 string `json:"addressLine1"`
 	AddressLine2 string `json:"addressLine2"`
 	AddressLine3 string `json:"addressLine3"`
