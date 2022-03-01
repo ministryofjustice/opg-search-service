@@ -2,10 +2,15 @@ package cmd
 
 import (
 	"flag"
+
+	"github.com/ministryofjustice/opg-search-service/internal/elasticsearch"
+	"github.com/ministryofjustice/opg-search-service/internal/person"
 )
 
 type IndexClient interface {
 	CreateIndex(name string, config []byte, force bool) error
+	ResolveAlias(name string) (string, error)
+	CreateAlias(alias, index string) error
 }
 
 type createIndicesCommand struct {
@@ -36,6 +41,15 @@ func (c *createIndicesCommand) Run(args []string) error {
 	}
 
 	if err := c.esClient.CreateIndex(c.indexName, c.indexConfig, *force); err != nil {
+		return err
+	}
+
+	_, err := c.esClient.ResolveAlias(person.AliasName)
+	if err == elasticsearch.ErrAliasMissing {
+		if err := c.esClient.CreateAlias(person.AliasName, c.indexName); err != nil {
+			return err
+		}
+	} else if err != nil {
 		return err
 	}
 
