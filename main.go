@@ -35,7 +35,7 @@ func main() {
 
 	cmd.Run(l,
 		cmd.NewHealthCheck(l),
-		cmd.NewCreateIndices(esClient, personIndex, personConfig),
+		cmd.NewCreateIndices(l),
 		cmd.NewIndex(l, esClient, secretsCache, personIndex),
 		cmd.NewUpdateAlias(l, esClient, personIndex),
 		cmd.NewCleanupIndices(l, esClient, personIndex),

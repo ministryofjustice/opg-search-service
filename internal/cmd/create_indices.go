@@ -1,24 +1,16 @@
 package cmd
 
 import (
-	"flag"
+	"github.com/sirupsen/logrus"
 )
 
-type IndexClient interface {
-	CreateIndex(name string, config []byte, force bool) error
-}
-
 type createIndicesCommand struct {
-	esClient    IndexClient
-	indexName   string
-	indexConfig []byte
+	logger *logrus.Logger
 }
 
-func NewCreateIndices(esClient IndexClient, indexName string, indexConfig []byte) *createIndicesCommand {
+func NewCreateIndices(logger *logrus.Logger) *createIndicesCommand {
 	return &createIndicesCommand{
-		esClient:    esClient,
-		indexName:   indexName,
-		indexConfig: indexConfig,
+		logger: logger,
 	}
 }
 
@@ -27,17 +19,7 @@ func (c *createIndicesCommand) Name() string {
 }
 
 func (c *createIndicesCommand) Run(args []string) error {
-	flagset := flag.NewFlagSet("create-indices", flag.ExitOnError)
-
-	force := flagset.Bool("force", false, "force recreation if index already exists")
-
-	if err := flagset.Parse(args); err != nil {
-		return err
-	}
-
-	if err := c.esClient.CreateIndex(c.indexName, c.indexConfig, *force); err != nil {
-		return err
-	}
+	c.logger.Print("create-indices is now a no-op, the only thing it does is log this message")
 
 	return nil
 }
