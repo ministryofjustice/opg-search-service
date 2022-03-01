@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -320,7 +321,8 @@ func TestClientCreateIndexErrorDeleteIndex(t *testing.T) {
 
 	err = client.CreateIndex("test-index", indexConfig, true)
 	assert.NotNil(err)
-	assert.Contains(hook.LastEntry().Message, "Deleting index 'test-index'")
+	fmt.Println(hook.LastEntry().Message)
+	assert.Contains(hook.Entries[2].Message, "Deleting index 'test-index'")
 }
 
 func TestClientCreateIndexErrorCreateIndex(t *testing.T) {

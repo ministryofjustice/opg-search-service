@@ -80,8 +80,8 @@ func (suite *IndexHandlerTestSuite) Test_EmptyRequestBody() {
 }
 
 func (suite *IndexHandlerTestSuite) Test_InvalidIndexRequestBody() {
-	// come back to this
-	reqBody := `{"firms":[{"id":"13"}]}`
+	// come back to this - added person type
+	reqBody := `{"firms":[{"id":"13", "personType":"Firm"}]}`
 	suite.ServeRequest(http.MethodPost, "/firms", reqBody)
 
 	suite.Equal(http.StatusBadRequest, suite.RespCode())

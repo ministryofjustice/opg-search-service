@@ -35,7 +35,7 @@ func TestUpdateAlias(t *testing.T) {
 		On("UpdateAlias", person.AliasName, "person_old", "person_expected").
 		Return(nil)
 
-	command := NewUpdateAlias(l, client, "person_expected")
+	command := NewUpdateAliasForPersonAndFirm(l, client, "person_expected", "firm_expected")
 	assert.Nil(t, command.Run([]string{}))
 }
 
@@ -47,7 +47,7 @@ func TestUpdateAliasWhenAliasIsCurrent(t *testing.T) {
 		On("ResolveAlias", person.AliasName).
 		Return("person_expected", nil)
 
-	command := NewUpdateAlias(l, client, "person_expected")
+	command := NewUpdateAliasForPersonAndFirm(l, client, "person_expected", "firm_expected")
 	assert.Nil(t, command.Run([]string{}))
 
 	assert.Equal(t, "alias 'person' is already set to 'person_expected'", hook.LastEntry().Message)
@@ -65,6 +65,6 @@ func TestUpdateAliasSet(t *testing.T) {
 		On("UpdateAlias", person.AliasName, "person_old", "person_this").
 		Return(nil)
 
-	command := NewUpdateAlias(l, client, "person_unexpected")
+	command := NewUpdateAliasForPersonAndFirm(l, client, "person_unexpected", "firm_expected")
 	assert.Nil(t, command.Run([]string{"-set", "person_this"}))
 }
