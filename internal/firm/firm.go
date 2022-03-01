@@ -9,6 +9,7 @@ import (
 )
 
 const AliasName = "firm"
+const AliasNames = "person,firm"
 
 type Firm struct {
 	ID           *int64 `json:"id"`

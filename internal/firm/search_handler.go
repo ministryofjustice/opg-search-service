@@ -12,7 +12,7 @@ import (
 )
 
 type SearchClient interface {
-	Search(indexName string, requestBody map[string]interface{}) (*elasticsearch.SearchResult, error)
+	Search(indices [] string, requestBody map[string]interface{}) (*elasticsearch.SearchResult, error)
 }
 
 type SearchHandler struct {
@@ -54,28 +54,21 @@ func (s *SearchHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	// construct ES request body
 	esReqBody := map[string]interface{}{
 		"from": req.From,
-		"sort": map[string]interface{}{
-			"firmName.raw": map[string]string{
-				"order": "asc",
-			},
-		},
+		/**
+		    commented out because there is not a common field present in both person and firm indexing which we can reliably
+			sort on - Q for Alex/Phil - is it ok to omit this sorting as it should sort on score automatically
+		 */
+
+		//"sort": map[string]interface{}{
+		//	"firmName.raw": map[string]string{
+		//		"order": "asc",
+		//	},
+		//},
 		"query": map[string]interface{}{
 			"multi_match" : map[string]interface{}{
 				"query":  req.Term,
-				"fields": []string{ "firmName", "firmNumber" },
+				"fields": []string{ "firmName", "firmNumber", "caseRecNumber", "searchable" },
 			},
-			//"bool": map[string]interface{}{
-			//	"must": map[string]interface{}{
-			//		"simple_query_string": map[string]interface{}{
-			//			"query": req.Term,
-			//			"fields": []string{
-			//				"firmName",
-			//				"firmNumber",
-			//			},
-			//			"default_operator": "OR",
-			//		},
-			//	},
-			//},
 		},
 		"aggs": map[string]interface{}{
 			"personType": map[string]interface{}{
@@ -95,7 +88,7 @@ func (s *SearchHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		esReqBody["size"] = req.Size
 	}
 
-	result, err := s.client.Search(AliasName, esReqBody)
+	result, err := s.client.Search([] string{"person", "firm"}, esReqBody)
 	s.logger.Println("after result")
 	s.logger.Println(result.Aggregations)
 

@@ -354,6 +354,8 @@ func main() {
 
 	postRouter.Handle("/firms/search", firm.NewSearchHandler(l, esClient))
 
+	postRouter.Handle("/searchAll", firm.NewSearchHandler(l, esClient))
+
 	w := l.Writer()
 	defer w.Close()
 
