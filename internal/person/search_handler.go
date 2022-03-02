@@ -48,11 +48,6 @@ func (s *SearchHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	// construct ES request body
 	esReqBody := map[string]interface{}{
 		"from": req.From,
-		"sort": map[string]interface{}{
-			"surname": map[string]string{
-				"order": "asc",
-			},
-		},
 		"query": map[string]interface{}{
 			"bool": map[string]interface{}{
 				"must": map[string]interface{}{
