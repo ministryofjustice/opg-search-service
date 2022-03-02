@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/ministryofjustice/opg-search-service/internal/firm"
 	"io/ioutil"
 	"log"
 	"net"
@@ -25,6 +26,7 @@ type EndToEndTestSuite struct {
 	testPeople []person.Person
 	esClient   *elasticsearch.Client
 	authHeader string
+	testFirm   []firm.Firm
 }
 
 func makeToken() string {
@@ -79,6 +81,22 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 		},
 	}
 
+	suite.testFirm = []firm.Firm{
+		{
+			ID:           id(1),
+			Persontype:   "Firm",
+			Email:        "email@firm.com",
+			FirmName:     "FirmName",
+			FirmNumber:   100001,
+			AddressLine1: "123 fake street",
+			AddressLine2: "Fake town",
+			Town:         "Nottingham",
+			County:       "Nottinghamshire",
+			Postcode:     "NG3 2TT",
+			Phonenumber:  "123456789",
+		},
+	}
+
 	// wait for ES service to stand up
 	time.Sleep(time.Second * 10)
 
@@ -95,10 +113,15 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 	suite.Nil(err)
 	suite.Equal(http.StatusOK, resp.StatusCode)
 
-	indexName, _, _ := person.IndexConfig()
+	personIndexName, _, _ := person.IndexConfig()
+	firmIndexName, _, _ := firm.IndexConfigFirm()
 
-	exists, err := suite.esClient.IndexExists(indexName)
+	exists, err := suite.esClient.IndexExists(personIndexName)
 	suite.False(exists, "Person index should not exist at this point")
+	suite.Nil(err)
+
+	exists, err = suite.esClient.IndexExists(firmIndexName)
+	suite.False(exists, "Firm index should not exist at this point")
 	suite.Nil(err)
 
 	// wait up to 5 seconds for the app to start
@@ -110,8 +133,12 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 			continue
 		}
 
-		exists, err = suite.esClient.IndexExists(indexName)
+		exists, err = suite.esClient.IndexExists(personIndexName)
 		suite.True(exists, "Person index should exist at this point")
+		suite.Nil(err)
+
+		exists, err = suite.esClient.IndexExists(firmIndexName)
+		suite.True(exists, "Firm index should exist at this point")
 		suite.Nil(err)
 
 		conn.Close()

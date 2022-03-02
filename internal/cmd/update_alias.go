@@ -14,11 +14,11 @@ type UpdateAliasClient interface {
 	UpdateAlias(string, string, string) error
 }
 
-type updateAliasCommand struct {
-	logger *logrus.Logger
-	client UpdateAliasClient
-	index  string
-}
+//type updateAliasCommand struct {
+//	logger *logrus.Logger
+//	client UpdateAliasClient
+//	index  string
+//}
 
 type updateAliasCommandForPersonAndFirm struct {
 	logger 		 	*logrus.Logger
@@ -27,13 +27,13 @@ type updateAliasCommandForPersonAndFirm struct {
 	firmIndex		string
 }
 
-func NewUpdateAlias(logger *logrus.Logger, client UpdateAliasClient, index string) *updateAliasCommand {
-	return &updateAliasCommand{
-		logger: logger,
-		client: client,
-		index:  index,
-	}
-}
+//func NewUpdateAlias(logger *logrus.Logger, client UpdateAliasClient, index string) *updateAliasCommand {
+//	return &updateAliasCommand{
+//		logger: logger,
+//		client: client,
+//		index:  index,
+//	}
+//}
 
 func NewUpdateAliasForPersonAndFirm(logger *logrus.Logger, client UpdateAliasClient, personIndex string, firmIndex string) *updateAliasCommandForPersonAndFirm {
 	return &updateAliasCommandForPersonAndFirm{
@@ -53,9 +53,6 @@ func (c *updateAliasCommandForPersonAndFirm) Name() string {
 }
 
 func (c *updateAliasCommandForPersonAndFirm) Run(args []string) error {
-	l := logrus.New()
-	l.SetFormatter(&logrus.JSONFormatter{})
-	l.Println("Running update alias")
 
 	flagset := flag.NewFlagSet("update-alias", flag.ExitOnError)
 
@@ -76,7 +73,7 @@ func (c *updateAliasCommandForPersonAndFirm) Run(args []string) error {
 		} else {
 			aliasName = firm.AliasName
 		}
-
+		c.logger.Println("aliasName")
 		c.logger.Println(aliasName)
 
 		aliasedIndex, err := c.client.ResolveAlias(aliasName)

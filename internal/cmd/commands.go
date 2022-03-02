@@ -29,14 +29,10 @@ Commands:
 	}
 	flag.Parse()
 	args := flag.Args()
-	logger.Println(args)
 	if len(args) > 0 {
 		for _, cmd := range cmds {
-			logger.Println("In commands.go")
-			logger.Println(cmd.Name())
 			if cmd.Name() == args[0] {
 				logger.Printf("Running command: %T", cmd)
-
 				//potentially a way to check for args after create indices to allow for certain indexes to be created or be populated
 				if (len(args)>1){
 					logger.Println(args[1])

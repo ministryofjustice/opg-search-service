@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/ministryofjustice/opg-search-service/internal/firm"
 	"testing"
 
 	"github.com/ministryofjustice/opg-search-service/internal/person"
@@ -35,6 +36,14 @@ func TestUpdateAlias(t *testing.T) {
 		On("UpdateAlias", person.AliasName, "person_old", "person_expected").
 		Return(nil)
 
+	client.
+		On("ResolveAlias", firm.AliasName).
+		Return("firm_old", nil)
+
+	client.
+		On("UpdateAlias", firm.AliasName, "firm_old", "firm_expected").
+		Return(nil)
+
 	command := NewUpdateAliasForPersonAndFirm(l, client, "person_expected", "firm_expected")
 	assert.Nil(t, command.Run([]string{}))
 }
@@ -49,10 +58,27 @@ func TestUpdateAliasWhenAliasIsCurrent(t *testing.T) {
 
 	command := NewUpdateAliasForPersonAndFirm(l, client, "person_expected", "firm_expected")
 	assert.Nil(t, command.Run([]string{}))
-
 	assert.Equal(t, "alias 'person' is already set to 'person_expected'", hook.LastEntry().Message)
 }
 
+func TestUpdateAliasWhenAliasIsCurrent2(t *testing.T) {
+	l, hook := test.NewNullLogger()
+	client := &mockUpdateAliasClient{}
+
+	client.
+		On("ResolveAlias", person.AliasName).
+		Return("person_expected", nil)
+
+	client.
+		On("ResolveAlias", firm.AliasName).
+		Return("firm_expected", nil)
+
+	command := NewUpdateAliasForPersonAndFirm(l, client, "person_expected", "firm_expected")
+	assert.Nil(t, command.Run([]string{}))
+	assert.Equal(t, "alias 'firm' is already set to 'firm_expected'", hook.LastEntry().Message)
+}
+
+//todo this test is hard
 func TestUpdateAliasSet(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	client := &mockUpdateAliasClient{}
@@ -63,6 +89,14 @@ func TestUpdateAliasSet(t *testing.T) {
 
 	client.
 		On("UpdateAlias", person.AliasName, "person_old", "person_this").
+		Return(nil)
+
+	client.
+		On("ResolveAlias", firm.AliasName).
+		Return("firm_old", nil)
+
+	client.
+		On("UpdateAlias", firm.AliasName, "firm_old", "firm_this").
 		Return(nil)
 
 	command := NewUpdateAliasForPersonAndFirm(l, client, "person_unexpected", "firm_expected")
