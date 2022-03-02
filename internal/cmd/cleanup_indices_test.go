@@ -1,9 +1,10 @@
 package cmd
 
 import (
+	"github.com/ministryofjustice/opg-search-service/internal/firm"
+	"github.com/ministryofjustice/opg-search-service/internal/person"
 	"testing"
 
-	"github.com/ministryofjustice/opg-search-service/internal/person"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -28,7 +29,7 @@ func (m *mockCleanupIndicesClient) DeleteIndex(index string) error {
 	return args.Error(0)
 }
 
-func TestCleanupIndices(t *testing.T) {
+func TestCleanupIndicesForPersonAndFirm2(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	client := &mockCleanupIndicesClient{}
 
@@ -40,10 +41,21 @@ func TestCleanupIndices(t *testing.T) {
 		On("Indices", "person_*").
 		Return([]string{"person_xyz", "person_something", "person_abc"}, nil)
 
+	client.
+		On("ResolveAlias", firm.AliasName).
+		Return("firm_something", nil)
+
+	client.
+		On("Indices", "firm_*").
+		Return([]string{"firm_xyz", "firm_something", "firm_abc"}, nil)
+
 	client.On("DeleteIndex", "person_xyz").Return(nil).Once()
 	client.On("DeleteIndex", "person_abc").Return(nil).Once()
 
-	command := NewCleanupIndices(l, client, "person_something")
+	client.On("DeleteIndex", "firm_xyz").Return(nil).Once()
+	client.On("DeleteIndex", "firm_abc").Return(nil).Once()
+
+	command := NewCleanupIndicesForPersonAndFirm(l, client, "person_something", "firm_something")
 	assert.Nil(t, command.Run([]string{}))
 }
 
@@ -59,7 +71,7 @@ func TestCleanupIndicesWhenAliasNotCurrent(t *testing.T) {
 		On("Indices", "person_*").
 		Return([]string{"person_xyz", "person_something", "person_abc"}, nil)
 
-	command := NewCleanupIndices(l, client, "person_something")
+	command := NewCleanupIndicesForPersonAndFirm(l, client, "person_something", "firm_something")
 	assert.NotNil(t, command.Run([]string{}))
 }
 
@@ -75,10 +87,18 @@ func TestCleanupIndicesExplain(t *testing.T) {
 		On("Indices", "person_*").
 		Return([]string{"person_xyz", "person_something", "person_abc"}, nil)
 
-	command := NewCleanupIndices(l, client, "person_something")
+	client.
+		On("ResolveAlias", firm.AliasName).
+		Return("firm_something", nil)
+
+	client.
+		On("Indices", "firm_*").
+		Return([]string{"firm_xyz", "firm_something", "firm_abc"}, nil)
+
+	command := NewCleanupIndicesForPersonAndFirm(l, client, "person_something","firm_something")
 	assert.Nil(t, command.Run([]string{"-explain"}))
 
-	expected := []string{"will delete person_xyz", "will delete person_abc"}
+	expected := []string{"will delete person_xyz", "will delete person_abc", "will delete firm_xyz", "will delete firm_abc"}
 	if assert.Len(t, hook.Entries, len(expected)) {
 		for i, e := range hook.Entries {
 			assert.Equal(t, expected[i], e.Message)

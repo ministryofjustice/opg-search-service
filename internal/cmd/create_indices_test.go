@@ -42,7 +42,7 @@ func TestCreateIndicesRun(t *testing.T) {
 			esClient.On("CreateIndex", person.AliasName, indexConfig, tc.force).Times(1).Return(nil).
 				On("CreateIndex", "person-test", indexConfig, tc.force).Times(1).Return(tc.error)
 
-			command := NewCreateIndices(esClient, "person-test", indexConfig)
+			command := NewCreateIndicesForPersonAndFirm(esClient, "person-test", indexConfig, "firm-test", indexConfig)
 
 			args := []string{}
 			if tc.force {
@@ -78,7 +78,7 @@ func TestCreateIndicesRunErrorInFirst(t *testing.T) {
 			esClient := new(elasticsearch.MockESClient)
 			esClient.On("CreateIndex", "person-test", indexConfig, tc.force).Times(1).Return(tc.error)
 
-			command := NewCreateIndices(esClient, "person-test", indexConfig)
+			command := NewCreateIndicesForPersonAndFirm(esClient, "person-test", indexConfig, "firm-test", indexConfig)
 
 			args := []string{}
 			if tc.force {
