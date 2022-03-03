@@ -2,6 +2,7 @@ package index
 
 import (
 	"context"
+	"github.com/ministryofjustice/opg-search-service/internal/Merged"
 	"time"
 
 	"github.com/jackc/pgx/v4"
@@ -33,18 +34,37 @@ type Indexer struct {
 	indexName string
 }
 
-func (r *Indexer) All(ctx context.Context, batchSize int) (*Result, error) {
-	min, max, err := r.getIDRange(ctx)
+func (r *Indexer) All(ctx context.Context, batchSize int, indexName string) (*Result, error) {
+	var tableName string
+
+	switch indexName {
+	case "firm":
+		tableName = indexName
+	default:
+		tableName = "persons"
+	}
+
+	min, max, err := r.getIDRange(ctx, tableName)
+
 	if err != nil {
 		return nil, err
 	}
 
-	return r.ByID(ctx, min, max, batchSize)
+	return r.ByID(ctx, min, max, batchSize, indexName)
 }
 
-func (r *Indexer) ByID(ctx context.Context, start, end, batchSize int) (*Result, error) {
+func (r *Indexer) ByID(ctx context.Context, start, end, batchSize int, indexName string) (*Result, error) {
 	var rerr error
-	persons := make(chan person.Person, batchSize)
+	var firms chan Merged.Firm
+	var persons chan Merged.Person
+
+	switch indexName {
+	case "firm":
+		firms = make(chan Merged.Firm, batchSize)
+	default:
+		persons = make(chan Merged.Person, batchSize)
+	}
+
 
 	go func() {
 		err := r.queryByID(ctx, persons, start, end, batchSize)

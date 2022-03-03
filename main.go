@@ -2,6 +2,9 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"github.com/ministryofjustice/opg-search-service/internal/Merged"
+	"github.com/ministryofjustice/opg-search-service/internal/cmd/merged"
 	"log"
 	"net/http"
 	"os"
@@ -21,7 +24,7 @@ func main() {
 	l := logrus.New()
 	l.SetFormatter(&logrus.JSONFormatter{})
 
-	personIndex, personConfig, err := person.IndexConfig()
+	personEntityIndex, firmEntityIndex, entityPersonConfig, entityFirmConfig, err := Merged.EntityIndexConfig()
 	if err != nil {
 		l.Fatal(err)
 	}
@@ -33,31 +36,39 @@ func main() {
 		l.Fatal(err)
 	}
 
+	indexes := map[string][]byte{
+		personEntityIndex: entityPersonConfig,
+		firmEntityIndex: entityFirmConfig,
+	}
+
+	fmt.Println("indexes")
+	fmt.Println(indexes)
+
 	cmd.Run(l,
 		cmd.NewHealthCheck(l),
-		cmd.NewCreateIndices(esClient, personIndex, personConfig),
-		cmd.NewIndex(l, esClient, secretsCache, personIndex),
-		cmd.NewUpdateAlias(l, esClient, personIndex),
-		cmd.NewCleanupIndices(l, esClient, personIndex),
+		merged.NewCreateIndices(esClient, indexes),
+		cmd.NewIndex(l, esClient, secretsCache, indexes),
+		cmd.NewUpdateAlias(l, esClient, personEntityIndex),
+		cmd.NewCleanupIndices(l, esClient, personEntityIndex),
 	)
 
-	if err := esClient.CreateIndex(personIndex, personConfig, false); err != nil {
+	if err := esClient.CreateIndex(personEntityIndex, entityPersonConfig, false); err != nil {
 		l.Fatal(err)
 	}
 
 	aliasedIndex, err := esClient.ResolveAlias(person.AliasName)
 	if err == elasticsearch.ErrAliasMissing {
-		if err := esClient.CreateAlias(person.AliasName, personIndex); err != nil {
+		if err := esClient.CreateAlias(person.AliasName, personEntityIndex); err != nil {
 			l.Fatal(err)
 		}
-		aliasedIndex = personIndex
+		aliasedIndex = personEntityIndex
 	} else if err != nil {
 		l.Fatal(err)
 	}
 
 	indices := []string{person.AliasName}
-	if aliasedIndex != personIndex {
-		indices = append(indices, personIndex)
+	if aliasedIndex != personEntityIndex {
+		indices = append(indices, personEntityIndex)
 	}
 
 	l.Println("indexing to", indices)

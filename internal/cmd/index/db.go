@@ -3,20 +3,20 @@ package index
 import (
 	"context"
 	"fmt"
+	"github.com/ministryofjustice/opg-search-service/internal/Merged"
 	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v4"
-	"github.com/ministryofjustice/opg-search-service/internal/person"
 )
 
-func (r *Indexer) getIDRange(ctx context.Context) (min int, max int, err error) {
-	err = r.conn.QueryRow(ctx, "SELECT MIN(id), MAX(id) FROM persons").Scan(&min, &max)
+func (r *Indexer) getIDRange(ctx context.Context, tableName string) (min int, max int, err error) {
+	err = r.conn.QueryRow(ctx, "SELECT MIN(id), MAX(id) FROM" + tableName).Scan(&min, &max)
 
 	return min, max, err
 }
 
-func (r *Indexer) queryByID(ctx context.Context, results chan<- person.Person, start, end, batchSize int) error {
+func (r *Indexer) queryByID(ctx context.Context, results chan<- Merged.Person, start, end, batchSize int) error {
 	defer func() { close(results) }()
 
 	batch := &batchIter{start: start, end: end, size: batchSize}
@@ -37,7 +37,7 @@ func (r *Indexer) queryByID(ctx context.Context, results chan<- person.Person, s
 	return nil
 }
 
-func (r *Indexer) queryFromDate(ctx context.Context, results chan<- person.Person, from time.Time) error {
+func (r *Indexer) queryFromDate(ctx context.Context, results chan<- Merged.Person, from time.Time) error {
 	defer func() { close(results) }()
 
 	rows, err := r.conn.Query(ctx, makeQuery(`p.updatedDate >= $1`), from)
@@ -63,11 +63,11 @@ WHERE ` + whereClause + `
 ORDER BY p.id`
 }
 
-func scan(ctx context.Context, rows pgx.Rows, results chan<- person.Person) error {
+func scan(ctx context.Context, rows pgx.Rows, results chan<- Merged.Person) error {
 	var err error
 	lastID := -1
 	a := &personAdded{}
-	var p *person.Person
+	var p *Merged.Person
 
 	for rows.Next() {
 		var v rowResult
@@ -87,7 +87,7 @@ func scan(ctx context.Context, rows pgx.Rows, results chan<- person.Person) erro
 			}
 
 			a.clear()
-			p = &person.Person{}
+			p = &Merged.Person{}
 			lastID = v.ID
 		}
 
@@ -165,7 +165,7 @@ func (a *personAdded) clear() {
 	a.cases = map[int]struct{}{}
 }
 
-func addResultToPerson(a *personAdded, p *person.Person, s rowResult) {
+func addResultToPerson(a *personAdded, p *Merged.Person, s rowResult) {
 	if p.ID == nil {
 		id := int64(s.ID)
 		p.ID = &id
@@ -183,20 +183,20 @@ func addResultToPerson(a *personAdded, p *person.Person, s rowResult) {
 	}
 
 	if s.AddressID != nil && !a.hasAddress(*s.AddressID) {
-		p.Addresses = append(p.Addresses, person.PersonAddress{
+		p.Addresses = append(p.Addresses, Merged.PersonAddress{
 			Addresslines: getAddressLines(s.AddressLines),
 			Postcode:     s.Postcode,
 		})
 	}
 
 	if s.PhoneNumberID != nil && !a.hasPhonenumber(*s.PhoneNumberID) {
-		p.Phonenumbers = append(p.Phonenumbers, person.PersonPhonenumber{
+		p.Phonenumbers = append(p.Phonenumbers, Merged.PersonPhonenumber{
 			Phonenumber: s.PhoneNumber,
 		})
 	}
 
 	if s.CaseID != nil && !a.hasCase(*s.CaseID) {
-		p.Cases = append(p.Cases, person.PersonCase{
+		p.Cases = append(p.Cases, Merged.PersonCase{
 			UID:           formatUID(*s.CasesUID),
 			Normalizeduid: int64(*s.CasesUID),
 			Caserecnumber: s.CasesCaseRecNumber,
