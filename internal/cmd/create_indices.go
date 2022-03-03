@@ -1,4 +1,4 @@
-package merged
+package cmd
 
 import (
 	"flag"
@@ -12,26 +12,26 @@ type IndexClient interface {
 	CreateAlias(alias, index string) error
 }
 
-type command struct {
-	esClient    IndexClient
-	indexName   string
+type indicesCommand struct {
+	esClient  IndexClient
+	indexName string
 	indexConfig []byte
 }
 
 type createIndicesCommand struct {
-	commands []*command
+	commands []*indicesCommand
 }
 
 func NewCreateIndices(esClient IndexClient, indexes map[string][]byte) *createIndicesCommand {
 	commandArray := &createIndicesCommand{}
 
 	for indexName, config := range indexes {
-		indexCommand := &command{
+		indicesCommand := &indicesCommand{
 			esClient:    esClient,
 			indexName:   indexName,
 			indexConfig: config,
 		}
-		commandArray.commands = append(commandArray.commands, indexCommand)
+		commandArray.commands = append(commandArray.commands, indicesCommand)
 	}
 
 	return commandArray

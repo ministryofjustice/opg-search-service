@@ -7,7 +7,6 @@ import (
 
 	"github.com/jackc/pgx/v4"
 	"github.com/ministryofjustice/opg-search-service/internal/elasticsearch"
-	"github.com/ministryofjustice/opg-search-service/internal/person"
 )
 
 type BulkClient interface {
@@ -54,36 +53,46 @@ func (r *Indexer) All(ctx context.Context, batchSize int, indexName string) (*Re
 }
 
 func (r *Indexer) ByID(ctx context.Context, start, end, batchSize int, indexName string) (*Result, error) {
+	// TODO looks horrible
 	var rerr error
-	var firms chan Merged.Firm
-	var persons chan Merged.Person
 
 	switch indexName {
 	case "firm":
-		firms = make(chan Merged.Firm, batchSize)
-	default:
-		persons = make(chan Merged.Person, batchSize)
-	}
+		firms := make(chan Merged.Firm, batchSize)
+		go func() {
+			err := r.queryByIDFirm(ctx, firms, start, end, batchSize)
+			if err != nil {
+				rerr = err
+			}
+		}()
 
-
-	go func() {
-		err := r.queryByID(ctx, persons, start, end, batchSize)
-		if err != nil {
-			rerr = err
+		result, err := r.indexFirm(ctx, firms)
+		if rerr != nil {
+			return result, rerr
 		}
-	}()
 
-	result, err := r.index(ctx, persons)
-	if rerr != nil {
-		return result, rerr
+		return result, err
+	default:
+		persons := make(chan Merged.Person, batchSize)
+		go func() {
+			err := r.queryByID(ctx, persons, start, end, batchSize)
+			if err != nil {
+				rerr = err
+			}
+		}()
+
+		result, err := r.indexPerson(ctx, persons)
+		if rerr != nil {
+			return result, rerr
+		}
+
+		return result, err
 	}
-
-	return result, err
 }
 
 func (r *Indexer) FromDate(ctx context.Context, from time.Time, batchSize int) (*Result, error) {
 	var rerr error
-	persons := make(chan person.Person, batchSize)
+	persons := make(chan Merged.Person, batchSize)
 
 	go func() {
 		err := r.queryFromDate(ctx, persons, from)
@@ -92,7 +101,7 @@ func (r *Indexer) FromDate(ctx context.Context, from time.Time, batchSize int) (
 		}
 	}()
 
-	result, err := r.index(ctx, persons)
+	result, err := r.indexPerson(ctx, persons)
 	if rerr != nil {
 		return result, rerr
 	}

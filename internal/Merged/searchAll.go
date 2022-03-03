@@ -1,7 +1,8 @@
-package person
+package Merged
 
 import (
 	"encoding/json"
+	"github.com/ministryofjustice/opg-search-service/internal/person"
 	"net/http"
 	"time"
 
@@ -29,7 +30,11 @@ func NewSearchHandler(logger *logrus.Logger, client SearchClient) *SearchHandler
 func (s *SearchHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 
-	req, err := CreateSearchRequestFromRequest(r)
+	s.logger.Println("in firm search handler")
+
+	req, err := person.CreateSearchRequestFromRequest(r)
+	s.logger.Println("after create search request")
+
 	if err != nil {
 		s.logger.Println(err)
 		response.WriteJSONError(rw, "request", err.Error(), http.StatusBadRequest)
@@ -44,22 +49,15 @@ func (s *SearchHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			},
 		})
 	}
+	s.logger.Println("before es req body")
 
 	// construct ES request body
 	esReqBody := map[string]interface{}{
 		"from": req.From,
 		"query": map[string]interface{}{
-			"bool": map[string]interface{}{
-				"must": map[string]interface{}{
-					"simple_query_string": map[string]interface{}{
-						"query": req.Term,
-						"fields": []string{
-							"searchable",
-							"caseRecNumber",
-						},
-						"default_operator": "AND",
-					},
-				},
+			"multi_match" : map[string]interface{}{
+				"query":  req.Term,
+				"fields": []string{ "firmName", "firmNumber", "caseRecNumber", "searchable" },
 			},
 		},
 		"aggs": map[string]interface{}{
@@ -80,10 +78,13 @@ func (s *SearchHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		esReqBody["size"] = req.Size
 	}
 
-	result, err := s.client.Search([]string{AliasName}, esReqBody)
+	result, err := s.client.Search([] string{"person", "firm"}, esReqBody)
+	s.logger.Println("after result")
+	s.logger.Println(result.Aggregations)
+
 	if err != nil {
 		s.logger.Println(err.Error())
-		response.WriteJSONError(rw, "request", "Person search caused an unexpected error", http.StatusInternalServerError)
+		response.WriteJSONError(rw, "request", "Firm search caused an unexpected error", http.StatusInternalServerError)
 		return
 	}
 
@@ -99,6 +100,16 @@ func (s *SearchHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	jsonResp, _ := json.Marshal(resp)
 	rw.WriteHeader(http.StatusOK)
 	_, _ = rw.Write(jsonResp)
+	s.logger.Printf("json response")
+	s.logger.Printf(string(jsonResp))
+	s.logger.Printf("response")
+	s.logger.Printf("%v", resp)
+	s.logger.Printf("%v", resp.Aggregations)
+	s.logger.Printf("%s", resp.Results)
+	s.logger.Printf(string(rune(resp.Total.Count)))
+	s.logger.Printf("%t", resp.Total.Exact)
+
+
 
 	s.logger.Printf("Request took: %d", time.Since(start))
 }

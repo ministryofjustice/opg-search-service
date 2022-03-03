@@ -3,8 +3,8 @@ package cmd
 import (
 	"flag"
 	"fmt"
+	"strings"
 
-	"github.com/ministryofjustice/opg-search-service/internal/person"
 	"github.com/sirupsen/logrus"
 )
 
@@ -14,18 +14,29 @@ type CleanupIndicesClient interface {
 	DeleteIndex(string) error
 }
 
-type cleanupIndicesCommand struct {
+type cleanupCommand struct {
 	logger *logrus.Logger
 	client CleanupIndicesClient
 	index  string
 }
 
-func NewCleanupIndices(logger *logrus.Logger, client CleanupIndicesClient, index string) *cleanupIndicesCommand {
-	return &cleanupIndicesCommand{
-		logger: logger,
-		client: client,
-		index:  index,
+type cleanupIndicesCommand struct {
+	commands []*cleanupCommand
+}
+
+func NewCleanupIndices(logger *logrus.Logger, client CleanupIndicesClient, indexes map[string][]byte) *cleanupIndicesCommand {
+	commandArray := &cleanupIndicesCommand{}
+
+	for indexName, _ := range indexes {
+		indexCommand := &cleanupCommand{
+			logger: logger,
+			client: client,
+			index:  indexName,
+		}
+		commandArray.commands = append(commandArray.commands, indexCommand)
 	}
+
+	return commandArray
 }
 
 func (c *cleanupIndicesCommand) Name() string {
@@ -41,26 +52,29 @@ func (c *cleanupIndicesCommand) Run(args []string) error {
 		return err
 	}
 
-	aliasedIndex, err := c.client.ResolveAlias(person.AliasName)
-	if err != nil {
-		return err
-	}
-	if aliasedIndex != c.index {
-		return fmt.Errorf("alias '%s' does not match current index '%s'", person.AliasName, c.index)
-	}
+	for _, s := range c.commands {
+		aliasName := strings.Split(s.index, "_")[0]
+		aliasedIndex, err := s.client.ResolveAlias(aliasName)
+		if err != nil {
+			return err
+		}
+		if aliasedIndex != s.index {
+			return fmt.Errorf("alias '%s' does not match current index '%s'", aliasName, s.index)
+		}
 
-	indices, err := c.client.Indices("person_*")
-	if err != nil {
-		return err
-	}
+		indices, err := s.client.Indices(aliasName + "_*")
+		if err != nil {
+			return err
+		}
 
-	for _, index := range indices {
-		if index != c.index {
-			if *explain {
-				c.logger.Println("will delete", index)
-			} else {
-				if err := c.client.DeleteIndex(index); err != nil {
-					return err
+		for _, index := range indices {
+			if index != s.index {
+				if *explain {
+					s.logger.Println("will delete", index)
+				} else {
+					if err := s.client.DeleteIndex(index); err != nil {
+						return err
+					}
 				}
 			}
 		}

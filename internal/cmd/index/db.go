@@ -24,7 +24,7 @@ func (r *Indexer) queryByID(ctx context.Context, results chan<- Merged.Person, s
 	for batch.Next() {
 		r.log.Printf("reading range from db (%d, %d)", batch.From(), batch.To())
 
-		rows, err := r.conn.Query(ctx, makeQuery(`p.id >= $1 AND p.id <= $2`), batch.From(), batch.To())
+		rows, err := r.conn.Query(ctx, makeQueryPerson(`p.id >= $1 AND p.id <= $2`), batch.From(), batch.To())
 		if err != nil {
 			return err
 		}
@@ -37,10 +37,31 @@ func (r *Indexer) queryByID(ctx context.Context, results chan<- Merged.Person, s
 	return nil
 }
 
+func (r *Indexer) queryByIDFirm(ctx context.Context, results chan<- Merged.Firm, start, end, batchSize int) error {
+	defer func() { close(results) }()
+
+	batch := &batchIter{start: start, end: end, size: batchSize}
+
+	for batch.Next() {
+		r.log.Printf("reading range from db (%d, %d)", batch.From(), batch.To())
+
+		rows, err := r.conn.Query(ctx, makeQueryFirm(`f.id >= $1 AND f.id <= $2`), batch.From(), batch.To())
+		if err != nil {
+			return err
+		}
+
+		if err := scanFirm(ctx, rows, results); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (r *Indexer) queryFromDate(ctx context.Context, results chan<- Merged.Person, from time.Time) error {
 	defer func() { close(results) }()
 
-	rows, err := r.conn.Query(ctx, makeQuery(`p.updatedDate >= $1`), from)
+	rows, err := r.conn.Query(ctx, makeQueryPerson(`p.updatedDate >= $1`), from)
 	if err != nil {
 		return err
 	}
@@ -48,7 +69,7 @@ func (r *Indexer) queryFromDate(ctx context.Context, results chan<- Merged.Perso
 	return scan(ctx, rows, results)
 }
 
-func makeQuery(whereClause string) string {
+func makeQueryPerson(whereClause string) string {
 	return `SELECT p.id, p.uid, coalesce(p.caseRecNumber, ''), coalesce(p.email, ''), coalesce(to_char(p.dob, 'DD/MM/YYYY'), ''),
 		coalesce(p.firstname, ''), coalesce(p.middlenames, ''), coalesce(p.surname, ''), coalesce(p.companyname, ''), p.type, coalesce(p.organisationname, ''),
 		phonenumbers.id, coalesce(phonenumbers.phone_number, ''),
@@ -61,6 +82,16 @@ LEFT JOIN person_caseitem ON p.id = person_caseitem.person_id
 LEFT JOIN cases ON person_caseitem.caseitem_id = cases.id
 WHERE ` + whereClause + `
 ORDER BY p.id`
+}
+
+func makeQueryFirm(whereClause string) string {
+	return `SELECT f.id, coalesce(f.email, ''), f.firmname, f.firmNumber,
+		coalesce(f.addressline1, ''), coalesce(f.addressline2, ''), coalesce(f.addressline3, ''), 
+		coalesce(f.town, ''), coalesce(f.county, ''), coalesce(f.postcode, ''),
+		coalesce(f.phonenumber, '')
+FROM firm f
+WHERE ` + whereClause + `
+ORDER BY f.id`
 }
 
 func scan(ctx context.Context, rows pgx.Rows, results chan<- Merged.Person) error {
@@ -109,6 +140,48 @@ func scan(ctx context.Context, rows pgx.Rows, results chan<- Merged.Person) erro
 	return err
 }
 
+func scanFirm(ctx context.Context, rows pgx.Rows, results chan<- Merged.Firm) error {
+	var err error
+	lastID := -1
+	var f *Merged.Firm
+
+	for rows.Next() {
+		var v rowResultFirm
+		err = rows.Scan(&v.ID, &v.Email, &v.FirmName,
+			&v.FirmNumber, &v.AddressLine1, &v.AddressLine2, &v.AddressLine3, &v.Town, &v.County,
+			&v.Postcode, &v.PhoneNumber)
+
+		if err != nil {
+			break
+		}
+
+		if v.ID != lastID {
+			if f != nil {
+				results <- *f
+			}
+
+			f = &Merged.Firm{}
+			lastID = v.ID
+		}
+
+		addResultToFirm(f, v)
+	}
+
+	if f != nil {
+		results <- *f
+	}
+
+	if err != nil {
+		return err
+	}
+
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
+	return err
+}
+
 type rowResult struct {
 	ID                 int
 	UID                int
@@ -139,6 +212,20 @@ type personAdded struct {
 	addresses    map[int]struct{}
 	phonenumbers map[int]struct{}
 	cases        map[int]struct{}
+}
+
+type rowResultFirm struct {
+	ID           int
+	Email        string
+	FirmName     string
+	FirmNumber   int
+	AddressLine1 string
+	AddressLine2 string
+	AddressLine3 string
+	Town         string
+	County       string
+	Postcode     string
+	PhoneNumber  string
 }
 
 func (a *personAdded) hasAddress(id int) bool {
@@ -205,6 +292,23 @@ func addResultToPerson(a *personAdded, p *Merged.Person, s rowResult) {
 			Casetype:      s.CasesCaseType,
 			Casesubtype:   s.CasesCaseSubType,
 		})
+	}
+}
+
+func addResultToFirm(f *Merged.Firm, s rowResultFirm) {
+	if f.ID == nil {
+		id := int64(s.ID)
+		f.ID = &id
+		f.Email = s.Email
+		f.FirmName = s.FirmName
+		f.FirmNumber = s.FirmNumber
+		f.AddressLine1 = s.AddressLine1
+		f.AddressLine2 = s.AddressLine2
+		f.AddressLine3 = s.AddressLine3
+		f.Town = s.Town
+		f.County = s.County
+		f.Postcode = s.Postcode
+		f.Phonenumber = s.PhoneNumber
 	}
 }
 

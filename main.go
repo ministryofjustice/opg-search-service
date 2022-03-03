@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 	"github.com/ministryofjustice/opg-search-service/internal/Merged"
-	"github.com/ministryofjustice/opg-search-service/internal/cmd/merged"
+	"github.com/ministryofjustice/opg-search-service/internal/firm"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -46,32 +47,23 @@ func main() {
 
 	cmd.Run(l,
 		cmd.NewHealthCheck(l),
-		merged.NewCreateIndices(esClient, indexes),
+		cmd.NewCreateIndices(esClient, indexes),
 		cmd.NewIndex(l, esClient, secretsCache, indexes),
-		cmd.NewUpdateAlias(l, esClient, personEntityIndex),
-		cmd.NewCleanupIndices(l, esClient, personEntityIndex),
+		cmd.NewUpdateAlias(l, esClient, indexes),
+		cmd.NewCleanupIndices(l, esClient, indexes),
 	)
 
-	if err := esClient.CreateIndex(personEntityIndex, entityPersonConfig, false); err != nil {
-		l.Fatal(err)
-	}
+	var indices [] string
 
-	aliasedIndex, err := esClient.ResolveAlias(person.AliasName)
-	if err == elasticsearch.ErrAliasMissing {
-		if err := esClient.CreateAlias(person.AliasName, personEntityIndex); err != nil {
-			l.Fatal(err)
+	for indexName, indexConfig := range indexes {
+		aliasName := strings.Split(indexName, "_")[0]
+		if aliasName == "person" {
+			indices = createIndexAndAlias(esClient, aliasName, indexName, indexConfig, l)
+		} else if aliasName == "firm" {
+			indices = createIndexAndAlias(esClient, aliasName, indexName, indexConfig, l)
 		}
-		aliasedIndex = personEntityIndex
-	} else if err != nil {
-		l.Fatal(err)
+		l.Println("indexing to", indices)
 	}
-
-	indices := []string{person.AliasName}
-	if aliasedIndex != personEntityIndex {
-		indices = append(indices, personEntityIndex)
-	}
-
-	l.Println("indexing to", indices)
 
 	// Create new serveMux
 	sm := mux.NewRouter().PathPrefix(os.Getenv("PATH_PREFIX")).Subrouter()
@@ -326,6 +318,10 @@ func main() {
 
 	postRouter.Handle("/persons/search", person.NewSearchHandler(l, esClient))
 
+	postRouter.Handle("/firms", firm.NewIndexHandler(l, esClient, indices))
+
+	postRouter.Handle("/searchAll", Merged.NewSearchHandler(l, esClient))
+
 	w := l.Writer()
 	defer w.Close()
 
@@ -355,4 +351,27 @@ func main() {
 
 	tc, _ := context.WithTimeout(context.Background(), 30*time.Second)
 	_ = s.Shutdown(tc)
+}
+
+func createIndexAndAlias (esClient *elasticsearch.Client, aliasName string, indexName string, indexConfig []byte, l *logrus.Logger) []string {
+	if err := esClient.CreateIndex(indexName, indexConfig, false); err != nil {
+		l.Fatal(err)
+	}
+
+	aliasedIndex, err := esClient.ResolveAlias(aliasName)
+	if err == elasticsearch.ErrAliasMissing {
+		if err := esClient.CreateAlias(aliasName, indexName); err != nil {
+			l.Fatal(err)
+		}
+		aliasedIndex = indexName
+	} else if err != nil {
+		l.Fatal(err)
+	}
+
+	indices := []string{aliasName}
+	if aliasedIndex != indexName {
+		indices = append(indices, indexName)
+	}
+
+	return indices
 }
