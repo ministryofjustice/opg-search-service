@@ -1,9 +1,10 @@
-package firm
+package indexing
 
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/ministryofjustice/opg-search-service/internal/indices"
 	"net/http"
 	"time"
 
@@ -45,12 +46,6 @@ func (i *IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err := json.Unmarshal(bodyBuf.Bytes(), &req)
-	i.logger.Println("&req")
-	i.logger.Println(&req)
-	i.logger.Println("r.Body")
-	i.logger.Println(r.Body)
-	i.logger.Println("bodyBuf.Bytes()")
-	i.logger.Println(bodyBuf.Bytes())
 	if err != nil {
 		i.logger.Println(err.Error())
 		response.WriteJSONError(w, "request", "Unable to unmarshal JSON request", http.StatusBadRequest)
@@ -66,23 +61,13 @@ func (i *IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	response := &indexResponse{}
 
-	i.logger.Println("Response")
-	i.logger.Println(response)
-
 	for _, index := range i.indices {
-		i.logger.Println("index in for loop")
-		i.logger.Print(index)
-		i.logger.Println("req.Firms")
-		i.logger.Println(req.Firms)
-		if err := i.doIndex(index, response, req.Firms); err != nil {
+		if err := i.doIndex(index, response, req.Entities); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 		}
 	}
 
 	jsonResp, _ := json.Marshal(response)
-	i.logger.Println("jsonResp")
-	i.logger.Println(jsonResp)
-
 
 	w.WriteHeader(http.StatusAccepted)
 
@@ -91,25 +76,22 @@ func (i *IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	i.logger.Println("Request took: ", time.Since(start))
 }
 
-func (i *IndexHandler) doIndex(indexName string, response *indexResponse, firms []Firm) error {
-	i.logger.Println("In the doIndex")
+func (i *IndexHandler) doIndex(indexName string, response *indexResponse, entities []indices.Entity) error {
 	op := elasticsearch.NewBulkOp(indexName)
-	i.logger.Println("op")
-	i.logger.Println(op)
-	for _, f := range firms {
-		f.Persontype = "Firm"
-		err := op.Index(f.Id(), f)
+
+	for _, p := range entities {
+		err := op.Index(p.Id(), p)
 
 		if err == elasticsearch.ErrOpTooLarge {
 			response.Add(i.client.DoBulk(op))
 			op.Reset()
-			err = op.Index(f.Id(), f)
+			err = op.Index(p.Id(), p)
 		}
 
 		if err != nil {
 			i.logger.Println(err)
 
-			return fmt.Errorf("could not construct index request for id=%d", f.Id())
+			return fmt.Errorf("could not construct index request for id=%d", p.Id())
 		}
 	}
 

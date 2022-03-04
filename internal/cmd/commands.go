@@ -20,10 +20,6 @@ func Run(logger *logrus.Logger, cmds ...Command) {
 Commands:
 	hc                		run healthcheck on the search service
 	create-indices    		create elasticsearch indices
-	index             		index person records
-
-	create-indices person	create person index
-	create-indices firm		create firm index
 	index             		index all records
 	index person			index person records
 	index firm				index firm records
@@ -37,11 +33,6 @@ Commands:
 		for _, cmd := range cmds {
 			if cmd.Name() == args[0] {
 				logger.Printf("Running command: %T", cmd)
-				//diff
-				if (len(args)>1){
-					logger.Println(args[1])
-					logger.Println(args[1:])
-				}
 				err := cmd.Run(args[1:])
 				if err != nil {
 					logger.Errorln(err)

@@ -2,7 +2,8 @@ package index
 
 import (
 	"context"
-	"github.com/ministryofjustice/opg-search-service/internal/Merged"
+	"github.com/ministryofjustice/opg-search-service/internal/indices"
+	"github.com/ministryofjustice/opg-search-service/internal/person"
 	"time"
 
 	"github.com/jackc/pgx/v4"
@@ -37,11 +38,13 @@ func (r *Indexer) All(ctx context.Context, batchSize int, indexName string) (*Re
 	var tableName string
 
 	switch indexName {
-	case "firm":
-		tableName = indexName
+	case indices.AliasNameFirm:
+		tableName = indices.AliasNameFirm
 	default:
 		tableName = "persons"
 	}
+
+	r.log.Printf(indexName)
 
 	min, max, err := r.getIDRange(ctx, tableName)
 
@@ -53,46 +56,43 @@ func (r *Indexer) All(ctx context.Context, batchSize int, indexName string) (*Re
 }
 
 func (r *Indexer) ByID(ctx context.Context, start, end, batchSize int, indexName string) (*Result, error) {
-	// TODO looks horrible
 	var rerr error
+	var result *Result
+	var err error
 
+	r.log.Printf("indexName")
+	r.log.Printf(indexName)
 	switch indexName {
-	case "firm":
-		firms := make(chan Merged.Firm, batchSize)
+	case indices.AliasNameFirm:
+		firms := make(chan indices.Firm, batchSize)
 		go func() {
 			err := r.queryByIDFirm(ctx, firms, start, end, batchSize)
 			if err != nil {
 				rerr = err
 			}
 		}()
-
-		result, err := r.indexFirm(ctx, firms)
-		if rerr != nil {
-			return result, rerr
-		}
-
-		return result, err
+		result, err = r.indexFirm(ctx, firms)
 	default:
-		persons := make(chan Merged.Person, batchSize)
+		persons := make(chan person.Person, batchSize)
 		go func() {
-			err := r.queryByID(ctx, persons, start, end, batchSize)
+			err := r.queryByIDPerson(ctx, persons, start, end, batchSize)
 			if err != nil {
 				rerr = err
 			}
 		}()
-
-		result, err := r.indexPerson(ctx, persons)
-		if rerr != nil {
-			return result, rerr
-		}
-
-		return result, err
+		result, err = r.indexPerson(ctx, persons)
 	}
+
+	if rerr != nil {
+		return result, rerr
+	}
+
+	return result, err
 }
 
 func (r *Indexer) FromDate(ctx context.Context, from time.Time, batchSize int) (*Result, error) {
 	var rerr error
-	persons := make(chan Merged.Person, batchSize)
+	persons := make(chan person.Person, batchSize)
 
 	go func() {
 		err := r.queryFromDate(ctx, persons, from)

@@ -3,7 +3,8 @@ package index
 import (
 	"context"
 	"fmt"
-	"github.com/ministryofjustice/opg-search-service/internal/Merged"
+	"github.com/ministryofjustice/opg-search-service/internal/indices"
+	"github.com/ministryofjustice/opg-search-service/internal/person"
 	"strconv"
 	"time"
 
@@ -11,12 +12,12 @@ import (
 )
 
 func (r *Indexer) getIDRange(ctx context.Context, tableName string) (min int, max int, err error) {
-	err = r.conn.QueryRow(ctx, "SELECT MIN(id), MAX(id) FROM" + tableName).Scan(&min, &max)
+	err = r.conn.QueryRow(ctx, "SELECT MIN(id), MAX(id) FROM " + tableName).Scan(&min, &max)
 
 	return min, max, err
 }
 
-func (r *Indexer) queryByID(ctx context.Context, results chan<- Merged.Person, start, end, batchSize int) error {
+func (r *Indexer) queryByIDPerson(ctx context.Context, results chan<- person.Person, start, end, batchSize int) error {
 	defer func() { close(results) }()
 
 	batch := &batchIter{start: start, end: end, size: batchSize}
@@ -29,15 +30,14 @@ func (r *Indexer) queryByID(ctx context.Context, results chan<- Merged.Person, s
 			return err
 		}
 
-		if err := scan(ctx, rows, results); err != nil {
+		if err := scanPerson(ctx, rows, results); err != nil {
 			return err
 		}
 	}
-
 	return nil
 }
 
-func (r *Indexer) queryByIDFirm(ctx context.Context, results chan<- Merged.Firm, start, end, batchSize int) error {
+func (r *Indexer) queryByIDFirm(ctx context.Context, results chan<- indices.Firm, start, end, batchSize int) error {
 	defer func() { close(results) }()
 
 	batch := &batchIter{start: start, end: end, size: batchSize}
@@ -58,7 +58,7 @@ func (r *Indexer) queryByIDFirm(ctx context.Context, results chan<- Merged.Firm,
 	return nil
 }
 
-func (r *Indexer) queryFromDate(ctx context.Context, results chan<- Merged.Person, from time.Time) error {
+func (r *Indexer) queryFromDate(ctx context.Context, results chan<- person.Person, from time.Time) error {
 	defer func() { close(results) }()
 
 	rows, err := r.conn.Query(ctx, makeQueryPerson(`p.updatedDate >= $1`), from)
@@ -66,7 +66,7 @@ func (r *Indexer) queryFromDate(ctx context.Context, results chan<- Merged.Perso
 		return err
 	}
 
-	return scan(ctx, rows, results)
+	return scanPerson(ctx, rows, results)
 }
 
 func makeQueryPerson(whereClause string) string {
@@ -94,11 +94,11 @@ WHERE ` + whereClause + `
 ORDER BY f.id`
 }
 
-func scan(ctx context.Context, rows pgx.Rows, results chan<- Merged.Person) error {
+func scanPerson(ctx context.Context, rows pgx.Rows, results chan<- person.Person) error {
 	var err error
 	lastID := -1
 	a := &personAdded{}
-	var p *Merged.Person
+	var p *person.Person
 
 	for rows.Next() {
 		var v rowResult
@@ -118,7 +118,7 @@ func scan(ctx context.Context, rows pgx.Rows, results chan<- Merged.Person) erro
 			}
 
 			a.clear()
-			p = &Merged.Person{}
+			p = &person.Person{}
 			lastID = v.ID
 		}
 
@@ -140,10 +140,10 @@ func scan(ctx context.Context, rows pgx.Rows, results chan<- Merged.Person) erro
 	return err
 }
 
-func scanFirm(ctx context.Context, rows pgx.Rows, results chan<- Merged.Firm) error {
+func scanFirm(ctx context.Context, rows pgx.Rows, results chan<- indices.Firm) error {
 	var err error
 	lastID := -1
-	var f *Merged.Firm
+	var f *indices.Firm
 
 	for rows.Next() {
 		var v rowResultFirm
@@ -160,7 +160,7 @@ func scanFirm(ctx context.Context, rows pgx.Rows, results chan<- Merged.Firm) er
 				results <- *f
 			}
 
-			f = &Merged.Firm{}
+			f = &indices.Firm{}
 			lastID = v.ID
 		}
 
@@ -252,7 +252,7 @@ func (a *personAdded) clear() {
 	a.cases = map[int]struct{}{}
 }
 
-func addResultToPerson(a *personAdded, p *Merged.Person, s rowResult) {
+func addResultToPerson(a *personAdded, p *person.Person, s rowResult) {
 	if p.ID == nil {
 		id := int64(s.ID)
 		p.ID = &id
@@ -270,20 +270,20 @@ func addResultToPerson(a *personAdded, p *Merged.Person, s rowResult) {
 	}
 
 	if s.AddressID != nil && !a.hasAddress(*s.AddressID) {
-		p.Addresses = append(p.Addresses, Merged.PersonAddress{
+		p.Addresses = append(p.Addresses, person.PersonAddress{
 			Addresslines: getAddressLines(s.AddressLines),
 			Postcode:     s.Postcode,
 		})
 	}
 
 	if s.PhoneNumberID != nil && !a.hasPhonenumber(*s.PhoneNumberID) {
-		p.Phonenumbers = append(p.Phonenumbers, Merged.PersonPhonenumber{
+		p.Phonenumbers = append(p.Phonenumbers, person.PersonPhonenumber{
 			Phonenumber: s.PhoneNumber,
 		})
 	}
 
 	if s.CaseID != nil && !a.hasCase(*s.CaseID) {
-		p.Cases = append(p.Cases, Merged.PersonCase{
+		p.Cases = append(p.Cases, person.PersonCase{
 			UID:           formatUID(*s.CasesUID),
 			Normalizeduid: int64(*s.CasesUID),
 			Caserecnumber: s.CasesCaseRecNumber,
@@ -295,7 +295,7 @@ func addResultToPerson(a *personAdded, p *Merged.Person, s rowResult) {
 	}
 }
 
-func addResultToFirm(f *Merged.Firm, s rowResultFirm) {
+func addResultToFirm(f *indices.Firm, s rowResultFirm) {
 	if f.ID == nil {
 		id := int64(s.ID)
 		f.ID = &id

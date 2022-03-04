@@ -85,6 +85,8 @@ func (c *createIndexCommand) Run(args []string) error {
 
 		fromTime, err := time.Parse(time.RFC3339, *fromDate)
 
+		s.logger.Println(err)
+
 		if *fromDate != "" && err != nil {
 			return fmt.Errorf("-from-date: %w", err)
 		}
@@ -98,9 +100,12 @@ func (c *createIndexCommand) Run(args []string) error {
 			s.logger.Printf("indexing all records batchSize=%d", *batchSize)
 			result, err = indexer.All(ctx, *batchSize, indexName)
 		} else if *person && indexName == "person" {
+			s.logger.Println("Person")
 			s.logger.Printf("indexing by id from=%d to=%d batchSize=%d", *from, *to, *batchSize)
 			result, err = indexer.ByID(ctx, *from, *to, *batchSize, indexName)
+			s.logger.Println(err)
 		} else if *firm && indexName == "firm" {
+			s.logger.Println("Firm")
 			s.logger.Printf("indexing by id from=%d to=%d batchSize=%d", *from, *to, *batchSize)
 			result, err = indexer.ByID(ctx, *from, *to, *batchSize, indexName)
 		}

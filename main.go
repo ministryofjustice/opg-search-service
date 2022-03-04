@@ -3,13 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/ministryofjustice/opg-search-service/internal/Merged"
-	"github.com/ministryofjustice/opg-search-service/internal/firm"
+	"github.com/ministryofjustice/opg-search-service/internal/indexing"
+	"github.com/ministryofjustice/opg-search-service/internal/indices"
+	"github.com/ministryofjustice/opg-search-service/internal/searching"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -25,9 +25,19 @@ func main() {
 	l := logrus.New()
 	l.SetFormatter(&logrus.JSONFormatter{})
 
-	personEntityIndex, firmEntityIndex, entityPersonConfig, entityFirmConfig, err := Merged.EntityIndexConfig()
+	personIndex, personConfig, err := person.IndexConfig()
 	if err != nil {
 		l.Fatal(err)
+	}
+
+	firmIndex, firmConfig, err := indices.IndexConfigFirm()
+	if err != nil {
+		l.Fatal(err)
+	}
+
+	currentIndices := map[string][]byte{
+		personIndex: personConfig,
+		firmIndex: firmConfig,
 	}
 
 	secretsCache := cache.New()
@@ -37,33 +47,19 @@ func main() {
 		l.Fatal(err)
 	}
 
-	indexes := map[string][]byte{
-		personEntityIndex: entityPersonConfig,
-		firmEntityIndex: entityFirmConfig,
-	}
-
 	fmt.Println("indexes")
-	fmt.Println(indexes)
+	fmt.Println(currentIndices)
 
 	cmd.Run(l,
 		cmd.NewHealthCheck(l),
-		cmd.NewCreateIndices(esClient, indexes),
-		cmd.NewIndex(l, esClient, secretsCache, indexes),
-		cmd.NewUpdateAlias(l, esClient, indexes),
-		cmd.NewCleanupIndices(l, esClient, indexes),
+		cmd.NewCreateIndices(esClient, currentIndices),
+		cmd.NewIndex(l, esClient, secretsCache, currentIndices),
+		cmd.NewUpdateAlias(l, esClient, currentIndices),
+		cmd.NewCleanupIndices(l, esClient, currentIndices),
 	)
 
-	var indices [] string
-
-	for indexName, indexConfig := range indexes {
-		aliasName := strings.Split(indexName, "_")[0]
-		if aliasName == "person" {
-			indices = createIndexAndAlias(esClient, aliasName, indexName, indexConfig, l)
-		} else if aliasName == "firm" {
-			indices = createIndexAndAlias(esClient, aliasName, indexName, indexConfig, l)
-		}
-		l.Println("indexing to", indices)
-	}
+	personIndices := createIndexAndAlias(esClient, person.AliasName, personIndex, personConfig, l)
+	firmIndices := createIndexAndAlias(esClient, indices.AliasNameFirm, firmIndex, firmConfig, l)
 
 	// Create new serveMux
 	sm := mux.NewRouter().PathPrefix(os.Getenv("PATH_PREFIX")).Subrouter()
@@ -314,13 +310,13 @@ func main() {
 	//     description: Not found
 	//   '500':
 	//     description: Unexpected error occurred
-	postRouter.Handle("/persons", person.NewIndexHandler(l, esClient, indices))
+	postRouter.Handle("/persons", person.NewIndexHandler(l, esClient, personIndices))
 
-	postRouter.Handle("/persons/search", person.NewSearchHandler(l, esClient))
+	postRouter.Handle("/persons/search", searching.NewSearchHandler(l, esClient, person.AliasName))
 
-	postRouter.Handle("/firms", firm.NewIndexHandler(l, esClient, indices))
+	postRouter.Handle("/firms", indexing.NewIndexHandler(l, esClient, firmIndices))
 
-	postRouter.Handle("/searchAll", Merged.NewSearchHandler(l, esClient))
+	postRouter.Handle("/searchAll", searching.NewSearchHandler(l, esClient, indices.AliasNamePersonFirm))
 
 	w := l.Writer()
 	defer w.Close()
@@ -368,10 +364,12 @@ func createIndexAndAlias (esClient *elasticsearch.Client, aliasName string, inde
 		l.Fatal(err)
 	}
 
-	indices := []string{aliasName}
+	currentIndices := []string{aliasName}
 	if aliasedIndex != indexName {
-		indices = append(indices, indexName)
+		currentIndices = append(currentIndices, indexName)
 	}
 
-	return indices
+	l.Println("indexing to", currentIndices)
+
+	return currentIndices
 }

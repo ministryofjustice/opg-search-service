@@ -1,25 +1,26 @@
-package firm
+package indexing
 
 import (
+	"github.com/ministryofjustice/opg-search-service/internal/indices"
 	"github.com/ministryofjustice/opg-search-service/internal/response"
 )
 
 type IndexRequest struct {
-	Firms []Firm `json:"firms"`
+	Entities []indices.Entity
 }
 
 func (ir *IndexRequest) Validate() []response.Error {
 	var errs []response.Error
 
-	if ir.Firms == nil || len(ir.Firms) == 0 {
+	if ir.Entities == nil || len(ir.Entities) == 0 {
 		errs = append(errs, response.Error{
-			Name:        "firms",
+			Name:        "entity",
 			Description: "field is empty",
 		})
 	}
 
-	for _, f := range ir.Firms {
-		errs = append(errs, f.Validate()...)
+	for _, p := range ir.Entities {
+		errs = append(errs, p.Validate()...)
 	}
 
 	return errs

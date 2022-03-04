@@ -3,13 +3,13 @@ package index
 import (
 	"context"
 	"fmt"
-	"github.com/ministryofjustice/opg-search-service/internal/Merged"
-	"github.com/sirupsen/logrus"
-
 	"github.com/ministryofjustice/opg-search-service/internal/elasticsearch"
+	"github.com/ministryofjustice/opg-search-service/internal/indices"
+	"github.com/ministryofjustice/opg-search-service/internal/person"
+	"github.com/sirupsen/logrus"
 )
 
-func (r *Indexer) indexPerson(ctx context.Context, persons <-chan Merged.Person) (*Result, error) {
+func (r *Indexer) indexPerson(ctx context.Context, persons <-chan person.Person) (*Result, error) {
 	op := elasticsearch.NewBulkOp(r.indexName)
 	result := &Result{}
 
@@ -41,7 +41,7 @@ func (r *Indexer) indexPerson(ctx context.Context, persons <-chan Merged.Person)
 	return result, nil
 }
 
-func (r *Indexer) indexFirm(ctx context.Context, firms <-chan Merged.Firm) (*Result, error) {
+func (r *Indexer) indexFirm(ctx context.Context, firms <-chan indices.Firm) (*Result, error) {
 	l := logrus.New()
 	l.SetFormatter(&logrus.JSONFormatter{})
 	l.Println("in index firm")
