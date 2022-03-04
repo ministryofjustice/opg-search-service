@@ -33,11 +33,6 @@ Commands:
 		for _, cmd := range cmds {
 			if cmd.Name() == args[0] {
 				logger.Printf("Running command: %T", cmd)
-				//potentially a way to check for args after create indices to allow for certain indexes to be created or be populated
-				if (len(args)>1){
-					logger.Println(args[1])
-					logger.Println(args[1:])
-				}
 				if err := cmd.Run(args[1:]); err != nil {
 					logger.Errorln(err)
 					logger.Exit(1)

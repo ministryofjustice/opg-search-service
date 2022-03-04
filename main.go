@@ -39,13 +39,6 @@ func main() {
 		l.Fatal(err)
 	}
 
-	//potentially we could split these out into various commands which will allow us to run each individually so have
-	/**
-	cmd.NewCreatesIndicesAll
-	cmd.NewCreateIndicesPerson
-	cmd.NewCreateIndicesFirm
-	would mean a lot of duplication but these are only ran on bulk operations
-	 */
 	cmd.Run(l,
 		cmd.NewHealthCheck(l),
 		cmd.NewCreateIndicesForPersonAndFirm(esClient, personIndex, personConfig, firmIndex, firmConfig),
