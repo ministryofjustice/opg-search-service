@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/ministryofjustice/opg-search-service/internal/indexing"
 	"github.com/ministryofjustice/opg-search-service/internal/indices"
 	"github.com/ministryofjustice/opg-search-service/internal/searching"
 	"log"
@@ -313,7 +312,7 @@ func main() {
 
 	postRouter.Handle("/persons/search", searching.NewSearchHandler(l, esClient, person.AliasName))
 
-	postRouter.Handle("/firms", indexing.NewIndexHandler(l, esClient, firmIndices))
+	postRouter.Handle("/firms", indices.NewIndexHandler(l, esClient, firmIndices))
 
 	postRouter.Handle("/firms/search", searching.NewSearchHandler(l, esClient, indices.AliasNameFirm))
 

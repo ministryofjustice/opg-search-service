@@ -1,10 +1,9 @@
-package indexing
+package indices
 
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/ministryofjustice/opg-search-service/internal/indices"
 	"net/http"
 	"time"
 
@@ -12,6 +11,8 @@ import (
 	"github.com/ministryofjustice/opg-search-service/internal/response"
 	"github.com/sirupsen/logrus"
 )
+
+//the index handler and index request are the only thing that is different across the firm and person hence seperated out. the search is common
 
 type IndexClient interface {
 	DoBulk(op *elasticsearch.BulkOp) (elasticsearch.BulkResult, error)
@@ -62,7 +63,7 @@ func (i *IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	response := &indexResponse{}
 
 	for _, index := range i.indices {
-		if err := i.doIndex(index, response, req.Entities); err != nil {
+		if err := i.doIndex(index, response, req.Firms); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 		}
 	}
@@ -76,10 +77,10 @@ func (i *IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	i.logger.Println("Request took: ", time.Since(start))
 }
 
-func (i *IndexHandler) doIndex(indexName string, response *indexResponse, entities []indices.Entity) error {
+func (i *IndexHandler) doIndex(indexName string, response *indexResponse, firms []Firm) error {
 	op := elasticsearch.NewBulkOp(indexName)
 
-	for _, p := range entities {
+	for _, p := range firms {
 		err := op.Index(p.Id(), p)
 
 		if err == elasticsearch.ErrOpTooLarge {
