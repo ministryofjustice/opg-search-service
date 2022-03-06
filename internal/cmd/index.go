@@ -1,17 +1,18 @@
 package cmd
 
 import (
-"context"
-"errors"
-"flag"
-"fmt"
-"os"
-	"strings"
+	"context"
+	"errors"
+	"flag"
+	"fmt"
+	"github.com/ministryofjustice/opg-search-service/internal/indices"
+	"github.com/ministryofjustice/opg-search-service/internal/person"
+	"os"
 	"time"
 
-"github.com/jackc/pgx/v4"
-"github.com/ministryofjustice/opg-search-service/internal/cmd/index"
-"github.com/sirupsen/logrus"
+	"github.com/jackc/pgx/v4"
+	"github.com/ministryofjustice/opg-search-service/internal/cmd/index"
+	"github.com/sirupsen/logrus"
 )
 
 type Secrets interface {
@@ -19,41 +20,35 @@ type Secrets interface {
 }
 
 type indexCommand struct {
-	logger    *logrus.Logger
-	esClient  index.BulkClient
-	secrets   Secrets
-	indexName string
+	logger    		*logrus.Logger
+	esClient  		index.BulkClient
+	secrets   		Secrets
+	currentIndices	[] string
 }
 
-type createIndexCommand struct {
-	commands []*indexCommand
-}
-
-func NewIndex(logger *logrus.Logger, esClient index.BulkClient, secrets Secrets, indexes map[string][]byte) *createIndexCommand {
-	commandArray := &createIndexCommand{}
-
+func NewIndex(logger *logrus.Logger, esClient index.BulkClient, secrets Secrets, indexes map[string][]byte) *indexCommand {
+	var currentIndices [] string
 	for indexName, _ := range indexes {
-		indexCommand := &indexCommand{
+		currentIndices = append(currentIndices, indexName)
+	}
+	return &indexCommand{
 			logger:    logger,
 			esClient:  esClient,
 			secrets:   secrets,
-			indexName: indexName,
-		}
-		commandArray.commands = append(commandArray.commands, indexCommand)
+			currentIndices: currentIndices,
 	}
-	return commandArray
 }
 
-func (c *createIndexCommand) Name() string {
+func (c *indexCommand) Name() string {
 	return "index"
 }
 
-func (c *createIndexCommand) Run(args []string) error {
+func (c *indexCommand) Run(args []string) error {
 	flagset := flag.NewFlagSet("index", flag.ExitOnError)
 
 	all := flagset.Bool("all", false, "index all records")
-	person := flagset.Bool("person", false, "index person records")
-	firm := flagset.Bool("firm", false, "index firm records")
+	personOnly := flagset.Bool("person", false, "index person records")
+	firmOnly := flagset.Bool("firm", false, "index firm records")
 	from := flagset.Int("from", 0, "id to index from")
 	to := flagset.Int("to", 100, "id to index to")
 	batchSize := flagset.Int("batch-size", 10000, "batch size to read from db")
@@ -80,51 +75,45 @@ func (c *createIndexCommand) Run(args []string) error {
 		return err
 	}
 
-	for _, s := range c.commands {
-		indexer := index.New(conn, s.esClient, s.logger, s.indexName)
+	indexer := index.New(conn, c.esClient, c.logger, c.currentIndices)
 
-		fromTime, err := time.Parse(time.RFC3339, *fromDate)
+	fromTime, err := time.Parse(time.RFC3339, *fromDate)
 
-		s.logger.Println(err)
-
-		if *fromDate != "" && err != nil {
-			return fmt.Errorf("-from-date: %w", err)
-		}
-
-		var result *index.Result
-		indexName := strings.Split(s.indexName, "_")[0]
-		if !fromTime.IsZero() && indexName == "person" {
-			s.logger.Printf("indexing by date from=%v batchSize=%d", fromTime, *batchSize)
-			result, err = indexer.FromDate(ctx, fromTime, *batchSize)
-		} else if *all {
-			s.logger.Printf("indexing all records batchSize=%d", *batchSize)
-			result, err = indexer.All(ctx, *batchSize, indexName)
-		} else if *person && indexName == "person" {
-			s.logger.Println("Person")
-			s.logger.Printf("indexing by id from=%d to=%d batchSize=%d", *from, *to, *batchSize)
-			result, err = indexer.ByID(ctx, *from, *to, *batchSize, indexName)
-			s.logger.Println(err)
-		} else if *firm && indexName == "firm" {
-			s.logger.Println("Firm")
-			s.logger.Printf("indexing by id from=%d to=%d batchSize=%d", *from, *to, *batchSize)
-			result, err = indexer.ByID(ctx, *from, *to, *batchSize, indexName)
-		}
-
-		if err != nil {
-			return err
-		}
-
-		s.logger.Printf("indexing done successful=%d failed=%d", result.Successful, result.Failed)
-		for _, e := range result.Errors {
-			s.logger.Println(e)
-		}
+	if *fromDate != "" && err != nil {
+		return fmt.Errorf("-from-date: %w", err)
 	}
+
+	var result *index.Result
+
+	if !fromTime.IsZero() {
+		c.logger.Printf("indexing by date from=%v batchSize=%d", fromTime, *batchSize)
+		result, err = indexer.FromDate(ctx, fromTime, *batchSize)
+	} else if *all {
+		c.logger.Printf("indexing all records batchSize=%d", *batchSize)
+		result, err = indexer.All(ctx, *batchSize)
+	} else if *personOnly {
+		c.logger.Printf("indexing by id from=%d to=%d batchSize=%d", *from, *to, *batchSize)
+		result, err = indexer.ByID(ctx, *from, *to, *batchSize, person.AliasName)
+	} else if *firmOnly {
+		c.logger.Printf("indexing by id from=%d to=%d batchSize=%d", *from, *to, *batchSize)
+		result, err = indexer.ByID(ctx, *from, *to, *batchSize, indices.AliasNameFirm)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	c.logger.Printf("indexing done successful=%d failed=%d", result.Successful, result.Failed)
+	for _, e := range result.Errors {
+		c.logger.Println(e)
+	}
+
 	return nil
 }
 
-func (c *createIndexCommand) dbConnectionString() (string, error) {
+func (c *indexCommand) dbConnectionString() (string, error) {
 	pass := os.Getenv("SEARCH_SERVICE_DB_PASS")
-	universalSecret := c.commands[0].secrets
+	universalSecret := c.secrets
 	if passSecret := os.Getenv("SEARCH_SERVICE_DB_PASS_SECRET"); passSecret != "" {
 		var err error
 		pass, err = universalSecret.GetGlobalSecretString(passSecret)

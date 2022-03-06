@@ -6,6 +6,7 @@ import (
 	"github.com/ministryofjustice/opg-search-service/internal/indices"
 	"github.com/ministryofjustice/opg-search-service/internal/person"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v4"
@@ -17,27 +18,52 @@ func (r *Indexer) getIDRange(ctx context.Context, tableName string) (min int, ma
 	return min, max, err
 }
 
-func (r *Indexer) queryByIDPerson(ctx context.Context, results chan<- person.Person, start, end, batchSize int) error {
+func (r *Indexer) queryByID(ctx context.Context, results chan<- indices.Entity, start, end, batchSize int, indexName string) error {
 	defer func() { close(results) }()
 
 	batch := &batchIter{start: start, end: end, size: batchSize}
 
+	r.log.Printf("querybyid indexname", indexName)
+
 	for batch.Next() {
+		aliasName := strings.Split(indexName, "_")[0]
+
+		r.log.Printf("querybyid aliasname", aliasName)
+
 		r.log.Printf("reading range from db (%d, %d)", batch.From(), batch.To())
 
-		rows, err := r.conn.Query(ctx, makeQueryPerson(`p.id >= $1 AND p.id <= $2`), batch.From(), batch.To())
-		if err != nil {
-			return err
+		if aliasName == person.AliasName {
+			rows, err := r.conn.Query(ctx, makeQueryPerson(`p.id >= $1 AND p.id <= $2`), batch.From(), batch.To())
+			r.log.Printf("querybyid person rows", rows)
+			r.log.Printf("querybyid person err", err)
+			if err != nil {
+				return err
+			}
+
+			if err := scan(ctx, rows, results, indexName); err != nil {
+				r.log.Printf("querybyid person err after scan", err)
+				return err
+			}
 		}
 
-		if err := scanPerson(ctx, rows, results); err != nil {
-			return err
+		if aliasName == indices.AliasNameFirm {
+			rows, err := r.conn.Query(ctx, makeQueryFirm(`f.id >= $1 AND f.id <= $2`), batch.From(), batch.To())
+			r.log.Printf("querybyid firm rows", rows)
+			r.log.Printf("querybyid firm err", err)
+			if err != nil {
+				return err
+			}
+
+			if err := scan(ctx, rows, results, indexName); err != nil {
+				r.log.Printf("querybyid firm err after scan", err)
+				return err
+			}
 		}
 	}
 	return nil
 }
 
-func (r *Indexer) queryByIDFirm(ctx context.Context, results chan<- indices.Firm, start, end, batchSize int) error {
+/*func (r *Indexer) queryByIDFirm(ctx context.Context, results chan<- indices.Entity, start, end, batchSize int) error {
 	defer func() { close(results) }()
 
 	batch := &batchIter{start: start, end: end, size: batchSize}
@@ -56,9 +82,9 @@ func (r *Indexer) queryByIDFirm(ctx context.Context, results chan<- indices.Firm
 	}
 
 	return nil
-}
+}*/
 
-func (r *Indexer) queryFromDate(ctx context.Context, results chan<- person.Person, from time.Time) error {
+func (r *Indexer) queryFromDate(ctx context.Context, results chan<- indices.Entity, from time.Time, indexName string) error {
 	defer func() { close(results) }()
 
 	rows, err := r.conn.Query(ctx, makeQueryPerson(`p.updatedDate >= $1`), from)
@@ -66,7 +92,9 @@ func (r *Indexer) queryFromDate(ctx context.Context, results chan<- person.Perso
 		return err
 	}
 
-	return scanPerson(ctx, rows, results)
+
+
+	return scan(ctx, rows, results, indexName)
 }
 
 func makeQueryPerson(whereClause string) string {
@@ -94,92 +122,113 @@ WHERE ` + whereClause + `
 ORDER BY f.id`
 }
 
-func scanPerson(ctx context.Context, rows pgx.Rows, results chan<- person.Person) error {
+func scan(ctx context.Context, rows pgx.Rows, results chan<- indices.Entity, indexName string) error {
 	var err error
 	lastID := -1
-	a := &personAdded{}
-	var p *person.Person
 
-	for rows.Next() {
-		var v rowResult
+	fmt.Println("querybyid indexname", indexName)
 
-		err = rows.Scan(&v.ID, &v.UID, &v.CaseRecNumber, &v.Email, &v.Dob,
-			&v.Firstname, &v.Middlenames, &v.Surname, &v.CompanyName, &v.Type, &v.OrganisationName,
-			&v.PhoneNumberID, &v.PhoneNumber,
-			&v.AddressID, &v.AddressLines, &v.Postcode,
-			&v.CaseID, &v.CasesUID, &v.CasesCaseRecNumber, &v.CasesOnlineLpaID, &v.CasesBatchID, &v.CasesCaseType, &v.CasesCaseSubType)
-		if err != nil {
-			break
-		}
+	aliasName := strings.Split(indexName, "_")[0]
 
-		if v.ID != lastID {
-			if p != nil {
-				results <- *p
+	fmt.Println("querybyid aliasname", aliasName)
+
+	if aliasName == person.AliasName {
+		fmt.Println("db.go person")
+		a := &personAdded{}
+		var p *person.Person
+
+		for rows.Next() {
+			var v rowResult
+			fmt.Println("db.go person row result", v)
+
+			err = rows.Scan(&v.ID, &v.UID, &v.CaseRecNumber, &v.Email, &v.Dob,
+				&v.Firstname, &v.Middlenames, &v.Surname, &v.CompanyName, &v.Type, &v.OrganisationName,
+				&v.PhoneNumberID, &v.PhoneNumber,
+				&v.AddressID, &v.AddressLines, &v.Postcode,
+				&v.CaseID, &v.CasesUID, &v.CasesCaseRecNumber, &v.CasesOnlineLpaID, &v.CasesBatchID, &v.CasesCaseType, &v.CasesCaseSubType)
+
+			fmt.Println("db.go person err", err)
+
+			if err != nil {
+				break
 			}
 
-			a.clear()
-			p = &person.Person{}
-			lastID = v.ID
+			if v.ID != lastID {
+				fmt.Println("in id change")
+				fmt.Println("in id *p", &p)
+				if p != nil {
+					results <- *p
+				}
+
+				a.clear()
+				p = &person.Person{}
+				fmt.Println("in id p", p)
+				lastID = v.ID
+			}
+			addResultToPerson(a, p, v)
 		}
 
-		addResultToPerson(a, p, v)
-	}
+		if p != nil {
+			results <- *p
+		}
 
-	if p != nil {
-		results <- *p
-	}
+		if err != nil {
+			return err
+		}
 
-	if err != nil {
+		if err := rows.Err(); err != nil {
+			return err
+		}
+
 		return err
 	}
 
-	if err := rows.Err(); err != nil {
+	if aliasName == indices.AliasNameFirm {
+		var f *indices.Firm
+		for rows.Next() {
+			var v rowResultFirm
+			fmt.Println("db.go firm row result", v)
+			err = rows.Scan(&v.ID, &v.Email, &v.FirmName,
+				&v.FirmNumber, &v.AddressLine1, &v.AddressLine2, &v.AddressLine3, &v.Town, &v.County,
+				&v.Postcode, &v.PhoneNumber)
+			fmt.Println("db.go firm err", err)
+
+			if err != nil {
+				break
+			}
+
+			if v.ID != lastID {
+				fmt.Println("in id change firm")
+				fmt.Println("in id *f", &f)
+				if f != nil {
+					results <- *f
+				}
+
+				f = &indices.Firm{}
+				fmt.Println("in id f", f)
+				lastID = v.ID
+			}
+
+			addResultToFirm(f, v)
+		}
+
+		if f != nil {
+			results <- *f
+		}
+
+		if err != nil {
+			return err
+		}
+
+		if err := rows.Err(); err != nil {
+			return err
+		}
+
 		return err
 	}
 
 	return err
-}
 
-func scanFirm(ctx context.Context, rows pgx.Rows, results chan<- indices.Firm) error {
-	var err error
-	lastID := -1
-	var f *indices.Firm
-
-	for rows.Next() {
-		var v rowResultFirm
-		err = rows.Scan(&v.ID, &v.Email, &v.FirmName,
-			&v.FirmNumber, &v.AddressLine1, &v.AddressLine2, &v.AddressLine3, &v.Town, &v.County,
-			&v.Postcode, &v.PhoneNumber)
-
-		if err != nil {
-			break
-		}
-
-		if v.ID != lastID {
-			if f != nil {
-				results <- *f
-			}
-
-			f = &indices.Firm{}
-			lastID = v.ID
-		}
-
-		addResultToFirm(f, v)
-	}
-
-	if f != nil {
-		results <- *f
-	}
-
-	if err != nil {
-		return err
-	}
-
-	if err := rows.Err(); err != nil {
-		return err
-	}
-
-	return err
 }
 
 type rowResult struct {
@@ -299,6 +348,7 @@ func addResultToFirm(f *indices.Firm, s rowResultFirm) {
 	if f.ID == nil {
 		id := int64(s.ID)
 		f.ID = &id
+		f.Persontype = "Firm" // needed to add this when querying firm comes back blank
 		f.Email = s.Email
 		f.FirmName = s.FirmName
 		f.FirmNumber = s.FirmNumber

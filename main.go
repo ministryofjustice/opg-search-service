@@ -25,16 +25,15 @@ func main() {
 	l := logrus.New()
 	l.SetFormatter(&logrus.JSONFormatter{})
 
+	//create indices for entities
 	personIndex, personConfig, err := person.IndexConfig()
 	if err != nil {
 		l.Fatal(err)
 	}
-
 	firmIndex, firmConfig, err := indices.IndexConfigFirm()
 	if err != nil {
 		l.Fatal(err)
 	}
-
 	currentIndices := map[string][]byte{
 		personIndex: personConfig,
 		firmIndex: firmConfig,
@@ -316,6 +315,8 @@ func main() {
 
 	postRouter.Handle("/firms", indexing.NewIndexHandler(l, esClient, firmIndices))
 
+	postRouter.Handle("/firms/search", searching.NewSearchHandler(l, esClient, indices.AliasNameFirm))
+
 	postRouter.Handle("/searchAll", searching.NewSearchHandler(l, esClient, indices.AliasNamePersonFirm))
 
 	w := l.Writer()
@@ -325,7 +326,7 @@ func main() {
 		Addr:         ":8000",           // configure the bind address
 		Handler:      sm,                // set the default handler
 		ErrorLog:     log.New(w, "", 0), // Set the logger for the server
-		IdleTimeout:  120 * time.Second, // max time fro connections using TCP Keep-Alive
+		IdleTimeout:  120 * time.Second, // max time for connections using TCP Keep-Alive
 		ReadTimeout:  1 * time.Second,   // max time to read request from the client
 		WriteTimeout: 1 * time.Minute,   // max time to write response to the client
 	}

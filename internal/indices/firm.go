@@ -9,7 +9,7 @@ import (
 )
 
 const AliasNameFirm = "firm"
-const AliasNamePersonFirm = "person, firm"
+const AliasNamePersonFirm = "person,firm"
 
 type Entity interface {
 	Id () int64

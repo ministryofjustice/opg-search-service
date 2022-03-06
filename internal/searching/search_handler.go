@@ -121,10 +121,11 @@ func getsearchBody (s *SearchHandler, req *searchRequest, filters []interface{})
 			esReqBody["size"] = req.Size
 		}
 
-		result, err := s.client.Search([]string{person.AliasName, indices.AliasNameFirm}, esReqBody)
+		result, err := s.client.Search([]string{person.AliasName}, esReqBody)
 		return result, err
 
 	} else if s.entity == indices.AliasNamePersonFirm {
+		s.logger.Println("in search")
 		esReqBody := map[string]interface{}{
 			"from": req.From,
 			"query": map[string]interface{}{
@@ -151,7 +152,7 @@ func getsearchBody (s *SearchHandler, req *searchRequest, filters []interface{})
 			esReqBody["size"] = req.Size
 		}
 
-		result, err := s.client.Search([] string{"person", "firm"}, esReqBody)
+		result, err := s.client.Search([] string{indices.AliasNamePersonFirm}, esReqBody)
 		return result, err
 
 	} else {

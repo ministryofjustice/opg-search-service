@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/ministryofjustice/opg-search-service/internal/indices"
 	"github.com/ministryofjustice/opg-search-service/internal/person"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v4"
@@ -18,12 +19,12 @@ type Logger interface {
 	Printf(string, ...interface{})
 }
 
-func New(conn *pgx.Conn, es BulkClient, logger Logger, indexName string) *Indexer {
+func New(conn *pgx.Conn, es BulkClient, logger Logger, indexNames []string) *Indexer {
 	return &Indexer{
 		conn:      conn,
 		es:        es,
 		log:       logger,
-		indexName: indexName,
+		indexNames: indexNames,
 	}
 }
 
@@ -31,28 +32,41 @@ type Indexer struct {
 	conn      *pgx.Conn
 	es        BulkClient
 	log       Logger
-	indexName string
+	indexNames [] string
 }
 
-func (r *Indexer) All(ctx context.Context, batchSize int, indexName string) (*Result, error) {
+func (r *Indexer) All(ctx context.Context, batchSize int) (*Result, error) {
+
 	var tableName string
+	var res *Result
+	var err error
 
-	switch indexName {
-	case indices.AliasNameFirm:
-		tableName = indices.AliasNameFirm
-	default:
-		tableName = "persons"
+	for _,index := range r.indexNames {
+		aliasName := strings.Split(index, "_")[0]
+		switch aliasName {
+		case indices.AliasNameFirm:
+			tableName = indices.AliasNameFirm
+		default:
+			tableName = "persons"
+		}
+
+		min, max, err := r.getIDRange(ctx, tableName)
+
+		r.log.Printf("in All index/index.go min", min)
+		r.log.Printf("in All index/index.go max", max)
+		r.log.Printf("in All index/index.go err", err)
+
+		if err != nil {
+			return nil, err
+		}
+
+		res, err =  r.ByID(ctx, min, max, batchSize, index)
+
+		r.log.Printf("in All index/index.go res", res)
+		r.log.Printf("in All index/index.go err", err)
 	}
+	return res, err
 
-	r.log.Printf(indexName)
-
-	min, max, err := r.getIDRange(ctx, tableName)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return r.ByID(ctx, min, max, batchSize, indexName)
 }
 
 func (r *Indexer) ByID(ctx context.Context, start, end, batchSize int, indexName string) (*Result, error) {
@@ -60,28 +74,17 @@ func (r *Indexer) ByID(ctx context.Context, start, end, batchSize int, indexName
 	var result *Result
 	var err error
 
-	r.log.Printf("indexName")
-	r.log.Printf(indexName)
-	switch indexName {
-	case indices.AliasNameFirm:
-		firms := make(chan indices.Firm, batchSize)
-		go func() {
-			err := r.queryByIDFirm(ctx, firms, start, end, batchSize)
-			if err != nil {
-				rerr = err
-			}
-		}()
-		result, err = r.indexFirm(ctx, firms)
-	default:
-		persons := make(chan person.Person, batchSize)
-		go func() {
-			err := r.queryByIDPerson(ctx, persons, start, end, batchSize)
-			if err != nil {
-				rerr = err
-			}
-		}()
-		result, err = r.indexPerson(ctx, persons)
-	}
+	entity := make(chan indices.Entity, batchSize)
+	go func() {
+
+		//TODO some of these methods just need alias name to decide which query or scan to run when indexing - see where you
+		//can add aliasname instead of the full index name
+		err := r.queryByID(ctx, entity, start, end, batchSize, indexName)
+		if err != nil {
+			rerr = err
+		}
+	}()
+	result, err = r.index(ctx, entity, indexName)
 
 	if rerr != nil {
 		return result, rerr
@@ -92,16 +95,24 @@ func (r *Indexer) ByID(ctx context.Context, start, end, batchSize int, indexName
 
 func (r *Indexer) FromDate(ctx context.Context, from time.Time, batchSize int) (*Result, error) {
 	var rerr error
-	persons := make(chan person.Person, batchSize)
+	entity := make(chan indices.Entity, batchSize)
+
+	var personIndexName string
+	for _,indexName := range r.indexNames {
+		aliasName := strings.Split(indexName, "_")[0]
+		if aliasName == person.AliasName {
+			personIndexName = indexName
+		}
+	}
 
 	go func() {
-		err := r.queryFromDate(ctx, persons, from)
+		err := r.queryFromDate(ctx, entity, from, personIndexName)
 		if err != nil {
 			rerr = err
 		}
 	}()
 
-	result, err := r.indexPerson(ctx, persons)
+	result, err := r.index(ctx, entity, personIndexName)
 	if rerr != nil {
 		return result, rerr
 	}
