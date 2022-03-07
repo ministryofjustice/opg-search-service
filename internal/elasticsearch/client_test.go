@@ -18,6 +18,7 @@ import (
 
 var indexConfig = []byte("{json}")
 
+
 type MockHttpClient struct {
 	mock.Mock
 }

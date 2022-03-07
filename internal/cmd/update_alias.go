@@ -57,7 +57,7 @@ func (c *updateAliasCommand) Run(args []string) error {
 		}
 
 		if aliasedIndex == *set {
-			s.logger.Printf("alias '%s' is alrFeady set to '%s'", aliasName, *set)
+			s.logger.Printf("alias '%s' is already set to '%s'", aliasName, *set)
 			return nil
 		}
 
