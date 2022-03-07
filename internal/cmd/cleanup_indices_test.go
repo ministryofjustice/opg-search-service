@@ -43,7 +43,7 @@ func TestCleanupIndices(t *testing.T) {
 	client.On("DeleteIndex", "person_xyz").Return(nil).Once()
 	client.On("DeleteIndex", "person_abc").Return(nil).Once()
 
-	command := NewCleanupIndices(l, client, "person_something")
+	command := NewCleanupIndices(l, client, map[string][]byte{"person_something": indexConfig})
 	assert.Nil(t, command.Run([]string{}))
 }
 
@@ -59,7 +59,7 @@ func TestCleanupIndicesWhenAliasNotCurrent(t *testing.T) {
 		On("Indices", "person_*").
 		Return([]string{"person_xyz", "person_something", "person_abc"}, nil)
 
-	command := NewCleanupIndices(l, client, "person_something")
+	command := NewCleanupIndices(l, client, map[string][]byte{"person_something": indexConfig})
 	assert.NotNil(t, command.Run([]string{}))
 }
 
@@ -75,7 +75,7 @@ func TestCleanupIndicesExplain(t *testing.T) {
 		On("Indices", "person_*").
 		Return([]string{"person_xyz", "person_something", "person_abc"}, nil)
 
-	command := NewCleanupIndices(l, client, "person_something")
+	command := NewCleanupIndices(l, client, map[string][]byte{"person_something": indexConfig})
 	assert.Nil(t, command.Run([]string{"-explain"}))
 
 	expected := []string{"will delete person_xyz", "will delete person_abc"}

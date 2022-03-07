@@ -453,7 +453,7 @@ func TestClient_Search(t *testing.T) {
 				test.esResponseError,
 			)
 
-			result, err := c.Search("test-index", reqBody)
+			result, err := c.Search([]string{"test-index"}, reqBody)
 
 			assert.Equal(test.expectedResult, result)
 			if test.expectedError == nil {
@@ -475,7 +475,7 @@ func TestClient_Search_MalformedEndpoint(t *testing.T) {
 
 	c, _ := NewClient(mc, l)
 
-	res, err := c.Search("test-index", map[string]interface{}{})
+	res, err := c.Search([]string{"test-index"}, map[string]interface{}{})
 
 	assert.Nil(t, res)
 	assert.NotNil(t, err)
@@ -494,7 +494,7 @@ func TestClient_Search_InvalidESRequestBody(t *testing.T) {
 	esReqBody := map[string]interface{}{
 		"term": func() {},
 	}
-	res, err := c.Search("test-index", esReqBody)
+	res, err := c.Search([]string{"test-index"}, esReqBody)
 
 	assert.Nil(t, res)
 	assert.NotNil(t, err)

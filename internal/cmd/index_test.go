@@ -16,7 +16,7 @@ func TestIndex(t *testing.T) {
 	ctx := context.Background()
 
 	l, hook := test.NewNullLogger()
-	command := NewIndex(l, &elasticsearch.MockESClient{}, nil, "test-index")
+	command := NewIndex(l, &elasticsearch.MockESClient{}, nil, map[string][]byte{"test-index": indexConfig})
 
 	os.Setenv("SEARCH_SERVICE_DB_PASS", "searchservice")
 	os.Setenv("SEARCH_SERVICE_DB_USER", "searchservice")
