@@ -280,3 +280,31 @@ WITH (
     OIDS = FALSE
 )
 TABLESPACE pg_default;
+
+-- Table: public.firm
+
+DROP TABLE IF EXISTS public.firm;
+
+CREATE TABLE public.firm
+(
+    id integer NOT NULL,
+    firmname character varying(255) NOT NULL,
+    addressline1 character varying(255) COLLATE pg_catalog."default" default NULL::character varying,
+    addressline2 character varying(255) COLLATE pg_catalog."default" default NULL::character varying,
+    addressline3 character varying(255) COLLATE pg_catalog."default" default NULL::character varying,
+    town character varying(255) COLLATE pg_catalog."default" default NULL::character varying,
+    county character varying(255) COLLATE pg_catalog."default" default NULL::character varying,
+    postcode character varying(255) COLLATE pg_catalog."default" default NULL::character varying,
+    phonenumber character varying(255) COLLATE pg_catalog."default" default NULL::character varying,
+    email character varying(255) COLLATE pg_catalog."default" default NULL::character varying,
+    firmnumber integer,
+    piireceived date,
+    piiexpiry date,
+    piiamount numeric(12, 2) default NULL::numeric,
+    piirequested date,
+    CONSTRAINT firm_pkey PRIMARY KEY (id)
+)
+    WITH (
+        OIDS = FALSE
+    )
+    TABLESPACE pg_default;
