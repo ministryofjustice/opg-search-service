@@ -1,6 +1,7 @@
 package indices
 
 import (
+	"fmt"
 	"github.com/ministryofjustice/opg-search-service/internal/response"
 )
 
@@ -18,6 +19,8 @@ func (ir *IndexRequest) Validate() []response.Error {
 			Description: "field is empty",
 		})
 	}
+
+	fmt.Println("before for loop")
 
 	for _, p := range ir.Firms {
 		errs = append(errs, p.Validate()...)
