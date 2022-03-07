@@ -129,7 +129,7 @@ func (suite *SearchHandlerTestSuite) Test_SearchWithAllParameters() {
 	}
 
 	suite.esClient.
-		On("Search", AliasName, mock.MatchedBy(func(req map[string]interface{}) bool {
+		On("Search", []string{AliasName}, mock.MatchedBy(func(req map[string]interface{}) bool {
 			return suite.Equal(map[string]interface{}{
 				"size": 20,
 				"from": 10,
