@@ -20,8 +20,8 @@ func Run(logger *logrus.Logger, cmds ...Command) {
 Commands:
 	hc                		run healthcheck on the search service
 	create-indices    		create elasticsearch indices
-	index             		index all records
-	index person			index person records
+	index             		index person records
+	index all           	index all records
 	index firm				index firm records
 
 `, os.Args[0])

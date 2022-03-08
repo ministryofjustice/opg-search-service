@@ -47,7 +47,6 @@ func (c *indexCommand) Run(args []string) error {
 	flagset := flag.NewFlagSet("index", flag.ExitOnError)
 
 	all := flagset.Bool("all", false, "index all records")
-	personOnly := flagset.Bool("person", false, "index person records")
 	firmOnly := flagset.Bool("firm", false, "index firm records")
 	from := flagset.Int("from", 0, "id to index from")
 	to := flagset.Int("to", 100, "id to index to")
@@ -98,12 +97,12 @@ func (c *indexCommand) Run(args []string) error {
 	} else if *all {
 		c.logger.Printf("indexing all records batchSize=%d", *batchSize)
 		result, err = indexer.All(ctx, *batchSize)
-	} else if *personOnly {
-		c.logger.Printf("indexing by id from=%d to=%d batchSize=%d", *from, *to, *batchSize)
-		result, err = indexer.ByID(ctx, *from, *to, *batchSize, person.AliasName)
 	} else if *firmOnly {
 		c.logger.Printf("indexing by id from=%d to=%d batchSize=%d", *from, *to, *batchSize)
 		result, err = indexer.ByID(ctx, *from, *to, *batchSize, indices.AliasNameFirm)
+	} else {
+		c.logger.Printf("indexing by id from=%d to=%d batchSize=%d", *from, *to, *batchSize)
+		result, err = indexer.ByID(ctx, *from, *to, *batchSize, person.AliasName)
 	}
 
 	if err != nil {
