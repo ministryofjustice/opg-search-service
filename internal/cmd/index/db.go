@@ -6,7 +6,6 @@ import (
 	"github.com/ministryofjustice/opg-search-service/internal/indices"
 	"github.com/ministryofjustice/opg-search-service/internal/person"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v4"
@@ -18,21 +17,17 @@ func (r *Indexer) getIDRange(ctx context.Context, tableName string) (min int, ma
 	return min, max, err
 }
 
-func (r *Indexer) queryByID(ctx context.Context, results chan<- indices.Entity, start, end, batchSize int, indexName string) error {
+func (r *Indexer) queryByID(ctx context.Context, results chan<- indices.Entity, start, end, batchSize int, indexName string, alias string) error {
 	defer func() { close(results) }()
 
 	batch := &batchIter{start: start, end: end, size: batchSize}
 
-	r.log.Printf("querybyid indexname", indexName)
-
 	for batch.Next() {
-		aliasName := strings.Split(indexName, "_")[0]
-
-		r.log.Printf("querybyid aliasname", aliasName)
+		r.log.Printf("querybyid aliasname", alias)
 
 		r.log.Printf("reading range from db (%d, %d)", batch.From(), batch.To())
 
-		if aliasName == person.AliasName {
+		if alias == person.AliasName {
 			rows, err := r.conn.Query(ctx, makeQueryPerson(`p.id >= $1 AND p.id <= $2`), batch.From(), batch.To())
 			r.log.Printf("querybyid person rows", rows)
 			r.log.Printf("querybyid person err", err)
@@ -40,13 +35,13 @@ func (r *Indexer) queryByID(ctx context.Context, results chan<- indices.Entity, 
 				return err
 			}
 
-			if err := scan(ctx, rows, results, indexName); err != nil {
+			if err := scan(ctx, rows, results, indexName, alias); err != nil {
 				r.log.Printf("querybyid person err after scan", err)
 				return err
 			}
 		}
 
-		if aliasName == indices.AliasNameFirm {
+		if alias == indices.AliasNameFirm {
 			rows, err := r.conn.Query(ctx, makeQueryFirm(`f.id >= $1 AND f.id <= $2`), batch.From(), batch.To())
 			r.log.Printf("querybyid firm rows", rows)
 			r.log.Printf("querybyid firm err", err)
@@ -54,7 +49,7 @@ func (r *Indexer) queryByID(ctx context.Context, results chan<- indices.Entity, 
 				return err
 			}
 
-			if err := scan(ctx, rows, results, indexName); err != nil {
+			if err := scan(ctx, rows, results, indexName, alias); err != nil {
 				r.log.Printf("querybyid firm err after scan", err)
 				return err
 			}
@@ -84,7 +79,7 @@ func (r *Indexer) queryByID(ctx context.Context, results chan<- indices.Entity, 
 	return nil
 }*/
 
-func (r *Indexer) queryFromDate(ctx context.Context, results chan<- indices.Entity, from time.Time, indexName string) error {
+func (r *Indexer) queryFromDate(ctx context.Context, results chan<- indices.Entity, from time.Time, indexName string, alias string) error {
 	defer func() { close(results) }()
 
 	rows, err := r.conn.Query(ctx, makeQueryPerson(`p.updatedDate >= $1`), from)
@@ -92,9 +87,7 @@ func (r *Indexer) queryFromDate(ctx context.Context, results chan<- indices.Enti
 		return err
 	}
 
-
-
-	return scan(ctx, rows, results, indexName)
+	return scan(ctx, rows, results, indexName, alias)
 }
 
 func makeQueryPerson(whereClause string) string {
@@ -122,17 +115,14 @@ WHERE ` + whereClause + `
 ORDER BY f.id`
 }
 
-func scan(ctx context.Context, rows pgx.Rows, results chan<- indices.Entity, indexName string) error {
+func scan(ctx context.Context, rows pgx.Rows, results chan<- indices.Entity, indexName string, alias string) error {
 	var err error
 	lastID := -1
 
-	fmt.Println("querybyid indexname", indexName)
+	fmt.Println("scan indexname", indexName)
+	fmt.Println("scan aliasname", alias)
 
-	aliasName := strings.Split(indexName, "_")[0]
-
-	fmt.Println("querybyid aliasname", aliasName)
-
-	if aliasName == person.AliasName {
+	if alias == person.AliasName {
 		fmt.Println("db.go person")
 		a := &personAdded{}
 		var p *person.Person
@@ -183,7 +173,7 @@ func scan(ctx context.Context, rows pgx.Rows, results chan<- indices.Entity, ind
 		return err
 	}
 
-	if aliasName == indices.AliasNameFirm {
+	if alias == indices.AliasNameFirm {
 		var f *indices.Firm
 		for rows.Next() {
 			var v rowResultFirm

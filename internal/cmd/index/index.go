@@ -69,22 +69,31 @@ func (r *Indexer) All(ctx context.Context, batchSize int) (*Result, error) {
 
 }
 
-func (r *Indexer) ByID(ctx context.Context, start, end, batchSize int, indexName string) (*Result, error) {
+func (r *Indexer) ByID(ctx context.Context, start, end, batchSize int, aliasName string) (*Result, error) {
 	var rerr error
 	var result *Result
 	var err error
+
+	var index string
+	for _, currentIndex := range r.indexNames {
+		currentAliasName := strings.Split(index, "_")[0]
+		//r.log.Printf("in index aliasName", aliasName)
+		if currentAliasName == aliasName {
+			index = currentIndex
+		}
+	}
 
 	entity := make(chan indices.Entity, batchSize)
 	go func() {
 
 		//TODO some of these methods just need alias name to decide which query or scan to run when indexing - see where you
 		//can add aliasname instead of the full index name
-		err := r.queryByID(ctx, entity, start, end, batchSize, indexName)
+		err := r.queryByID(ctx, entity, start, end, batchSize, index, aliasName)
 		if err != nil {
 			rerr = err
 		}
 	}()
-	result, err = r.index(ctx, entity, indexName)
+	result, err = r.index(ctx, entity, index)
 
 	if rerr != nil {
 		return result, rerr
@@ -106,7 +115,7 @@ func (r *Indexer) FromDate(ctx context.Context, from time.Time, batchSize int) (
 	}
 
 	go func() {
-		err := r.queryFromDate(ctx, entity, from, personIndexName)
+		err := r.queryFromDate(ctx, entity, from, personIndexName, person.AliasName)
 		if err != nil {
 			rerr = err
 		}

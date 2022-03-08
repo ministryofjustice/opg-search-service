@@ -9,7 +9,6 @@ import (
 )
 
 func (r *Indexer) index(ctx context.Context, entity <-chan indices.Entity, indexName string) (*Result, error) {
-
 		aliasOfIndex := strings.Split(indexName, "_")[0]
 
 		//r.log.Printf("in index indexname", indexName)
@@ -23,13 +22,16 @@ func (r *Indexer) index(ctx context.Context, entity <-chan indices.Entity, index
 			indexToIndex = index
 		}
 	}
-	//r.log.Printf("in index indextoindex", indexToIndex)
+	//r.log.Printf("index to index", indexToIndex)
 
 	op := elasticsearch.NewBulkOp(indexToIndex)
 	result := &Result{}
 
 	for e := range entity {
+		//r.log.Printf("entity index", e.Id())
+
 		err := op.Index(e.Id(), e)
+		//r.log.Printf("err", err)
 
 		if err == elasticsearch.ErrOpTooLarge {
 			res, bulkErr := r.es.DoBulk(op)
@@ -50,6 +52,7 @@ func (r *Indexer) index(ctx context.Context, entity <-chan indices.Entity, index
 	}
 
 	if !op.Empty() {
+		//r.log.Printf("op empty branch")
 		result.Add(r.es.DoBulk(op))
 	}
 

@@ -100,7 +100,7 @@ INSERT INTO person_caseitem (person_id, caseitem_id) VALUES (1, 1), (1, 2);
 		}
 	}()
 
-	err = r.queryByID(ctx, resultsCh, 1, 2, 10, person.AliasName)
+	err = r.queryByID(ctx, resultsCh, 1, 2, 10, "person_1", person.AliasName)
 	if assert.Nil(err) && assert.Len(results, 2) {
 		assert.Equal([]indices.Entity{
 			person.Person{
@@ -213,7 +213,7 @@ INSERT INTO person_caseitem (person_id, caseitem_id) VALUES (1, 1), (1, 2);
 		}
 	}()
 
-	err = r.queryFromDate(ctx, resultsCh, time.Date(2021, time.January, 1, 23, 0, 0, 0, time.UTC), person.AliasName)
+	err = r.queryFromDate(ctx, resultsCh, time.Date(2021, time.January, 1, 23, 0, 0, 0, time.UTC), "person_1", person.AliasName)
 	if assert.Nil(err) && assert.Len(results, 2) {
 		assert.Equal([]indices.Entity{
 			person.Person{
