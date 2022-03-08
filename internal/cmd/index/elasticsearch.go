@@ -10,19 +10,20 @@ import (
 
 func (r *Indexer) index(ctx context.Context, entity <-chan indices.Entity, indexName string) (*Result, error) {
 
-	aliasOfIndex := strings.Split(indexName, "_")[0]
-	r.log.Printf("in index indexname", indexName)
-	r.log.Printf("in index aliasOfIndex", aliasOfIndex)
+		aliasOfIndex := strings.Split(indexName, "_")[0]
+
+		//r.log.Printf("in index indexname", indexName)
+		//r.log.Printf("in index aliasOfIndex", aliasOfIndex)
 
 	var indexToIndex string
 	for _, index := range r.indexNames {
 		aliasName := strings.Split(index, "_")[0]
-		r.log.Printf("in index aliasName", aliasName)
+		//r.log.Printf("in index aliasName", aliasName)
 		if aliasName == aliasOfIndex {
 			indexToIndex = index
 		}
 	}
-	r.log.Printf("in index indextoindex", indexToIndex)
+	//r.log.Printf("in index indextoindex", indexToIndex)
 
 	op := elasticsearch.NewBulkOp(indexToIndex)
 	result := &Result{}

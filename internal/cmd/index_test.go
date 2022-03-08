@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"github.com/ministryofjustice/opg-search-service/internal/person"
 	"os"
 	"testing"
 
@@ -39,7 +40,7 @@ func TestIndex(t *testing.T) {
 		return
 	}
 
-	err = command.Run([]string{})
+	err = command.Run([]string{person.AliasName})
 	assert.Nil(err)
 	assert.Equal("indexing done successful=0 failed=0", hook.LastEntry().Message)
 }

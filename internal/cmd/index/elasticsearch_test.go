@@ -40,7 +40,7 @@ func TestIndex(t *testing.T) {
 	expectedOp := elasticsearch.NewBulkOp("person")
 	expectedOp.Index(p.Id(), p)
 
-	result, err := r.index(ctx, persons, "persons")
+	result, err := r.index(ctx, persons, "person")
 	if assert.Nil(err) {
 		assert.Equal(1, result.Successful)
 		assert.Equal(0, result.Failed)

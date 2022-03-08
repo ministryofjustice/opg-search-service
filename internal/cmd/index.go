@@ -75,9 +75,16 @@ func (c *indexCommand) Run(args []string) error {
 		return err
 	}
 
+	var fromTime time.Time
 	indexer := index.New(conn, c.esClient, c.logger, c.currentIndices)
 
-	fromTime, err := time.Parse(time.RFC3339, *fromDate)
+	c.logger.Printf("error here")
+	c.logger.Printf(*fromDate)
+
+	fromTime, err = time.Parse(time.RFC3339, *fromDate)
+
+	c.logger.Printf("2")
+	c.logger.Printf(*fromDate)
 
 	if *fromDate != "" && err != nil {
 		return fmt.Errorf("-from-date: %w", err)
