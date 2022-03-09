@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"github.com/ministryofjustice/opg-search-service/internal/indices"
 	"github.com/ministryofjustice/opg-search-service/internal/searching"
 	"log"
@@ -44,9 +43,6 @@ func main() {
 	if err != nil {
 		l.Fatal(err)
 	}
-
-	fmt.Println("indexes")
-	fmt.Println(currentIndices)
 
 	cmd.Run(l,
 		cmd.NewHealthCheck(l),

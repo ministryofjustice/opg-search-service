@@ -77,13 +77,7 @@ func (c *indexCommand) Run(args []string) error {
 	var fromTime time.Time
 	indexer := index.New(conn, c.esClient, c.logger, c.currentIndices)
 
-	c.logger.Printf("error here")
-	c.logger.Printf(*fromDate)
-
 	fromTime, err = time.Parse(time.RFC3339, *fromDate)
-
-	c.logger.Printf("2")
-	c.logger.Printf(*fromDate)
 
 	if *fromDate != "" && err != nil {
 		return fmt.Errorf("-from-date: %w", err)
@@ -97,6 +91,8 @@ func (c *indexCommand) Run(args []string) error {
 	} else if *all {
 		c.logger.Printf("indexing all records batchSize=%d", *batchSize)
 		result, err = indexer.All(ctx, *batchSize)
+		c.logger.Println(result)
+		c.logger.Println(err)
 	} else if *firmOnly {
 		c.logger.Printf("indexing by id from=%d to=%d batchSize=%d", *from, *to, *batchSize)
 		result, err = indexer.ByID(ctx, *from, *to, *batchSize, indices.AliasNameFirm)

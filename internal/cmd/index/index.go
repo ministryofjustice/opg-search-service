@@ -41,8 +41,8 @@ func (r *Indexer) All(ctx context.Context, batchSize int) (*Result, error) {
 	var res *Result
 	var err error
 
-	for _,index := range r.indexNames {
-		aliasName := strings.Split(index, "_")[0]
+	for _,indexName := range r.indexNames {
+		aliasName := strings.Split(indexName, "_")[0]
 		switch aliasName {
 		case indices.AliasNameFirm:
 			tableName = indices.AliasNameFirm
@@ -60,7 +60,8 @@ func (r *Indexer) All(ctx context.Context, batchSize int) (*Result, error) {
 			return nil, err
 		}
 
-		res, err =  r.ByID(ctx, min, max, batchSize, index)
+		r.log.Printf("in All index/index.go before byid", indexName)
+		res, err =  r.ByID(ctx, min, max, batchSize, aliasName)
 
 		r.log.Printf("in All index/index.go res", res)
 		r.log.Printf("in All index/index.go err", err)
@@ -74,20 +75,21 @@ func (r *Indexer) ByID(ctx context.Context, start, end, batchSize int, aliasName
 	var result *Result
 	var err error
 
+	r.log.Printf("By id, alias name", aliasName)
+
 	var index string
 	for _, currentIndex := range r.indexNames {
-		currentAliasName := strings.Split(index, "_")[0]
+		currentAliasName := strings.Split(currentIndex, "_")[0]
 		//r.log.Printf("in index aliasName", aliasName)
 		if currentAliasName == aliasName {
 			index = currentIndex
+			break
 		}
 	}
+	r.log.Printf("By id, index", index)
 
 	entity := make(chan indices.Entity, batchSize)
 	go func() {
-
-		//TODO some of these methods just need alias name to decide which query or scan to run when indexing - see where you
-		//can add aliasname instead of the full index name
 		err := r.queryByID(ctx, entity, start, end, batchSize, index, aliasName)
 		if err != nil {
 			rerr = err

@@ -123,36 +123,28 @@ func scan(ctx context.Context, rows pgx.Rows, results chan<- indices.Entity, ind
 	fmt.Println("scan aliasname", alias)
 
 	if alias == person.AliasName {
-		fmt.Println("db.go person")
 		a := &personAdded{}
 		var p *person.Person
 
 		for rows.Next() {
 			var v rowResult
-			fmt.Println("db.go person row result", v)
-
 			err = rows.Scan(&v.ID, &v.UID, &v.CaseRecNumber, &v.Email, &v.Dob,
 				&v.Firstname, &v.Middlenames, &v.Surname, &v.CompanyName, &v.Type, &v.OrganisationName,
 				&v.PhoneNumberID, &v.PhoneNumber,
 				&v.AddressID, &v.AddressLines, &v.Postcode,
 				&v.CaseID, &v.CasesUID, &v.CasesCaseRecNumber, &v.CasesOnlineLpaID, &v.CasesBatchID, &v.CasesCaseType, &v.CasesCaseSubType)
 
-			fmt.Println("db.go person err", err)
-
 			if err != nil {
 				break
 			}
 
 			if v.ID != lastID {
-				fmt.Println("in id change")
-				fmt.Println("in id *p", &p)
 				if p != nil {
 					results <- *p
 				}
 
 				a.clear()
 				p = &person.Person{}
-				fmt.Println("in id p", p)
 				lastID = v.ID
 			}
 			addResultToPerson(a, p, v)
@@ -177,25 +169,20 @@ func scan(ctx context.Context, rows pgx.Rows, results chan<- indices.Entity, ind
 		var f *indices.Firm
 		for rows.Next() {
 			var v rowResultFirm
-			fmt.Println("db.go firm row result", v)
 			err = rows.Scan(&v.ID, &v.Email, &v.FirmName,
 				&v.FirmNumber, &v.AddressLine1, &v.AddressLine2, &v.AddressLine3, &v.Town, &v.County,
 				&v.Postcode, &v.PhoneNumber)
-			fmt.Println("db.go firm err", err)
 
 			if err != nil {
 				break
 			}
 
 			if v.ID != lastID {
-				fmt.Println("in id change firm")
-				fmt.Println("in id *f", &f)
 				if f != nil {
 					results <- *f
 				}
 
 				f = &indices.Firm{}
-				fmt.Println("in id f", f)
 				lastID = v.ID
 			}
 
@@ -257,7 +244,7 @@ type rowResultFirm struct {
 	ID           int
 	Email        string
 	FirmName     string
-	FirmNumber   string
+	FirmNumber   int
 	AddressLine1 string
 	AddressLine2 string
 	AddressLine3 string
@@ -341,7 +328,7 @@ func addResultToFirm(f *indices.Firm, s rowResultFirm) {
 		f.Persontype = "Firm" // needed to add this when querying firm comes back blank
 		f.Email = s.Email
 		f.FirmName = s.FirmName
-		f.FirmNumber = s.FirmNumber
+		f.FirmNumber = strconv.Itoa(s.FirmNumber)
 		f.AddressLine1 = s.AddressLine1
 		f.AddressLine2 = s.AddressLine2
 		f.AddressLine3 = s.AddressLine3

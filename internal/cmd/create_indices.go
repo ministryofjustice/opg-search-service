@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"flag"
+	"fmt"
 	"github.com/ministryofjustice/opg-search-service/internal/elasticsearch"
 	"strings"
 )
@@ -16,6 +17,7 @@ type indicesCommand struct {
 	esClient  IndexClient
 	indexName string
 	indexConfig []byte
+
 }
 
 type createIndicesCommand struct {
@@ -42,6 +44,7 @@ func (c *createIndicesCommand) Name() string {
 }
 
 func (c *createIndicesCommand) Run(args []string) error {
+	fmt.Println("commands array", c)
 	flagset := flag.NewFlagSet("create-indices", flag.ExitOnError)
 
 	force := flagset.Bool("force", false, "force recreation if index already exists")

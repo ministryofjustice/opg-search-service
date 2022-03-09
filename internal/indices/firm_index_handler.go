@@ -80,19 +80,20 @@ func (i *IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (i *IndexHandler) doIndex(indexName string, response *indexResponse, firms []Firm) error {
 	op := elasticsearch.NewBulkOp(indexName)
 
-	for _, p := range firms {
-		err := op.Index(p.Id(), p)
+	for _, f := range firms {
+
+		err := op.Index(f.Id(), f)
 
 		if err == elasticsearch.ErrOpTooLarge {
 			response.Add(i.client.DoBulk(op))
 			op.Reset()
-			err = op.Index(p.Id(), p)
+			err = op.Index(f.Id(), f)
 		}
 
 		if err != nil {
 			i.logger.Println(err)
 
-			return fmt.Errorf("could not construct index request for id=%d", p.Id())
+			return fmt.Errorf("could not construct index request for id=%d", f.Id())
 		}
 	}
 
