@@ -84,8 +84,76 @@ func (s *SearchHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 
 func getsearchBody (s *SearchHandler, req *searchRequest, filters []interface{}) (*elasticsearch.SearchResult, error) {
-	if s.entity == person.AliasName {
+	if s.entity == indices.AliasNameFirm {
+		s.logger.Println("in firm search")
+		s.logger.Println(s.entity)
+		esReqBody := map[string]interface{}{
+			"from": req.From,
+			"query": map[string]interface{}{
+				"multi_match" : map[string]interface{}{
+					"query":  req.Term,
+					"fields": []string{ "firmName", "firmNumber"},
+				},
+			},
+			"aggs": map[string]interface{}{
+				"personType": map[string]interface{}{
+					"terms": map[string]string{
+						"field": "personType",
+					},
+				},
+			},
+			"post_filter": map[string]interface{}{
+				"bool": map[string]interface{}{
+					"should": filters,
+				},
+			},
+		}
 
+		if req.Size > 0 {
+			esReqBody["size"] = req.Size
+		}
+
+		s.logger.Println("before result")
+
+		result, err := s.client.Search([] string{indices.AliasNameFirm}, esReqBody)
+		s.logger.Println("after result")
+		s.logger.Println(result)
+		s.logger.Println(err)
+
+		return result, err
+
+	} else if s.entity == indices.AliasNamePersonFirm {
+		s.logger.Println("in search")
+		esReqBody := map[string]interface{}{
+			"from": req.From,
+			"query": map[string]interface{}{
+				"multi_match" : map[string]interface{}{
+					"query":  req.Term,
+					"fields": []string{ "firmName", "firmNumber", "caseRecNumber", "searchable" },
+				},
+			},
+			"aggs": map[string]interface{}{
+				"personType": map[string]interface{}{
+					"terms": map[string]string{
+						"field": "personType",
+					},
+				},
+			},
+			"post_filter": map[string]interface{}{
+				"bool": map[string]interface{}{
+					"should": filters,
+				},
+			},
+		}
+
+		if req.Size > 0 {
+			esReqBody["size"] = req.Size
+		}
+
+		result, err := s.client.Search([] string{indices.AliasNamePersonFirm}, esReqBody)
+		return result, err
+
+	} else {
 		esReqBody := map[string]interface{}{
 			"from": req.From,
 			"query": map[string]interface{}{
@@ -123,40 +191,6 @@ func getsearchBody (s *SearchHandler, req *searchRequest, filters []interface{})
 
 		result, err := s.client.Search([]string{person.AliasName}, esReqBody)
 		return result, err
-
-	} else if s.entity == indices.AliasNamePersonFirm {
-		s.logger.Println("in search")
-		esReqBody := map[string]interface{}{
-			"from": req.From,
-			"query": map[string]interface{}{
-				"multi_match" : map[string]interface{}{
-					"query":  req.Term,
-					"fields": []string{ "firmName", "firmNumber", "caseRecNumber", "searchable" },
-				},
-			},
-			"aggs": map[string]interface{}{
-				"personType": map[string]interface{}{
-					"terms": map[string]string{
-						"field": "personType",
-					},
-				},
-			},
-			"post_filter": map[string]interface{}{
-				"bool": map[string]interface{}{
-					"should": filters,
-				},
-			},
-		}
-
-		if req.Size > 0 {
-			esReqBody["size"] = req.Size
-		}
-
-		result, err := s.client.Search([] string{indices.AliasNamePersonFirm}, esReqBody)
-		return result, err
-
-	} else {
-		return nil, nil
 	}
 }
 

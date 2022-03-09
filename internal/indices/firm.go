@@ -21,7 +21,7 @@ type Firm struct {
 	Persontype   string `json:"personType"`
 	Email        string `json:"email"`
 	FirmName     string `json:"firmName"`
-	FirmNumber   int  	`json:"firmNumber"`
+	FirmNumber   string  	`json:"firmNumber"`
 	AddressLine1 string `json:"addressLine1"`
 	AddressLine2 string `json:"addressLine2"`
 	AddressLine3 string `json:"addressLine3"`
@@ -68,12 +68,7 @@ func IndexConfigFirm() (name string, config []byte, err error) {
 					"type": "text",
 				},
 				"firmName": map[string]interface{}{
-					"type": "text",
-					"fields": map[string]interface{}{
-						"raw": map[string]interface{}{
-							"type": "keyword",
-						},
-					},
+					"type": "keyword",
 				},
 				"firmNumber": map[string]interface{}{
 					"type": "keyword",

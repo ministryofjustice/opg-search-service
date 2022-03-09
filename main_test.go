@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/ministryofjustice/opg-search-service/internal/indices"
 	"io/ioutil"
 	"log"
 	"net"
@@ -23,6 +24,7 @@ import (
 type EndToEndTestSuite struct {
 	suite.Suite
 	testPeople []person.Person
+	testFirms  []indices.Firm
 	esClient   *elasticsearch.Client
 	authHeader string
 }
@@ -79,6 +81,37 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 		},
 	}
 
+	suite.testFirms = []indices.Firm{
+		{
+			ID:           id(0),
+			FirmName:     "Firm1",
+			FirmNumber:   "1",
+			Persontype:   "Firm",
+			Email:        "test@test.com",
+			AddressLine1: "Address Line 1",
+			AddressLine2: "Address Line 2",
+			AddressLine3: "Address Line 3",
+			Town:         "Town",
+			County:       "County",
+			Postcode:     "PO2 CDE",
+			Phonenumber:  "0123 456 789",
+		},
+		{
+			ID:           id(1),
+			FirmName:     "Firm",
+			FirmNumber:   "2",
+			Persontype:   "Firm",
+			Email:        "test@test.com",
+			AddressLine1: "Address Line 1",
+			AddressLine2: "Address Line 2",
+			AddressLine3: "Address Line 3",
+			Town:         "Town",
+			County:       "County",
+			Postcode:     "PO2 CDE",
+			Phonenumber:  "0123 456 789",
+		},
+	}
+
 	// wait for ES service to stand up
 	time.Sleep(time.Second * 10)
 
@@ -96,9 +129,14 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 	suite.Equal(http.StatusOK, resp.StatusCode)
 
 	indexName, _, _ := person.IndexConfig()
+	indexNameFirm, _, _ := indices.IndexConfigFirm()
 
 	exists, err := suite.esClient.IndexExists(indexName)
 	suite.False(exists, "Person index should not exist at this point")
+	suite.Nil(err)
+
+	existsFirmIndex, err := suite.esClient.IndexExists(indexNameFirm)
+	suite.False(existsFirmIndex, "Firm index should not exist at this point")
 	suite.Nil(err)
 
 	// wait up to 5 seconds for the app to start
@@ -112,6 +150,10 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 
 		exists, err = suite.esClient.IndexExists(indexName)
 		suite.True(exists, "Person index should exist at this point")
+		suite.Nil(err)
+
+		existsFirmIndex, err = suite.esClient.IndexExists(indexName)
+		suite.True(existsFirmIndex, "Firm index should exist at this point")
 		suite.Nil(err)
 
 		conn.Close()
@@ -238,6 +280,75 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
 				resp, err := doRequest(suite.authHeader, "/persons/search", map[string]string{"term": tc.term})
 				if err != nil {
 					suite.Fail("Error searching for a person", err)
+				}
+
+				suite.Equal(http.StatusOK, resp.StatusCode)
+
+				respBody, _ = ioutil.ReadAll(resp.Body)
+
+				if bytes.Equal(expectedResponse, respBody) {
+					break
+				}
+
+				time.Sleep(time.Millisecond * 100)
+			}
+
+			suite.Equal(string(expectedResponse), string(respBody))
+		})
+	}
+}
+
+func (suite *EndToEndTestSuite) TestIndexAndSearchFirm() {
+	resp, err := doRequest(suite.authHeader, "/firms", indices.IndexRequest{Firms: suite.testFirms})
+	if err != nil {
+		suite.Fail("Error indexing firm", err)
+	}
+	defer resp.Body.Close()
+
+	suite.Equal(http.StatusAccepted, resp.StatusCode)
+
+	data, _ := ioutil.ReadAll(resp.Body)
+
+	suite.Equal(`{"successful":2,"failed":0}`, string(data))
+
+	testCases := []struct {
+		scenario         string
+		term             string
+		expectedResponse func() response.SearchResponse
+	}{
+		{
+			scenario: "search by firmname",
+			term:     suite.testFirms[1].FirmName,
+			expectedResponse: func() response.SearchResponse {
+				hit, _ := json.Marshal(suite.testFirms[1])
+
+				return response.SearchResponse{
+					Results: []json.RawMessage{hit},
+					Aggregations: map[string]map[string]int{
+						"personType": {
+							"Firm": 1,
+						},
+					},
+					Total: response.Total{
+						Count: 1,
+						Exact: true,
+					},
+				}
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.scenario, func() {
+			var respBody []byte
+
+			expectedResponse, _ := json.Marshal(tc.expectedResponse())
+
+			// wait up to 2s for the indexed record to become searchable
+			for i := 0; i < 20; i++ {
+				resp, err := doRequest(suite.authHeader, "/firms/search", map[string]string{"term": tc.term})
+				if err != nil {
+					suite.Fail("Error searching for a firm", err)
 				}
 
 				suite.Equal(http.StatusOK, resp.StatusCode)

@@ -257,7 +257,7 @@ type rowResultFirm struct {
 	ID           int
 	Email        string
 	FirmName     string
-	FirmNumber   int
+	FirmNumber   string
 	AddressLine1 string
 	AddressLine2 string
 	AddressLine3 string

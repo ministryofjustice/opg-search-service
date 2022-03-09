@@ -142,22 +142,22 @@ INSERT INTO person_caseitem (person_id, caseitem_id) VALUES (1, 1), (1, 2);
 					}},
 				},
 			person.Person{
-					ID:               i64(2),
-					UID:              "7006-5672-8332",
-					Normalizeduid:    700656728332,
-					CaseRecNumber:    "",
-					Email:            "",
-					Dob:              "02/01/1990",
-					Firstname:        "Jack",
-					Middlenames:      "",
-					Surname:          "Jackson",
-					CompanyName:      "",
-					Persontype:       "Donor",
-					OrganisationName: "",
-					Phonenumbers:     nil,
-					Addresses:        nil,
-					Cases:            nil,
-				}}, results)
+				ID:               i64(2),
+				UID:              "7006-5672-8332",
+				Normalizeduid:    700656728332,
+				CaseRecNumber:    "",
+				Email:            "",
+				Dob:              "02/01/1990",
+				Firstname:        "Jack",
+				Middlenames:      "",
+				Surname:          "Jackson",
+				CompanyName:      "",
+				Persontype:       "Donor",
+				OrganisationName: "",
+				Phonenumbers:     nil,
+				Addresses:        nil,
+				Cases:            nil,
+			}}, results)
 	}
 
 	_, ok := <-resultsCh

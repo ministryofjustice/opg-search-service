@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"testing"
 
@@ -41,10 +40,6 @@ func TestIndexPerson(t *testing.T) {
 	}
 
 	err = command.Run([]string{})
-	entries := hook.AllEntries()
-	for _, hook := range entries {
-		fmt.Println(hook.Message)
-	}
 	assert.Nil(err)
 	assert.Equal("indexing done successful=0 failed=0", hook.LastEntry().Message)
 }

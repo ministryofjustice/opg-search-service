@@ -297,7 +297,7 @@ CREATE TABLE public.firm
     postcode character varying(255) COLLATE pg_catalog."default" default NULL::character varying,
     phonenumber character varying(255) COLLATE pg_catalog."default" default NULL::character varying,
     email character varying(255) COLLATE pg_catalog."default" default NULL::character varying,
-    firmnumber integer,
+    firmnumber character varying(255) NOT NULL,
     piireceived date,
     piiexpiry date,
     piiamount numeric(12, 2) default NULL::numeric,
