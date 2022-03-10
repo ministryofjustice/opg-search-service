@@ -21,8 +21,8 @@ Commands:
 	hc                		run healthcheck on the search service
 	create-indices    		create elasticsearch indices
 	index             		index person records
-	index all           	index all records
-	index firm				index firm records
+	index --all           	index all person and firm records
+	index --firm			index firm records
 
 `, os.Args[0])
 	}
@@ -33,8 +33,7 @@ Commands:
 		for _, cmd := range cmds {
 			if cmd.Name() == args[0] {
 				logger.Printf("Running command: %T", cmd)
-				err := cmd.Run(args[1:])
-				if err != nil {
+				if err := cmd.Run(args[1:]); err != nil {
 					logger.Errorln(err)
 					logger.Exit(1)
 					return

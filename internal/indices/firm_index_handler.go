@@ -12,8 +12,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-//the index handler and index request are the only thing that is different across the firm and person hence seperated out. the search is common
-
 type IndexClient interface {
 	DoBulk(op *elasticsearch.BulkOp) (elasticsearch.BulkResult, error)
 }

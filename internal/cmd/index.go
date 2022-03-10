@@ -23,7 +23,7 @@ type indexCommand struct {
 	logger    		*logrus.Logger
 	esClient  		index.BulkClient
 	secrets   		Secrets
-	currentIndices	[] string
+	currentIndices	[]string
 }
 
 func NewIndex(logger *logrus.Logger, esClient index.BulkClient, secrets Secrets, indexes map[string][]byte) *indexCommand {
@@ -74,10 +74,9 @@ func (c *indexCommand) Run(args []string) error {
 		return err
 	}
 
-	var fromTime time.Time
 	indexer := index.New(conn, c.esClient, c.logger, c.currentIndices)
 
-	fromTime, err = time.Parse(time.RFC3339, *fromDate)
+	fromTime, err := time.Parse(time.RFC3339, *fromDate)
 
 	if *fromDate != "" && err != nil {
 		return fmt.Errorf("-from-date: %w", err)

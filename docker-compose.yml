@@ -12,8 +12,6 @@ services:
 
   localstack:
     image: localstack/localstack-full:0.12.8
-    ports:
-      - 4571:4571
     environment:
       DEFAULT_REGION: eu-west-1
       HOSTNAME_EXTERNAL: localstack

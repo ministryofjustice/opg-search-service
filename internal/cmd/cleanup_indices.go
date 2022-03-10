@@ -17,14 +17,14 @@ type CleanupIndicesClient interface {
 type cleanupIndicesCommand struct {
 	logger 		*logrus.Logger
 	client 		CleanupIndicesClient
-	indexes		map[string][]byte
+	indices		map[string][]byte
 }
 
-func NewCleanupIndices(logger *logrus.Logger, client CleanupIndicesClient, indexes map[string][]byte) *cleanupIndicesCommand {
+func NewCleanupIndices(logger *logrus.Logger, client CleanupIndicesClient, indices map[string][]byte) *cleanupIndicesCommand {
 	return &cleanupIndicesCommand{
 		logger: 	logger,
 		client: 	client,
-		indexes:  	indexes,
+		indices:  	indices,
 	}
 }
 
@@ -41,7 +41,7 @@ func (c *cleanupIndicesCommand) Run(args []string) error {
 		return err
 	}
 
-	for indexName := range c.indexes {
+	for indexName := range c.indices {
 		aliasName := strings.Split(indexName, "_")[0]
 		aliasedIndex, err := c.client.ResolveAlias(aliasName)
 		if err != nil {

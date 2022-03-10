@@ -14,13 +14,13 @@ type IndexClient interface {
 
 type createIndicesCommand struct {
 	esClient    IndexClient
-	indexes		map[string][]byte
+	indices		map[string][]byte
 }
 
-func NewCreateIndices(esClient IndexClient, indexes map[string][]byte) *createIndicesCommand {
+func NewCreateIndices(esClient IndexClient, indices map[string][]byte) *createIndicesCommand {
 	return &createIndicesCommand{
 		esClient:   esClient,
-		indexes: 	indexes,
+		indices: 	indices,
 	}
 }
 
@@ -37,7 +37,7 @@ func (c *createIndicesCommand) Run(args []string) error {
 		return err
 	}
 
-	for indexName, indexConfig := range c.indexes {
+	for indexName, indexConfig := range c.indices {
 		if err := c.esClient.CreateIndex(indexName, indexConfig, *force); err != nil {
 			return err
 		}

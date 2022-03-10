@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"github.com/ministryofjustice/opg-search-service/internal/indices"
 	"github.com/ministryofjustice/opg-search-service/internal/searching"
 	"log"
@@ -25,7 +24,6 @@ func main() {
 	l.SetFormatter(&logrus.JSONFormatter{})
 
 	//create indices for entities
-	fmt.Println("Creating indices & config for both bulk and individual indexing")
 	personIndex, personConfig, err := person.IndexConfig()
 	if err != nil {
 		l.Fatal(err)
@@ -54,7 +52,6 @@ func main() {
 		cmd.NewCleanupIndices(l, esClient, currentIndices),
 	)
 
-	fmt.Println("Force creating indices if they do not exist")
 	personIndices := createIndexAndAlias(esClient, person.AliasName, personIndex, personConfig, l)
 	firmIndices := createIndexAndAlias(esClient, indices.AliasNameFirm, firmIndex, firmConfig, l)
 
