@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"flag"
-	"fmt"
 	"github.com/ministryofjustice/opg-search-service/internal/elasticsearch"
 	"strings"
 )
@@ -13,30 +12,16 @@ type IndexClient interface {
 	CreateAlias(alias, index string) error
 }
 
-type indicesCommand struct {
-	esClient  IndexClient
-	indexName string
-	indexConfig []byte
-
-}
-
 type createIndicesCommand struct {
-	commands []*indicesCommand
+	esClient    IndexClient
+	indexes		map[string][]byte
 }
 
 func NewCreateIndices(esClient IndexClient, indexes map[string][]byte) *createIndicesCommand {
-	commandArray := &createIndicesCommand{}
-
-	for indexName, config := range indexes {
-		indicesCommand := &indicesCommand{
-			esClient:    esClient,
-			indexName:   indexName,
-			indexConfig: config,
-		}
-		commandArray.commands = append(commandArray.commands, indicesCommand)
+	return &createIndicesCommand{
+		esClient:   esClient,
+		indexes: 	indexes,
 	}
-
-	return commandArray
 }
 
 func (c *createIndicesCommand) Name() string {
@@ -44,7 +29,6 @@ func (c *createIndicesCommand) Name() string {
 }
 
 func (c *createIndicesCommand) Run(args []string) error {
-	fmt.Println("commands array", c)
 	flagset := flag.NewFlagSet("create-indices", flag.ExitOnError)
 
 	force := flagset.Bool("force", false, "force recreation if index already exists")
@@ -53,22 +37,21 @@ func (c *createIndicesCommand) Run(args []string) error {
 		return err
 	}
 
-	for _, s := range c.commands {
-		if err := s.esClient.CreateIndex(s.indexName, s.indexConfig, *force); err != nil {
+	for indexName, indexConfig := range c.indexes {
+		if err := c.esClient.CreateIndex(indexName, indexConfig, *force); err != nil {
 			return err
 		}
 
-		typeOfIndex := strings.Split(s.indexName, "_")[0]
-		_, err := s.esClient.ResolveAlias(typeOfIndex)
+		typeOfIndex := strings.Split(indexName, "_")[0]
+		_, err := c.esClient.ResolveAlias(typeOfIndex)
 
 		if err == elasticsearch.ErrAliasMissing {
-			if err := s.esClient.CreateAlias(typeOfIndex, s.indexName); err != nil {
+			if err := c.esClient.CreateAlias(typeOfIndex, indexName); err != nil {
 				return err
 			}
 		} else if err != nil {
 			return err
 		}
-
 	}
 
 	return nil

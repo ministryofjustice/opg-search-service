@@ -84,21 +84,33 @@ func (c *indexCommand) Run(args []string) error {
 	}
 
 	var result *index.Result
+	var resultsForAll index.AllResults
 
 	if !fromTime.IsZero() {
 		c.logger.Printf("indexing by date from=%v batchSize=%d", fromTime, *batchSize)
 		result, err = indexer.FromDate(ctx, fromTime, *batchSize)
 	} else if *all {
 		c.logger.Printf("indexing all records batchSize=%d", *batchSize)
-		result, err = indexer.All(ctx, *batchSize)
-		c.logger.Println(result)
-		c.logger.Println(err)
+		resultsForAll = indexer.All(ctx, *batchSize)
 	} else if *firmOnly {
 		c.logger.Printf("indexing by id from=%d to=%d batchSize=%d", *from, *to, *batchSize)
 		result, err = indexer.ByID(ctx, *from, *to, *batchSize, indices.AliasNameFirm)
 	} else {
 		c.logger.Printf("indexing by id from=%d to=%d batchSize=%d", *from, *to, *batchSize)
 		result, err = indexer.ByID(ctx, *from, *to, *batchSize, person.AliasName)
+	}
+
+	if *all {
+		for _, res  := range resultsForAll {
+			if res.Error != nil {
+				return res.Error
+			}
+			c.logger.Printf("indexing done successful=%d failed=%d", res.Result.Successful, res.Result.Failed)
+			for _, e := range res.Result.Errors {
+				c.logger.Println(e)
+			}
+		}
+		return nil
 	}
 
 	if err != nil {
@@ -115,10 +127,9 @@ func (c *indexCommand) Run(args []string) error {
 
 func (c *indexCommand) dbConnectionString() (string, error) {
 	pass := os.Getenv("SEARCH_SERVICE_DB_PASS")
-	universalSecret := c.secrets
 	if passSecret := os.Getenv("SEARCH_SERVICE_DB_PASS_SECRET"); passSecret != "" {
 		var err error
-		pass, err = universalSecret.GetGlobalSecretString(passSecret)
+		pass, err = c.secrets.GetGlobalSecretString(passSecret)
 		if err != nil {
 			return "", err
 		}

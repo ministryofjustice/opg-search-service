@@ -23,7 +23,7 @@ func (m *mockUpdateAliasClient) UpdateAlias(alias, oldIndex, newIndex string) er
 	args := m.Called(alias, oldIndex, newIndex)
 	return args.Error(0)
 }
-//check because the flag is panicking that its being redefined
+
 func TestUpdatePersonAlias(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	client := &mockUpdateAliasClient{}

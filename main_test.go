@@ -98,7 +98,7 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 		},
 		{
 			ID:           id(1),
-			FirmName:     "Firm",
+			FirmName:     "Firm2",
 			FirmNumber:   "2",
 			Persontype:   "Firm",
 			Email:        "test@test.com",

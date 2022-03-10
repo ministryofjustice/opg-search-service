@@ -14,29 +14,18 @@ type CleanupIndicesClient interface {
 	DeleteIndex(string) error
 }
 
-type cleanupCommand struct {
-	logger *logrus.Logger
-	client CleanupIndicesClient
-	index  string
-}
-
 type cleanupIndicesCommand struct {
-	commands []*cleanupCommand
+	logger 		*logrus.Logger
+	client 		CleanupIndicesClient
+	indexes		map[string][]byte
 }
 
 func NewCleanupIndices(logger *logrus.Logger, client CleanupIndicesClient, indexes map[string][]byte) *cleanupIndicesCommand {
-	commandArray := &cleanupIndicesCommand{}
-
-	for indexName, _ := range indexes {
-		indexCommand := &cleanupCommand{
-			logger: logger,
-			client: client,
-			index:  indexName,
-		}
-		commandArray.commands = append(commandArray.commands, indexCommand)
+	return &cleanupIndicesCommand{
+		logger: 	logger,
+		client: 	client,
+		indexes:  	indexes,
 	}
-
-	return commandArray
 }
 
 func (c *cleanupIndicesCommand) Name() string {
@@ -52,27 +41,27 @@ func (c *cleanupIndicesCommand) Run(args []string) error {
 		return err
 	}
 
-	for _, s := range c.commands {
-		aliasName := strings.Split(s.index, "_")[0]
-		aliasedIndex, err := s.client.ResolveAlias(aliasName)
+	for indexName := range c.indexes {
+		aliasName := strings.Split(indexName, "_")[0]
+		aliasedIndex, err := c.client.ResolveAlias(aliasName)
 		if err != nil {
 			return err
 		}
-		if aliasedIndex != s.index {
-			return fmt.Errorf("alias '%s' does not match current index '%s'", aliasName, s.index)
+		if aliasedIndex != indexName {
+			return fmt.Errorf("alias '%s' does not match current index '%s'", aliasName, indexName)
 		}
 
-		indices, err := s.client.Indices(aliasName + "_*")
+		indices, err := c.client.Indices(aliasName + "_*")
 		if err != nil {
 			return err
 		}
 
 		for _, index := range indices {
-			if index != s.index {
+			if index != indexName {
 				if *explain {
-					s.logger.Println("will delete", index)
+					c.logger.Println("will delete", index)
 				} else {
-					if err := s.client.DeleteIndex(index); err != nil {
+					if err := c.client.DeleteIndex(index); err != nil {
 						return err
 					}
 				}

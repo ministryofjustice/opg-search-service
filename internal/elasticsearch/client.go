@@ -230,9 +230,6 @@ func (c *Client) Search(indices[] string, requestBody map[string]interface{}) (*
 		endpoint = indices[0] + "/_search"
 	}
 
-	c.logger.Println("Endpoint")
-	c.logger.Println(endpoint)
-
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(requestBody); err != nil {
 		return nil, err

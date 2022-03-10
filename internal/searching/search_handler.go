@@ -69,15 +69,6 @@ func (s *SearchHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	jsonResp, _ := json.Marshal(resp)
 	rw.WriteHeader(http.StatusOK)
 	_, _ = rw.Write(jsonResp)
-	s.logger.Printf("json response")
-	s.logger.Printf(string(jsonResp))
-	s.logger.Printf("response")
-	s.logger.Printf("%v", resp)
-	s.logger.Printf("%v", resp.Aggregations)
-	s.logger.Printf("%s", resp.Results)
-	s.logger.Printf(string(rune(resp.Total.Count)))
-	s.logger.Printf("%t", resp.Total.Exact)
-
 
 	s.logger.Printf("Request took: %d", time.Since(start))
 }
@@ -85,8 +76,6 @@ func (s *SearchHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 func getsearchBody (s *SearchHandler, req *searchRequest, filters []interface{}) (*elasticsearch.SearchResult, error) {
 	if s.entity == indices.AliasNameFirm {
-		s.logger.Println("in firm search")
-		s.logger.Println(s.entity)
 		esReqBody := map[string]interface{}{
 			"from": req.From,
 			"query": map[string]interface{}{
@@ -113,17 +102,11 @@ func getsearchBody (s *SearchHandler, req *searchRequest, filters []interface{})
 			esReqBody["size"] = req.Size
 		}
 
-		s.logger.Println("before result")
-
 		result, err := s.client.Search([] string{indices.AliasNameFirm}, esReqBody)
-		s.logger.Println("after result")
-		s.logger.Println(result)
-		s.logger.Println(err)
 
 		return result, err
 
 	} else if s.entity == indices.AliasNamePersonFirm {
-		s.logger.Println("in search")
 		esReqBody := map[string]interface{}{
 			"from": req.From,
 			"query": map[string]interface{}{

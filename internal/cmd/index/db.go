@@ -23,61 +23,32 @@ func (r *Indexer) queryByID(ctx context.Context, results chan<- indices.Entity, 
 	batch := &batchIter{start: start, end: end, size: batchSize}
 
 	for batch.Next() {
-		r.log.Printf("querybyid aliasname", alias)
-
 		r.log.Printf("reading range from db (%d, %d)", batch.From(), batch.To())
 
 		if alias == person.AliasName {
 			rows, err := r.conn.Query(ctx, makeQueryPerson(`p.id >= $1 AND p.id <= $2`), batch.From(), batch.To())
-			r.log.Printf("querybyid person rows", rows)
-			r.log.Printf("querybyid person err", err)
 			if err != nil {
 				return err
 			}
 
 			if err := scan(ctx, rows, results, indexName, alias); err != nil {
-				r.log.Printf("querybyid person err after scan", err)
 				return err
 			}
 		}
 
 		if alias == indices.AliasNameFirm {
 			rows, err := r.conn.Query(ctx, makeQueryFirm(`f.id >= $1 AND f.id <= $2`), batch.From(), batch.To())
-			r.log.Printf("querybyid firm rows", rows)
-			r.log.Printf("querybyid firm err", err)
 			if err != nil {
 				return err
 			}
 
 			if err := scan(ctx, rows, results, indexName, alias); err != nil {
-				r.log.Printf("querybyid firm err after scan", err)
 				return err
 			}
 		}
 	}
 	return nil
 }
-
-/*func (r *Indexer) queryByIDFirm(ctx context.Context, results chan<- indices.Entity, start, end, batchSize int) error {
-	defer func() { close(results) }()
-
-	batch := &batchIter{start: start, end: end, size: batchSize}
-
-	for batch.Next() {
-		r.log.Printf("reading range from db (%d, %d)", batch.From(), batch.To())
-
-		rows, err := r.conn.Query(ctx, makeQueryFirm(`f.id >= $1 AND f.id <= $2`), batch.From(), batch.To())
-		if err != nil {
-			return err
-		}
-
-		if err := scanFirm(ctx, rows, results); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}*/
 
 func (r *Indexer) queryFromDate(ctx context.Context, results chan<- indices.Entity, from time.Time, indexName string, alias string) error {
 	defer func() { close(results) }()
@@ -118,9 +89,6 @@ ORDER BY f.id`
 func scan(ctx context.Context, rows pgx.Rows, results chan<- indices.Entity, indexName string, alias string) error {
 	var err error
 	lastID := -1
-
-	fmt.Println("scan indexname", indexName)
-	fmt.Println("scan aliasname", alias)
 
 	if alias == person.AliasName {
 		a := &personAdded{}
@@ -325,7 +293,7 @@ func addResultToFirm(f *indices.Firm, s rowResultFirm) {
 	if f.ID == nil {
 		id := int64(s.ID)
 		f.ID = &id
-		f.Persontype = "Firm" // needed to add this when querying firm comes back blank
+		f.Persontype = "Firm"
 		f.Email = s.Email
 		f.FirmName = s.FirmName
 		f.FirmNumber = strconv.Itoa(s.FirmNumber)

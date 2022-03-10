@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// TODO flaky tests when ran locally
 func TestIndexPerson(t *testing.T) {
 	assert := assert.New(t)
 	ctx := context.Background()

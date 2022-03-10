@@ -19,6 +19,14 @@ type Logger interface {
 	Printf(string, ...interface{})
 }
 
+type Results struct {
+	Result *Result
+	Error  error
+}
+
+type AllResults map[int]Results
+
+
 func New(conn *pgx.Conn, es BulkClient, logger Logger, indexNames []string) *Indexer {
 	return &Indexer{
 		conn:      conn,
@@ -35,13 +43,13 @@ type Indexer struct {
 	indexNames [] string
 }
 
-func (r *Indexer) All(ctx context.Context, batchSize int) (*Result, error) {
+func (r *Indexer) All(ctx context.Context, batchSize int) AllResults {
 
 	var tableName string
 	var res *Result
-	var err error
+	var allResults = make(map[int]Results)
 
-	for _,indexName := range r.indexNames {
+	for i,indexName := range r.indexNames {
 		aliasName := strings.Split(indexName, "_")[0]
 		switch aliasName {
 		case indices.AliasNameFirm:
@@ -52,21 +60,23 @@ func (r *Indexer) All(ctx context.Context, batchSize int) (*Result, error) {
 
 		min, max, err := r.getIDRange(ctx, tableName)
 
-		r.log.Printf("in All index/index.go min", min)
-		r.log.Printf("in All index/index.go max", max)
-		r.log.Printf("in All index/index.go err", err)
-
 		if err != nil {
-			return nil, err
+			return AllResults{
+				0: {nil,err},
+			}
 		}
 
-		r.log.Printf("in All index/index.go before byid", indexName)
 		res, err =  r.ByID(ctx, min, max, batchSize, aliasName)
 
-		r.log.Printf("in All index/index.go res", res)
-		r.log.Printf("in All index/index.go err", err)
+		results := Results{
+			Result: res,
+			Error: err,
+		}
+
+		allResults[i] = results
+
 	}
-	return res, err
+	return allResults
 
 }
 
@@ -75,18 +85,14 @@ func (r *Indexer) ByID(ctx context.Context, start, end, batchSize int, aliasName
 	var result *Result
 	var err error
 
-	r.log.Printf("By id, alias name", aliasName)
-
 	var index string
 	for _, currentIndex := range r.indexNames {
 		currentAliasName := strings.Split(currentIndex, "_")[0]
-		//r.log.Printf("in index aliasName", aliasName)
 		if currentAliasName == aliasName {
 			index = currentIndex
 			break
 		}
 	}
-	r.log.Printf("By id, index", index)
 
 	entity := make(chan indices.Entity, batchSize)
 	go func() {
