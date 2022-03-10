@@ -11,7 +11,7 @@ func (m *MockESClient) DoBulk(op *BulkOp) (BulkResult, error) {
 	return args.Get(0).(BulkResult), args.Error(1)
 }
 
-func (m *MockESClient) Search(indexName string, requestBody map[string]interface{}) (*SearchResult, error) {
+func (m *MockESClient) Search(indexName []string, requestBody map[string]interface{}) (*SearchResult, error) {
 	args := m.Called(indexName, requestBody)
 	return args.Get(0).(*SearchResult), args.Error(1)
 }

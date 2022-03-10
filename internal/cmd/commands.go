@@ -18,9 +18,12 @@ func Run(logger *logrus.Logger, cmds ...Command) {
 		fmt.Fprintf(flag.CommandLine.Output(), `Usage of %s <command> [arguments]:
 
 Commands:
-	hc                run healthcheck on the search service
-	create-indices    create elasticsearch indices
-	index             index person records
+	hc                		run healthcheck on the search service
+	create-indices    		create elasticsearch indices
+	index             		index person records
+	index --all				index all person and firm records
+	index --firm			index firm records
+
 `, os.Args[0])
 	}
 	flag.Parse()

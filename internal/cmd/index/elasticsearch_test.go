@@ -2,6 +2,7 @@ package index
 
 import (
 	"context"
+	"github.com/ministryofjustice/opg-search-service/internal/indices"
 	"testing"
 
 	"github.com/ministryofjustice/opg-search-service/internal/elasticsearch"
@@ -28,18 +29,18 @@ func TestIndex(t *testing.T) {
 	client := &mockBulkClient{
 		result: elasticsearch.BulkResult{Successful: 1, Failed: 0},
 	}
-	r := &Indexer{es: client, indexName: "person"}
+	r := &Indexer{es: client, indexNames: []string{"person"}}
 
 	p := person.Person{ID: i64(1), Firstname: "A"}
 
-	persons := make(chan person.Person, 1)
+	persons := make(chan indices.Entity, 1)
 	persons <- p
 	close(persons)
 
 	expectedOp := elasticsearch.NewBulkOp("person")
 	expectedOp.Index(p.Id(), p)
 
-	result, err := r.index(ctx, persons)
+	result, err := r.index(ctx, persons, "person")
 	if assert.Nil(err) {
 		assert.Equal(1, result.Successful)
 		assert.Equal(0, result.Failed)

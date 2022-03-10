@@ -3,17 +3,27 @@ package index
 import (
 	"context"
 	"fmt"
-
 	"github.com/ministryofjustice/opg-search-service/internal/elasticsearch"
-	"github.com/ministryofjustice/opg-search-service/internal/person"
+	"github.com/ministryofjustice/opg-search-service/internal/indices"
+	"strings"
 )
 
-func (r *Indexer) index(ctx context.Context, persons <-chan person.Person) (*Result, error) {
-	op := elasticsearch.NewBulkOp(r.indexName)
+func (r *Indexer) index(ctx context.Context, entity <-chan indices.Entity, indexName string) (*Result, error) {
+	aliasOfIndex := strings.Split(indexName, "_")[0]
+
+	var indexToIndex string
+	for _, index := range r.indexNames {
+		aliasName := strings.Split(index, "_")[0]
+		if aliasName == aliasOfIndex {
+			indexToIndex = index
+		}
+	}
+
+	op := elasticsearch.NewBulkOp(indexToIndex)
 	result := &Result{}
 
-	for p := range persons {
-		err := op.Index(p.Id(), p)
+	for e := range entity {
+		err := op.Index(e.Id(), e)
 
 		if err == elasticsearch.ErrOpTooLarge {
 			res, bulkErr := r.es.DoBulk(op)
@@ -25,11 +35,11 @@ func (r *Indexer) index(ctx context.Context, persons <-chan person.Person) (*Res
 
 			result.Add(res, bulkErr)
 			op.Reset()
-			err = op.Index(p.Id(), p)
+			err = op.Index(e.Id(), e)
 		}
 
 		if err != nil {
-			return nil, fmt.Errorf("could not construct index request for id=%d; %w", p.Id(), err)
+			return nil, fmt.Errorf("could not construct index request for id=%d; %w", e.Id(), err)
 		}
 	}
 

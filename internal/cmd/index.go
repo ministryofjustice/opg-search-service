@@ -5,6 +5,8 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/ministryofjustice/opg-search-service/internal/indices"
+	"github.com/ministryofjustice/opg-search-service/internal/person"
 	"os"
 	"time"
 
@@ -18,18 +20,22 @@ type Secrets interface {
 }
 
 type indexCommand struct {
-	logger    *logrus.Logger
-	esClient  index.BulkClient
-	secrets   Secrets
-	indexName string
+	logger    		*logrus.Logger
+	esClient  		index.BulkClient
+	secrets   		Secrets
+	currentIndices	[]string
 }
 
-func NewIndex(logger *logrus.Logger, esClient index.BulkClient, secrets Secrets, indexName string) *indexCommand {
+func NewIndex(logger *logrus.Logger, esClient index.BulkClient, secrets Secrets, indexes map[string][]byte) *indexCommand {
+	var currentIndices [] string
+	for indexName, _ := range indexes {
+		currentIndices = append(currentIndices, indexName)
+	}
 	return &indexCommand{
-		logger:    logger,
-		esClient:  esClient,
-		secrets:   secrets,
-		indexName: indexName,
+			logger:    logger,
+			esClient:  esClient,
+			secrets:   secrets,
+			currentIndices: currentIndices,
 	}
 }
 
@@ -41,6 +47,7 @@ func (c *indexCommand) Run(args []string) error {
 	flagset := flag.NewFlagSet("index", flag.ExitOnError)
 
 	all := flagset.Bool("all", false, "index all records")
+	firmOnly := flagset.Bool("firm", false, "index firm records")
 	from := flagset.Int("from", 0, "id to index from")
 	to := flagset.Int("to", 100, "id to index to")
 	batchSize := flagset.Int("batch-size", 10000, "batch size to read from db")
@@ -67,7 +74,7 @@ func (c *indexCommand) Run(args []string) error {
 		return err
 	}
 
-	indexer := index.New(conn, c.esClient, c.logger, c.indexName)
+	indexer := index.New(conn, c.esClient, c.logger, c.currentIndices)
 
 	fromTime, err := time.Parse(time.RFC3339, *fromDate)
 
@@ -76,16 +83,33 @@ func (c *indexCommand) Run(args []string) error {
 	}
 
 	var result *index.Result
+	var resultsForAll index.AllResults
 
 	if !fromTime.IsZero() {
 		c.logger.Printf("indexing by date from=%v batchSize=%d", fromTime, *batchSize)
 		result, err = indexer.FromDate(ctx, fromTime, *batchSize)
 	} else if *all {
 		c.logger.Printf("indexing all records batchSize=%d", *batchSize)
-		result, err = indexer.All(ctx, *batchSize)
+		resultsForAll = indexer.All(ctx, *batchSize)
+	} else if *firmOnly {
+		c.logger.Printf("indexing by id from=%d to=%d batchSize=%d", *from, *to, *batchSize)
+		result, err = indexer.ByID(ctx, *from, *to, *batchSize, indices.AliasNameFirm)
 	} else {
 		c.logger.Printf("indexing by id from=%d to=%d batchSize=%d", *from, *to, *batchSize)
-		result, err = indexer.ByID(ctx, *from, *to, *batchSize)
+		result, err = indexer.ByID(ctx, *from, *to, *batchSize, person.AliasName)
+	}
+
+	if *all {
+		for _, res  := range resultsForAll {
+			if res.Error != nil {
+				return res.Error
+			}
+			c.logger.Printf("indexing done successful=%d failed=%d", res.Result.Successful, res.Result.Failed)
+			for _, e := range res.Result.Errors {
+				c.logger.Println(e)
+			}
+		}
+		return nil
 	}
 
 	if err != nil {

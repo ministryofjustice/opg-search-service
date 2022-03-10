@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/ministryofjustice/opg-search-service/internal/indices"
 	"testing"
 
 	"github.com/ministryofjustice/opg-search-service/internal/person"
@@ -37,13 +38,24 @@ func TestCleanupIndices(t *testing.T) {
 		Return("person_something", nil)
 
 	client.
+		On("ResolveAlias", indices.AliasNameFirm).
+		Return("firm_something", nil)
+
+	client.
 		On("Indices", "person_*").
 		Return([]string{"person_xyz", "person_something", "person_abc"}, nil)
+
+	client.
+		On("Indices", "firm_*").
+		Return([]string{"firm_xyz", "firm_something", "firm_abc"}, nil)
 
 	client.On("DeleteIndex", "person_xyz").Return(nil).Once()
 	client.On("DeleteIndex", "person_abc").Return(nil).Once()
 
-	command := NewCleanupIndices(l, client, "person_something")
+	client.On("DeleteIndex", "firm_xyz").Return(nil).Once()
+	client.On("DeleteIndex", "firm_abc").Return(nil).Once()
+
+	command := NewCleanupIndices(l, client, map[string][]byte{"firm_something": indexConfig, "person_something": indexConfig})
 	assert.Nil(t, command.Run([]string{}))
 }
 
@@ -56,10 +68,19 @@ func TestCleanupIndicesWhenAliasNotCurrent(t *testing.T) {
 		Return("person_xyz", nil)
 
 	client.
+		On("ResolveAlias", indices.AliasNameFirm).
+		Return("firm_xyz", nil)
+
+	client.
 		On("Indices", "person_*").
 		Return([]string{"person_xyz", "person_something", "person_abc"}, nil)
 
-	command := NewCleanupIndices(l, client, "person_something")
+
+	client.
+		On("Indices", "firm_*").
+		Return([]string{"firm_xyz", "firm_something", "firm_abc"}, nil)
+
+	command := NewCleanupIndices(l, client, map[string][]byte{"firm_something": indexConfig, "person_something": indexConfig})
 	assert.NotNil(t, command.Run([]string{}))
 }
 
@@ -72,13 +93,22 @@ func TestCleanupIndicesExplain(t *testing.T) {
 		Return("person_something", nil)
 
 	client.
+		On("ResolveAlias", indices.AliasNameFirm).
+		Return("firm_something", nil)
+
+	client.
 		On("Indices", "person_*").
 		Return([]string{"person_xyz", "person_something", "person_abc"}, nil)
 
-	command := NewCleanupIndices(l, client, "person_something")
+
+	client.
+		On("Indices", "firm_*").
+		Return([]string{"firm_xyz", "firm_something", "firm_abc"}, nil)
+
+	command := NewCleanupIndices(l, client, map[string][]byte{"firm_something": indexConfig, "person_something": indexConfig})
 	assert.Nil(t, command.Run([]string{"-explain"}))
 
-	expected := []string{"will delete person_xyz", "will delete person_abc"}
+	expected := []string{"will delete firm_xyz", "will delete firm_abc", "will delete person_xyz", "will delete person_abc"}
 	if assert.Len(t, hook.Entries, len(expected)) {
 		for i, e := range hook.Entries {
 			assert.Equal(t, expected[i], e.Message)
