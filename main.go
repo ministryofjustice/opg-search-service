@@ -34,7 +34,7 @@ func main() {
 	}
 	currentIndices := map[string][]byte{
 		personIndex: personConfig,
-		firmIndex: firmConfig,
+		firmIndex:   firmConfig,
 	}
 
 	secretsCache := cache.New()
@@ -52,6 +52,7 @@ func main() {
 		cmd.NewCleanupIndices(l, esClient, currentIndices),
 	)
 
+	//force recreate indices
 	personIndices := createIndexAndAlias(esClient, person.AliasName, personIndex, personConfig, l)
 	firmIndices := createIndexAndAlias(esClient, indices.AliasNameFirm, firmIndex, firmConfig, l)
 
@@ -345,7 +346,7 @@ func main() {
 	_ = s.Shutdown(tc)
 }
 
-func createIndexAndAlias (esClient *elasticsearch.Client, aliasName string, indexName string, indexConfig []byte, l *logrus.Logger) []string {
+func createIndexAndAlias(esClient *elasticsearch.Client, aliasName string, indexName string, indexConfig []byte, l *logrus.Logger) []string {
 	if err := esClient.CreateIndex(indexName, indexConfig, false); err != nil {
 		l.Fatal(err)
 	}

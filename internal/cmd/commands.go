@@ -21,7 +21,7 @@ Commands:
 	hc                		run healthcheck on the search service
 	create-indices    		create elasticsearch indices
 	index             		index person records
-	index --all           	index all person and firm records
+	index --all				index all person and firm records
 	index --firm			index firm records
 
 `, os.Args[0])
