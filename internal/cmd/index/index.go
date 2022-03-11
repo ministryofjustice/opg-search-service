@@ -44,21 +44,12 @@ type Indexer struct {
 }
 
 func (r *Indexer) All(ctx context.Context, batchSize int) AllResults {
-
-	var tableName string
 	var res *Result
 	var allResults = make(map[int]Results)
 
 	for i,indexName := range r.indexNames {
 		aliasName := strings.Split(indexName, "_")[0]
-		switch aliasName {
-		case indices.AliasNameFirm:
-			tableName = indices.AliasNameFirm
-		default:
-			tableName = "persons"
-		}
-
-		min, max, err := r.getIDRange(ctx, tableName)
+		min, max, err := r.getIDRange(ctx, aliasName)
 
 		if err != nil {
 			return AllResults{

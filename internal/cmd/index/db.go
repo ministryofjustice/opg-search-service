@@ -11,8 +11,13 @@ import (
 	"github.com/jackc/pgx/v4"
 )
 
-func (r *Indexer) getIDRange(ctx context.Context, tableName string) (min int, max int, err error) {
-	err = r.conn.QueryRow(ctx, "SELECT MIN(id), MAX(id) FROM " + tableName).Scan(&min, &max)
+func (r *Indexer) getIDRange(ctx context.Context, aliasName string) (min int, max int, err error) {
+	switch aliasName {
+	case indices.AliasNameFirm:
+		err = r.conn.QueryRow(ctx, "SELECT MIN(id), MAX(id) FROM firm").Scan(&min, &max)
+	default:
+		err = r.conn.QueryRow(ctx, "SELECT MIN(id), MAX(id) FROM persons").Scan(&min, &max)
+	}
 
 	return min, max, err
 }

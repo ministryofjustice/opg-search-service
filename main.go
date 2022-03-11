@@ -52,7 +52,6 @@ func main() {
 		cmd.NewCleanupIndices(l, esClient, currentIndices),
 	)
 
-	//force recreate indices
 	personIndices := createIndexAndAlias(esClient, person.AliasName, personIndex, personConfig, l)
 	firmIndices := createIndexAndAlias(esClient, indices.AliasNameFirm, firmIndex, firmConfig, l)
 

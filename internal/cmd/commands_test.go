@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"testing"
 
@@ -63,22 +65,26 @@ func TestCommandsRunSecondArgument(t *testing.T) {
 	assert.Equal(t, 0, exitCode)
 }
 
-//this is the one that always failed even on main
-//func TestCommandsRunErrors(t *testing.T) {
-//	exitCode := -1
-//
-//	l, hook := test.NewNullLogger()
-//	l.ExitFunc = func(c int) {
-//		exitCode = c
-//	}
-//
-//	cmd1 := &MockCommand{name: "1"}
-//
-//	cmd2 := &MockCommand{name: "2"}
-//	cmd2.On("Run", []string{}).Times(1).Return(errors.New("what"))
-//
-//	Run(l, cmd1, cmd2)
-//
-//	assert.Equal(t, "what", hook.LastEntry().Message)
-//	assert.Equal(t, 1, exitCode)
-//}
+func TestCommandsRunErrors(t *testing.T) {
+	exitCode := -1
+
+	l, hook := test.NewNullLogger()
+	l.ExitFunc = func(c int) {
+		exitCode = c
+	}
+
+	cmd1 := &MockCommand{name: "1"}
+
+	cmd2 := &MockCommand{name: "2"}
+	cmd2.On("Run", []string{}).Times(1).Return(errors.New("what"))
+
+	Run(l, cmd1, cmd2)
+
+	fmt.Print("Before hook")
+	for entry := range hook.Entries {
+		fmt.Println(entry)
+	}
+
+	assert.Equal(t, "what", hook.LastEntry().Message)
+	assert.Equal(t, 1, exitCode)
+}

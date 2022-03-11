@@ -45,7 +45,7 @@ INSERT INTO persons (id, uid, caserecnumber, email, dob, firstname, middlenames,
 
 	r := &Indexer{conn: conn, log: &mockLogger{}}
 
-	min, max, err := r.getIDRange(ctx, "persons")
+	min, max, err := r.getIDRange(ctx, "person")
 	assert.Nil(err)
 	assert.Equal(1, min)
 	assert.Equal(3, max)
