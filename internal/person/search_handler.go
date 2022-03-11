@@ -11,7 +11,7 @@ import (
 )
 
 type SearchClient interface {
-	Search(indexName string, requestBody map[string]interface{}) (*elasticsearch.SearchResult, error)
+	Search(indices[] string, requestBody map[string]interface{}) (*elasticsearch.SearchResult, error)
 }
 
 type SearchHandler struct {
@@ -80,7 +80,7 @@ func (s *SearchHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		esReqBody["size"] = req.Size
 	}
 
-	result, err := s.client.Search(AliasName, esReqBody)
+	result, err := s.client.Search([]string{AliasName}, esReqBody)
 	if err != nil {
 		s.logger.Println(err.Error())
 		response.WriteJSONError(rw, "request", "Person search caused an unexpected error", http.StatusInternalServerError)
