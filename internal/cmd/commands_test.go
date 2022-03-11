@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"testing"
 
@@ -79,11 +78,6 @@ func TestCommandsRunErrors(t *testing.T) {
 	cmd2.On("Run", []string{}).Times(1).Return(errors.New("what"))
 
 	Run(l, cmd1, cmd2)
-
-	fmt.Print("Before hook")
-	for entry := range hook.Entries {
-		fmt.Println(entry)
-	}
 
 	assert.Equal(t, "what", hook.LastEntry().Message)
 	assert.Equal(t, 1, exitCode)
