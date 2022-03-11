@@ -77,6 +77,7 @@ func TestCommandsRunErrors(t *testing.T) {
 	cmd2 := &MockCommand{name: "2"}
 	cmd2.On("Run", []string{}).Times(1).Return(errors.New("what"))
 
+	os.Args = []string{"search-service", "2"}
 	Run(l, cmd1, cmd2)
 
 	assert.Equal(t, "what", hook.LastEntry().Message)
