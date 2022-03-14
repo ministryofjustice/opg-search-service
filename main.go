@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"github.com/ministryofjustice/opg-search-service/internal/indices"
+	"github.com/ministryofjustice/opg-search-service/internal/searching"
 	"log"
 	"net/http"
 	"os"
@@ -21,9 +23,18 @@ func main() {
 	l := logrus.New()
 	l.SetFormatter(&logrus.JSONFormatter{})
 
+	//create indices for entities
 	personIndex, personConfig, err := person.IndexConfig()
 	if err != nil {
 		l.Fatal(err)
+	}
+	firmIndex, firmConfig, err := indices.IndexConfigFirm()
+	if err != nil {
+		l.Fatal(err)
+	}
+	currentIndices := map[string][]byte{
+		personIndex: personConfig,
+		firmIndex:   firmConfig,
 	}
 
 	secretsCache := cache.New()
@@ -35,32 +46,14 @@ func main() {
 
 	cmd.Run(l,
 		cmd.NewHealthCheck(l),
-		cmd.NewCreateIndices(esClient, personIndex, personConfig),
-		cmd.NewIndex(l, esClient, secretsCache, personIndex),
-		cmd.NewUpdateAlias(l, esClient, personIndex),
-		cmd.NewCleanupIndices(l, esClient, personIndex),
+		cmd.NewCreateIndices(esClient, currentIndices),
+		cmd.NewIndex(l, esClient, secretsCache, currentIndices),
+		cmd.NewUpdateAlias(l, esClient, currentIndices),
+		cmd.NewCleanupIndices(l, esClient, currentIndices),
 	)
 
-	if err := esClient.CreateIndex(personIndex, personConfig, false); err != nil {
-		l.Fatal(err)
-	}
-
-	aliasedIndex, err := esClient.ResolveAlias(person.AliasName)
-	if err == elasticsearch.ErrAliasMissing {
-		if err := esClient.CreateAlias(person.AliasName, personIndex); err != nil {
-			l.Fatal(err)
-		}
-		aliasedIndex = personIndex
-	} else if err != nil {
-		l.Fatal(err)
-	}
-
-	indices := []string{person.AliasName}
-	if aliasedIndex != personIndex {
-		indices = append(indices, personIndex)
-	}
-
-	l.Println("indexing to", indices)
+	personIndices := createIndexAndAlias(esClient, person.AliasName, personIndex, personConfig, l)
+	firmIndices := createIndexAndAlias(esClient, indices.AliasNameFirm, firmIndex, firmConfig, l)
 
 	// Create new serveMux
 	sm := mux.NewRouter().PathPrefix(os.Getenv("PATH_PREFIX")).Subrouter()
@@ -311,9 +304,15 @@ func main() {
 	//     description: Not found
 	//   '500':
 	//     description: Unexpected error occurred
-	postRouter.Handle("/persons", person.NewIndexHandler(l, esClient, indices))
+	postRouter.Handle("/persons", person.NewIndexHandler(l, esClient, personIndices))
 
 	postRouter.Handle("/persons/search", person.NewSearchHandler(l, esClient))
+
+	postRouter.Handle("/firms", indices.NewIndexHandler(l, esClient, firmIndices))
+
+	postRouter.Handle("/firms/search", searching.NewSearchHandler(l, esClient, indices.AliasNameFirm))
+
+	postRouter.Handle("/searchAll", searching.NewSearchHandler(l, esClient, indices.AliasNamePersonFirm))
 
 	w := l.Writer()
 	defer w.Close()
@@ -322,7 +321,7 @@ func main() {
 		Addr:         ":8000",           // configure the bind address
 		Handler:      sm,                // set the default handler
 		ErrorLog:     log.New(w, "", 0), // Set the logger for the server
-		IdleTimeout:  120 * time.Second, // max time fro connections using TCP Keep-Alive
+		IdleTimeout:  120 * time.Second, // max time for connections using TCP Keep-Alive
 		ReadTimeout:  1 * time.Second,   // max time to read request from the client
 		WriteTimeout: 1 * time.Minute,   // max time to write response to the client
 	}
@@ -344,4 +343,29 @@ func main() {
 
 	tc, _ := context.WithTimeout(context.Background(), 30*time.Second)
 	_ = s.Shutdown(tc)
+}
+
+func createIndexAndAlias(esClient *elasticsearch.Client, aliasName string, indexName string, indexConfig []byte, l *logrus.Logger) []string {
+	if err := esClient.CreateIndex(indexName, indexConfig, false); err != nil {
+		l.Fatal(err)
+	}
+
+	aliasedIndex, err := esClient.ResolveAlias(aliasName)
+	if err == elasticsearch.ErrAliasMissing {
+		if err := esClient.CreateAlias(aliasName, indexName); err != nil {
+			l.Fatal(err)
+		}
+		aliasedIndex = indexName
+	} else if err != nil {
+		l.Fatal(err)
+	}
+
+	currentIndices := []string{aliasName}
+	if aliasedIndex != indexName {
+		currentIndices = append(currentIndices, indexName)
+	}
+
+	l.Println("indexing to", currentIndices)
+
+	return currentIndices
 }

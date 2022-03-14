@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"flag"
+	"strings"
 
-	"github.com/ministryofjustice/opg-search-service/internal/person"
 	"github.com/sirupsen/logrus"
 )
 
@@ -12,18 +12,29 @@ type UpdateAliasClient interface {
 	UpdateAlias(string, string, string) error
 }
 
-type updateAliasCommand struct {
+type aliasCommand struct {
 	logger *logrus.Logger
 	client UpdateAliasClient
 	index  string
 }
 
-func NewUpdateAlias(logger *logrus.Logger, client UpdateAliasClient, index string) *updateAliasCommand {
-	return &updateAliasCommand{
-		logger: logger,
-		client: client,
-		index:  index,
+type updateAliasCommand struct {
+	commands []*aliasCommand
+}
+
+func NewUpdateAlias(logger *logrus.Logger, client UpdateAliasClient, indexes map[string][]byte) *updateAliasCommand {
+	commandArray := &updateAliasCommand{}
+
+	for indexName, _ := range indexes {
+		indexCommand := &aliasCommand{
+			logger: logger,
+			client: client,
+			index:  indexName,
+		}
+		commandArray.commands = append(commandArray.commands, indexCommand)
 	}
+
+	return commandArray
 }
 
 func (c *updateAliasCommand) Name() string {
@@ -33,21 +44,28 @@ func (c *updateAliasCommand) Name() string {
 func (c *updateAliasCommand) Run(args []string) error {
 	flagset := flag.NewFlagSet("update-alias", flag.ExitOnError)
 
-	set := flagset.String("set", c.index, "index to point the alias at")
+	for _, s := range c.commands {
+		set := flagset.String("set", s.index, "index to point the alias at")
 
-	if err := flagset.Parse(args); err != nil {
-		return err
+		if err := flagset.Parse(args); err != nil {
+			return err
+		}
+		aliasName := strings.Split(s.index, "_")[0]
+		aliasedIndex, err := s.client.ResolveAlias(aliasName)
+		if err != nil {
+			return err
+		}
+
+		if aliasedIndex == *set {
+			s.logger.Printf("alias '%s' is already set to '%s'", aliasName, *set)
+			return nil
+		}
+
+		err = s.client.UpdateAlias(aliasName, aliasedIndex, *set)
+		if err != nil {
+			return err
+		}
+
 	}
-
-	aliasedIndex, err := c.client.ResolveAlias(person.AliasName)
-	if err != nil {
-		return err
-	}
-
-	if aliasedIndex == *set {
-		c.logger.Printf("alias '%s' is already set to '%s'", person.AliasName, *set)
-		return nil
-	}
-
-	return c.client.UpdateAlias(person.AliasName, aliasedIndex, *set)
+	return nil
 }

@@ -90,6 +90,6 @@ Required when running `index` command:
 
 ## Console commands
 
-- `docker-compose run --rm search-service hc` - Container health check. Exit code 0 on success and 1 on error.
-- `docker-compose run --rm search-service create-indices` - Creates indices in ElasticSearch
-- `docker-compose run --rm search-service index` - Index records in ElasticSearch from a database
+- `docker-compose run --rm search_service hc` - Container health check. Exit code 0 on success and 1 on error.
+- `docker-compose run --rm search_service create-indices` - Creates indices in ElasticSearch
+- `docker-compose run --rm search_service index` - Index records in ElasticSearch from a database

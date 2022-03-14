@@ -2,6 +2,7 @@ package index
 
 import (
 	"context"
+	"github.com/ministryofjustice/opg-search-service/internal/indices"
 	"os"
 	"testing"
 	"time"
@@ -44,7 +45,7 @@ INSERT INTO persons (id, uid, caserecnumber, email, dob, firstname, middlenames,
 
 	r := &Indexer{conn: conn, log: &mockLogger{}}
 
-	min, max, err := r.getIDRange(ctx)
+	min, max, err := r.getIDRange(ctx, "person")
 	assert.Nil(err)
 	assert.Equal(1, min)
 	assert.Equal(3, max)
@@ -91,70 +92,72 @@ INSERT INTO person_caseitem (person_id, caseitem_id) VALUES (1, 1), (1, 2);
 
 	r := &Indexer{conn: conn, log: &mockLogger{}}
 
-	resultsCh := make(chan person.Person)
-	results := []person.Person{}
+	resultsCh := make(chan indices.Entity)
+	results := []indices.Entity{}
 	go func() {
 		for p := range resultsCh {
 			results = append(results, p)
 		}
 	}()
 
-	err = r.queryByID(ctx, resultsCh, 1, 2, 10)
+	err = r.queryByID(ctx, resultsCh, 1, 2, 10, "person_1", person.AliasName)
 	if assert.Nil(err) && assert.Len(results, 2) {
-		assert.Equal([]person.Person{{
-			ID:               i64(1),
-			UID:              "7006-5672-8331",
-			Normalizeduid:    700656728331,
-			CaseRecNumber:    "1010101",
-			Email:            "email@example.com",
-			Dob:              "02/01/2002",
-			Firstname:        "John",
-			Middlenames:      "J",
-			Surname:          "Johnson",
-			CompanyName:      "& co",
-			Persontype:       "Donor",
-			OrganisationName: "Orgz",
-			Phonenumbers: []person.PersonPhonenumber{{
-				Phonenumber: "077777777",
-			}},
-			Addresses: []person.PersonAddress{{
-				Addresslines: []string{"1 Road", "", "Place"},
-				Postcode:     "S1 1AB",
-			}},
-			Cases: []person.PersonCase{{
-				UID:           "7006-5672-8311",
-				Normalizeduid: 700656728311,
-				Caserecnumber: "545534",
-				OnlineLpaId:   "A123",
-				Batchid:       "x",
-				Casetype:      "lpa",
-				Casesubtype:   "hw",
-			}, {
-				UID:           "7006-5672-8312",
-				Normalizeduid: 700656728312,
-				Caserecnumber: "545532",
-				OnlineLpaId:   "A124",
-				Batchid:       "y",
-				Casetype:      "lpa",
-				Casesubtype:   "pfa",
-			}},
-		}, {
-			ID:               i64(2),
-			UID:              "7006-5672-8332",
-			Normalizeduid:    700656728332,
-			CaseRecNumber:    "",
-			Email:            "",
-			Dob:              "02/01/1990",
-			Firstname:        "Jack",
-			Middlenames:      "",
-			Surname:          "Jackson",
-			CompanyName:      "",
-			Persontype:       "Donor",
-			OrganisationName: "",
-			Phonenumbers:     nil,
-			Addresses:        nil,
-			Cases:            nil,
-		}}, results)
+		assert.Equal([]indices.Entity{
+			person.Person{
+					ID:               i64(1),
+					UID:              "7006-5672-8331",
+					Normalizeduid:    700656728331,
+					CaseRecNumber:    "1010101",
+					Email:            "email@example.com",
+					Dob:              "02/01/2002",
+					Firstname:        "John",
+					Middlenames:      "J",
+					Surname:          "Johnson",
+					CompanyName:      "& co",
+					Persontype:       "Donor",
+					OrganisationName: "Orgz",
+					Phonenumbers: []person.PersonPhonenumber{{
+						Phonenumber: "077777777",
+					}},
+					Addresses: []person.PersonAddress{{
+						Addresslines: []string{"1 Road", "", "Place"},
+						Postcode:     "S1 1AB",
+					}},
+					Cases: []person.PersonCase{{
+						UID:           "7006-5672-8311",
+						Normalizeduid: 700656728311,
+						Caserecnumber: "545534",
+						OnlineLpaId:   "A123",
+						Batchid:       "x",
+						Casetype:      "lpa",
+						Casesubtype:   "hw",
+					}, {
+						UID:           "7006-5672-8312",
+						Normalizeduid: 700656728312,
+						Caserecnumber: "545532",
+						OnlineLpaId:   "A124",
+						Batchid:       "y",
+						Casetype:      "lpa",
+						Casesubtype:   "pfa",
+					}},
+				},
+			person.Person{
+				ID:               i64(2),
+				UID:              "7006-5672-8332",
+				Normalizeduid:    700656728332,
+				CaseRecNumber:    "",
+				Email:            "",
+				Dob:              "02/01/1990",
+				Firstname:        "Jack",
+				Middlenames:      "",
+				Surname:          "Jackson",
+				CompanyName:      "",
+				Persontype:       "Donor",
+				OrganisationName: "",
+				Phonenumbers:     nil,
+				Addresses:        nil,
+				Cases:            nil,
+			}}, results)
 	}
 
 	_, ok := <-resultsCh
@@ -202,70 +205,73 @@ INSERT INTO person_caseitem (person_id, caseitem_id) VALUES (1, 1), (1, 2);
 
 	r := &Indexer{conn: conn}
 
-	resultsCh := make(chan person.Person)
-	results := []person.Person{}
+	resultsCh := make(chan indices.Entity)
+	results := []indices.Entity{}
 	go func() {
 		for p := range resultsCh {
 			results = append(results, p)
 		}
 	}()
 
-	err = r.queryFromDate(ctx, resultsCh, time.Date(2021, time.January, 1, 23, 0, 0, 0, time.UTC))
+	err = r.queryFromDate(ctx, resultsCh, time.Date(2021, time.January, 1, 23, 0, 0, 0, time.UTC), "person_1", person.AliasName)
 	if assert.Nil(err) && assert.Len(results, 2) {
-		assert.Equal([]person.Person{{
-			ID:               i64(1),
-			UID:              "7000",
-			Normalizeduid:    7000,
-			CaseRecNumber:    "1010101",
-			Email:            "email@example.com",
-			Dob:              "02/01/2002",
-			Firstname:        "John",
-			Middlenames:      "J",
-			Surname:          "Johnson",
-			CompanyName:      "& co",
-			Persontype:       "Attorney",
-			OrganisationName: "Orgz",
-			Phonenumbers: []person.PersonPhonenumber{{
-				Phonenumber: "077777777",
-			}},
-			Addresses: []person.PersonAddress{{
-				Addresslines: []string{"123 Fake St"},
-				Postcode:     "S1 1AB",
-			}},
-			Cases: []person.PersonCase{{
-				UID:           "7000",
-				Normalizeduid: 7000,
-				Caserecnumber: "545534",
-				OnlineLpaId:   "A123",
-				Batchid:       "x",
-				Casetype:      "lpa",
-				Casesubtype:   "hw",
-			}, {
-				UID:           "7002",
-				Normalizeduid: 7002,
-				Caserecnumber: "545532",
-				OnlineLpaId:   "A124",
-				Batchid:       "y",
-				Casetype:      "lpa",
-				Casesubtype:   "pfa",
-			}},
-		}, {
-			ID:               i64(2),
-			UID:              "7002",
-			Normalizeduid:    7002,
-			CaseRecNumber:    "",
-			Email:            "",
-			Dob:              "02/01/1990",
-			Firstname:        "Jack",
-			Middlenames:      "",
-			Surname:          "Jackson",
-			CompanyName:      "",
-			Persontype:       "Donor",
-			OrganisationName: "",
-			Phonenumbers:     nil,
-			Addresses:        nil,
-			Cases:            nil,
-		}}, results)
+		assert.Equal([]indices.Entity{
+			person.Person{
+				ID:               i64(1),
+				UID:              "7000",
+				Normalizeduid:    7000,
+				CaseRecNumber:    "1010101",
+				Email:            "email@example.com",
+				Dob:              "02/01/2002",
+				Firstname:        "John",
+				Middlenames:      "J",
+				Surname:          "Johnson",
+				CompanyName:      "& co",
+				Persontype:       "Attorney",
+				OrganisationName: "Orgz",
+				Phonenumbers: []person.PersonPhonenumber{{
+					Phonenumber: "077777777",
+				}},
+				Addresses: []person.PersonAddress{{
+					Addresslines: []string{"123 Fake St"},
+					Postcode:     "S1 1AB",
+				}},
+				Cases: []person.PersonCase{{
+					UID:           "7000",
+					Normalizeduid: 7000,
+					Caserecnumber: "545534",
+					OnlineLpaId:   "A123",
+					Batchid:       "x",
+					Casetype:      "lpa",
+					Casesubtype:   "hw",
+				}, {
+					UID:           "7002",
+					Normalizeduid: 7002,
+					Caserecnumber: "545532",
+					OnlineLpaId:   "A124",
+					Batchid:       "y",
+					Casetype:      "lpa",
+					Casesubtype:   "pfa",
+				}},
+			},
+			person.Person{
+				ID:               i64(2),
+				UID:              "7002",
+				Normalizeduid:    7002,
+				CaseRecNumber:    "",
+				Email:            "",
+				Dob:              "02/01/1990",
+				Firstname:        "Jack",
+				Middlenames:      "",
+				Surname:          "Jackson",
+				CompanyName:      "",
+				Persontype:       "Donor",
+				OrganisationName: "",
+				Phonenumbers:     nil,
+				Addresses:        nil,
+				Cases:            nil,
+			},
+		}, results)
 	}
 
 	_, ok := <-resultsCh

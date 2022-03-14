@@ -2,9 +2,8 @@ package cmd
 
 import (
 	"flag"
-
 	"github.com/ministryofjustice/opg-search-service/internal/elasticsearch"
-	"github.com/ministryofjustice/opg-search-service/internal/person"
+	"strings"
 )
 
 type IndexClient interface {
@@ -15,15 +14,13 @@ type IndexClient interface {
 
 type createIndicesCommand struct {
 	esClient    IndexClient
-	indexName   string
-	indexConfig []byte
+	indices		map[string][]byte
 }
 
-func NewCreateIndices(esClient IndexClient, indexName string, indexConfig []byte) *createIndicesCommand {
+func NewCreateIndices(esClient IndexClient, indices map[string][]byte) *createIndicesCommand {
 	return &createIndicesCommand{
-		esClient:    esClient,
-		indexName:   indexName,
-		indexConfig: indexConfig,
+		esClient:   esClient,
+		indices: 	indices,
 	}
 }
 
@@ -40,17 +37,21 @@ func (c *createIndicesCommand) Run(args []string) error {
 		return err
 	}
 
-	if err := c.esClient.CreateIndex(c.indexName, c.indexConfig, *force); err != nil {
-		return err
-	}
-
-	_, err := c.esClient.ResolveAlias(person.AliasName)
-	if err == elasticsearch.ErrAliasMissing {
-		if err := c.esClient.CreateAlias(person.AliasName, c.indexName); err != nil {
+	for indexName, indexConfig := range c.indices {
+		if err := c.esClient.CreateIndex(indexName, indexConfig, *force); err != nil {
 			return err
 		}
-	} else if err != nil {
-		return err
+
+		typeOfIndex := strings.Split(indexName, "_")[0]
+		_, err := c.esClient.ResolveAlias(typeOfIndex)
+
+		if err == elasticsearch.ErrAliasMissing {
+			if err := c.esClient.CreateAlias(typeOfIndex, indexName); err != nil {
+				return err
+			}
+		} else if err != nil {
+			return err
+		}
 	}
 
 	return nil
