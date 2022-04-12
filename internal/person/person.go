@@ -15,6 +15,7 @@ type Person struct {
 	UID              string              `json:"uId"`
 	Normalizeduid    int64               `json:"normalizedUid"`
 	CaseRecNumber    string              `json:"caseRecNumber"`
+	DeputyNumber     *int64              `json:"deputyNumber"`
 	Persontype       string              `json:"personType"`
 	Dob              string              `json:"dob"`
 	Email            string              `json:"email"`
@@ -107,6 +108,10 @@ func IndexConfig() (name string, config []byte, err error) {
 					"type":    "keyword",
 					"copy_to": "searchable",
 				},
+				"deputyNumber": map[string]interface{}{
+					"type":    "keyword",
+					"copy_to": "searchable",
+				},
 				"personType": map[string]interface{}{
 					"type": "keyword",
 				},
@@ -116,7 +121,7 @@ func IndexConfig() (name string, config []byte, err error) {
 					"copy_to":  "searchable",
 				},
 				"email": map[string]interface{}{
-					"type":  "text",
+					"type": "text",
 				},
 				"firstname": map[string]interface{}{
 					"type":    "text",

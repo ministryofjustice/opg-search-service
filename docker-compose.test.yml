@@ -19,3 +19,6 @@ services:
       - .:/go/src/app
     working_dir: /go/src/app
     entrypoint: ["/bin/gosec", "/go/src/app/..."]
+
+  postgres:
+    ports: ["5434:5432"]
