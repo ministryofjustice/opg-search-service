@@ -102,6 +102,10 @@ func TestQueryByID(t *testing.T) {
 	}()
 
 	err = r.queryByID(ctx, resultsCh, 1, 3, 10, "person_1", person.AliasName)
+
+	// wait a bit for the async func to catch up :/
+	time.Sleep(2 * time.Second)
+
 	if assert.Nil(err) && assert.Len(results, 3) {
 		assert.Equal([]indices.Entity{
 			person.Person{
