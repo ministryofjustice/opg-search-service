@@ -74,6 +74,9 @@ paths:
                     type: string
                   county:
                     type: string
+                  deputyNumber:
+                    format: int64
+                    type: integer
                   dob:
                     type: string
                   email:
