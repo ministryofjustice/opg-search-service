@@ -108,6 +108,9 @@ func main() {
 	//               type: string
 	//             caseRecNumber:
 	//               type: string
+	//             deputyNumber:
+	//               type: integer
+	//               format: int64
 	//             workPhoneNumber:
 	//               type: object
 	//               properties:
