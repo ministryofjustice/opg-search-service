@@ -43,14 +43,17 @@ func (c *updateAliasCommand) Name() string {
 
 func (c *updateAliasCommand) Run(args []string) error {
 	flagset := flag.NewFlagSet("update-alias", flag.ExitOnError)
+	set := flagset.String("set", "", "index to point the alias at")
+	if err := flagset.Parse(args); err != nil {
+		return err
+	}
 
 	for _, s := range c.commands {
-		set := flagset.String("set", s.index, "index to point the alias at")
-
-		if err := flagset.Parse(args); err != nil {
-			return err
+		if *set == "" {
+			*set = s.index
 		}
-		aliasName := strings.Split(s.index, "_")[0]
+
+		aliasName := strings.Split(*set, "_")[0]
 		aliasedIndex, err := s.client.ResolveAlias(aliasName)
 		if err != nil {
 			return err
@@ -58,14 +61,13 @@ func (c *updateAliasCommand) Run(args []string) error {
 
 		if aliasedIndex == *set {
 			s.logger.Printf("alias '%s' is already set to '%s'", aliasName, *set)
-			return nil
+			continue
 		}
 
 		err = s.client.UpdateAlias(aliasName, aliasedIndex, *set)
 		if err != nil {
 			return err
 		}
-
 	}
 	return nil
 }
