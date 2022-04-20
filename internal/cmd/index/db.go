@@ -67,7 +67,7 @@ func (r *Indexer) queryFromDate(ctx context.Context, results chan<- indices.Enti
 }
 
 func makeQueryPerson(whereClause string) string {
-	return `SELECT p.id, p.uid, coalesce(p.caseRecNumber, ''), coalesce(p.email, ''), coalesce(to_char(p.dob, 'DD/MM/YYYY'), ''),
+	return `SELECT p.id, p.uid, coalesce(p.caseRecNumber, ''), p.deputynumber, coalesce(p.email, ''), coalesce(to_char(p.dob, 'DD/MM/YYYY'), ''),
 		coalesce(p.firstname, ''), coalesce(p.middlenames, ''), coalesce(p.surname, ''), coalesce(p.companyname, ''), p.type, coalesce(p.organisationname, ''),
 		phonenumbers.id, coalesce(phonenumbers.phone_number, ''),
 		addresses.id, addresses.address_lines, coalesce(addresses.postcode, ''),
@@ -101,7 +101,7 @@ func scan(ctx context.Context, rows pgx.Rows, results chan<- indices.Entity, ind
 
 		for rows.Next() {
 			var v rowResult
-			err = rows.Scan(&v.ID, &v.UID, &v.CaseRecNumber, &v.Email, &v.Dob,
+			err = rows.Scan(&v.ID, &v.UID, &v.CaseRecNumber, &v.DeputyNumber, &v.Email, &v.Dob,
 				&v.Firstname, &v.Middlenames, &v.Surname, &v.CompanyName, &v.Type, &v.OrganisationName,
 				&v.PhoneNumberID, &v.PhoneNumber,
 				&v.AddressID, &v.AddressLines, &v.Postcode,
@@ -185,6 +185,7 @@ type rowResult struct {
 	ID                 int
 	UID                int
 	CaseRecNumber      string
+	DeputyNumber       *int
 	PhoneNumberID      *int
 	PhoneNumber        string
 	Email              string
@@ -253,11 +254,14 @@ func (a *personAdded) clear() {
 
 func addResultToPerson(a *personAdded, p *person.Person, s rowResult) {
 	if p.ID == nil {
-		id := int64(s.ID)
-		p.ID = &id
+		p.ID = i64(s.ID)
 		p.UID = formatUID(s.UID)
 		p.Normalizeduid = int64(s.UID)
 		p.CaseRecNumber = s.CaseRecNumber
+		p.DeputyNumber = nil
+		if s.DeputyNumber != nil {
+			p.DeputyNumber = i64(*s.DeputyNumber)
+		}
 		p.Email = s.Email
 		p.Dob = s.Dob
 		p.Firstname = s.Firstname
@@ -382,4 +386,9 @@ func resolvePersonType(t string) string {
 	}
 
 	return t
+}
+
+func i64(x int) *int64 {
+	y := int64(x)
+	return &y
 }
