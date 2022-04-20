@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -57,7 +58,7 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 
 	suite.testPeople = []person.Person{
 		{
-			ID:         id(0),
+			ID:         i64(0),
 			Firstname:  "John0",
 			Surname:    "Doe0",
 			Persontype: "Type0",
@@ -67,11 +68,12 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 			}},
 		},
 		{
-			ID:         id(1),
-			Firstname:  "John1",
-			Surname:    "Doe1",
-			Persontype: "Type1",
-			Dob:        "20/03/1987",
+			ID:           i64(1),
+			Firstname:    "John1",
+			Surname:      "Doe1",
+			Persontype:   "Type1",
+			DeputyNumber: i64(12345),
+			Dob:          "20/03/1987",
 			Addresses: []person.PersonAddress{{
 				Postcode: "NG1 1AB",
 			}},
@@ -83,7 +85,7 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 
 	suite.testFirms = []indices.Firm{
 		{
-			ID:           id(0),
+			ID:           i64(0),
 			FirmName:     "Firm1",
 			FirmNumber:   "1",
 			Persontype:   "Firm",
@@ -97,7 +99,7 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 			Phonenumber:  "0123 456 789",
 		},
 		{
-			ID:           id(1),
+			ID:           i64(1),
 			FirmName:     "Firm2",
 			FirmNumber:   "2",
 			Persontype:   "Firm",
@@ -267,6 +269,26 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
 				}
 			},
 		},
+		{
+			scenario: "search by deputy number",
+			term:     strconv.FormatInt(*suite.testPeople[1].DeputyNumber, 10),
+			expectedResponse: func() response.SearchResponse {
+				hit, _ := json.Marshal(suite.testPeople[1])
+
+				return response.SearchResponse{
+					Results: []json.RawMessage{hit},
+					Aggregations: map[string]map[string]int{
+						"personType": {
+							"Type1": 1,
+						},
+					},
+					Total: response.Total{
+						Count: 1,
+						Exact: true,
+					},
+				}
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -371,7 +393,7 @@ func TestEndToEnd(t *testing.T) {
 	suite.Run(t, new(EndToEndTestSuite))
 }
 
-func id(i int) *int64 {
+func i64(i int) *int64 {
 	x := int64(i)
 	return &x
 }
