@@ -49,22 +49,23 @@ func (c *updateAliasCommand) Run(args []string) error {
 	}
 
 	for _, s := range c.commands {
-		if *set == "" {
-			*set = s.index
+		update := *set
+		if update == "" {
+			update = s.index
 		}
 
-		aliasName := strings.Split(*set, "_")[0]
+		aliasName := strings.Split(update, "_")[0]
 		aliasedIndex, err := s.client.ResolveAlias(aliasName)
 		if err != nil {
 			return err
 		}
 
-		if aliasedIndex == *set {
-			s.logger.Printf("alias '%s' is already set to '%s'", aliasName, *set)
+		if aliasedIndex == update {
+			s.logger.Printf("alias '%s' is already set to '%s'", aliasName, update)
 			continue
 		}
 
-		err = s.client.UpdateAlias(aliasName, aliasedIndex, *set)
+		err = s.client.UpdateAlias(aliasName, aliasedIndex, update)
 		if err != nil {
 			return err
 		}
