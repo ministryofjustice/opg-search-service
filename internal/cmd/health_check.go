@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"errors"
+	"flag"
 	"net/http"
 	"os"
 
@@ -20,11 +21,17 @@ func NewHealthCheck(logger *logrus.Logger) *healthCheckCommand {
 	}
 }
 
-func (h *healthCheckCommand) Name() string {
-	return "hc"
+func (h *healthCheckCommand) Info() (name, description string) {
+	return "hc", "run healthcheck"
 }
 
 func (h *healthCheckCommand) Run(args []string) error {
+	flagset := flag.NewFlagSet("hc", flag.ExitOnError)
+
+	if err := flagset.Parse(args); err != nil {
+		return err
+	}
+
 	resp, err := http.Get(h.checkUrl)
 	if err != nil || resp.StatusCode != 200 {
 		return errors.New("FAIL")
