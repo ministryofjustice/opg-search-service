@@ -1,69 +1,45 @@
-package index
+package person
 
 import (
 	"context"
 	"fmt"
-	"github.com/ministryofjustice/opg-search-service/internal/indices"
-	"github.com/ministryofjustice/opg-search-service/internal/person"
 	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v4"
+	"github.com/ministryofjustice/opg-search-service/internal/index"
 )
 
-func (r *Indexer) getIDRange(ctx context.Context, aliasName string) (min int, max int, err error) {
-	switch aliasName {
-	case indices.AliasNameFirm:
-		err = r.conn.QueryRow(ctx, "SELECT MIN(id), MAX(id) FROM firm").Scan(&min, &max)
-	default:
-		err = r.conn.QueryRow(ctx, "SELECT MIN(id), MAX(id) FROM persons").Scan(&min, &max)
-	}
+func NewDB(conn *pgx.Conn) *DB {
+	return &DB{conn: conn}
+}
+
+type DB struct {
+	conn *pgx.Conn
+}
+
+func (db *DB) QueryIDRange(ctx context.Context) (min int, max int, err error) {
+	err = db.conn.QueryRow(ctx, "SELECT MIN(id), MAX(id) FROM persons").Scan(&min, &max)
 
 	return min, max, err
 }
 
-func (r *Indexer) queryByID(ctx context.Context, results chan<- indices.Entity, start, end, batchSize int, indexName string, alias string) error {
-	defer func() { close(results) }()
-
-	batch := &batchIter{start: start, end: end, size: batchSize}
-
-	for batch.Next() {
-		r.log.Printf("reading range from db (%d, %d)", batch.From(), batch.To())
-
-		if alias == person.AliasName {
-			rows, err := r.conn.Query(ctx, makeQueryPerson(`p.id >= $1 AND p.id <= $2`), batch.From(), batch.To())
-			if err != nil {
-				return err
-			}
-
-			if err := scan(ctx, rows, results, indexName, alias); err != nil {
-				return err
-			}
-		}
-
-		if alias == indices.AliasNameFirm {
-			rows, err := r.conn.Query(ctx, makeQueryFirm(`f.id >= $1 AND f.id <= $2`), batch.From(), batch.To())
-			if err != nil {
-				return err
-			}
-
-			if err := scan(ctx, rows, results, indexName, alias); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-func (r *Indexer) queryFromDate(ctx context.Context, results chan<- indices.Entity, from time.Time, indexName string, alias string) error {
-	defer func() { close(results) }()
-
-	rows, err := r.conn.Query(ctx, makeQueryPerson(`p.updatedDate >= $1`), from)
+func (db *DB) QueryByID(ctx context.Context, results chan<- index.Indexable, from, to int) error {
+	rows, err := db.conn.Query(ctx, makeQueryPerson(`p.id >= $1 AND p.id <= $2`), from, to)
 	if err != nil {
 		return err
 	}
 
-	return scan(ctx, rows, results, indexName, alias)
+	return scan(ctx, rows, results)
+}
+
+func (db *DB) QueryFromDate(ctx context.Context, results chan<- index.Indexable, from time.Time) error {
+	rows, err := db.conn.Query(ctx, makeQueryPerson(`p.updatedDate >= $1`), from)
+	if err != nil {
+		return err
+	}
+
+	return scan(ctx, rows, results)
 }
 
 func makeQueryPerson(whereClause string) string {
@@ -79,106 +55,6 @@ LEFT JOIN person_caseitem ON p.id = person_caseitem.person_id
 LEFT JOIN cases ON person_caseitem.caseitem_id = cases.id
 WHERE ` + whereClause + `
 ORDER BY p.id`
-}
-
-func makeQueryFirm(whereClause string) string {
-	return `SELECT f.id, coalesce(f.email, ''), f.firmname, f.firmNumber,
-		coalesce(f.addressline1, ''), coalesce(f.addressline2, ''), coalesce(f.addressline3, ''), 
-		coalesce(f.town, ''), coalesce(f.county, ''), coalesce(f.postcode, ''),
-		coalesce(f.phonenumber, '')
-FROM firm f
-WHERE ` + whereClause + `
-ORDER BY f.id`
-}
-
-func scan(ctx context.Context, rows pgx.Rows, results chan<- indices.Entity, indexName string, alias string) error {
-	var err error
-	lastID := -1
-
-	if alias == person.AliasName {
-		a := &personAdded{}
-		var p *person.Person
-
-		for rows.Next() {
-			var v rowResult
-			err = rows.Scan(&v.ID, &v.UID, &v.CaseRecNumber, &v.DeputyNumber, &v.Email, &v.Dob,
-				&v.Firstname, &v.Middlenames, &v.Surname, &v.CompanyName, &v.Type, &v.OrganisationName,
-				&v.PhoneNumberID, &v.PhoneNumber,
-				&v.AddressID, &v.AddressLines, &v.Postcode,
-				&v.CaseID, &v.CasesUID, &v.CasesCaseRecNumber, &v.CasesOnlineLpaID, &v.CasesBatchID, &v.CasesCaseType, &v.CasesCaseSubType)
-
-			if err != nil {
-				break
-			}
-
-			if v.ID != lastID {
-				if p != nil {
-					results <- *p
-				}
-
-				a.clear()
-				p = &person.Person{}
-				lastID = v.ID
-			}
-			addResultToPerson(a, p, v)
-		}
-
-		if p != nil {
-			results <- *p
-		}
-
-		if err != nil {
-			return err
-		}
-
-		if err := rows.Err(); err != nil {
-			return err
-		}
-
-		return err
-	}
-
-	if alias == indices.AliasNameFirm {
-		var f *indices.Firm
-		for rows.Next() {
-			var v rowResultFirm
-			err = rows.Scan(&v.ID, &v.Email, &v.FirmName,
-				&v.FirmNumber, &v.AddressLine1, &v.AddressLine2, &v.AddressLine3, &v.Town, &v.County,
-				&v.Postcode, &v.PhoneNumber)
-
-			if err != nil {
-				break
-			}
-
-			if v.ID != lastID {
-				if f != nil {
-					results <- *f
-				}
-
-				f = &indices.Firm{}
-				lastID = v.ID
-			}
-
-			addResultToFirm(f, v)
-		}
-
-		if f != nil {
-			results <- *f
-		}
-
-		if err != nil {
-			return err
-		}
-
-		if err := rows.Err(); err != nil {
-			return err
-		}
-
-		return err
-	}
-
-	return err
-
 }
 
 type rowResult struct {
@@ -208,24 +84,57 @@ type rowResult struct {
 	CasesCaseSubType   string
 }
 
+func scan(ctx context.Context, rows pgx.Rows, results chan<- index.Indexable) error {
+	var err error
+	lastID := -1
+
+	a := &personAdded{}
+	var p *Person
+
+	for rows.Next() {
+		var v rowResult
+		err = rows.Scan(&v.ID, &v.UID, &v.CaseRecNumber, &v.DeputyNumber, &v.Email, &v.Dob,
+			&v.Firstname, &v.Middlenames, &v.Surname, &v.CompanyName, &v.Type, &v.OrganisationName,
+			&v.PhoneNumberID, &v.PhoneNumber,
+			&v.AddressID, &v.AddressLines, &v.Postcode,
+			&v.CaseID, &v.CasesUID, &v.CasesCaseRecNumber, &v.CasesOnlineLpaID, &v.CasesBatchID, &v.CasesCaseType, &v.CasesCaseSubType)
+
+		if err != nil {
+			break
+		}
+
+		if v.ID != lastID {
+			if p != nil {
+				results <- *p
+			}
+
+			a.clear()
+			p = &Person{}
+			lastID = v.ID
+		}
+		addResultToPerson(a, p, v)
+	}
+
+	if p != nil {
+		results <- *p
+	}
+
+	if err != nil {
+		return err
+	}
+
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
+	return err
+
+}
+
 type personAdded struct {
 	addresses    map[int]struct{}
 	phonenumbers map[int]struct{}
 	cases        map[int]struct{}
-}
-
-type rowResultFirm struct {
-	ID           int
-	Email        string
-	FirmName     string
-	FirmNumber   int
-	AddressLine1 string
-	AddressLine2 string
-	AddressLine3 string
-	Town         string
-	County       string
-	Postcode     string
-	PhoneNumber  string
 }
 
 func (a *personAdded) hasAddress(id int) bool {
@@ -252,7 +161,7 @@ func (a *personAdded) clear() {
 	a.cases = map[int]struct{}{}
 }
 
-func addResultToPerson(a *personAdded, p *person.Person, s rowResult) {
+func addResultToPerson(a *personAdded, p *Person, s rowResult) {
 	if p.ID == nil {
 		p.ID = i64(s.ID)
 		p.UID = formatUID(s.UID)
@@ -273,20 +182,20 @@ func addResultToPerson(a *personAdded, p *person.Person, s rowResult) {
 	}
 
 	if s.AddressID != nil && !a.hasAddress(*s.AddressID) {
-		p.Addresses = append(p.Addresses, person.PersonAddress{
+		p.Addresses = append(p.Addresses, PersonAddress{
 			Addresslines: getAddressLines(s.AddressLines),
 			Postcode:     s.Postcode,
 		})
 	}
 
 	if s.PhoneNumberID != nil && !a.hasPhonenumber(*s.PhoneNumberID) {
-		p.Phonenumbers = append(p.Phonenumbers, person.PersonPhonenumber{
+		p.Phonenumbers = append(p.Phonenumbers, PersonPhonenumber{
 			Phonenumber: s.PhoneNumber,
 		})
 	}
 
 	if s.CaseID != nil && !a.hasCase(*s.CaseID) {
-		p.Cases = append(p.Cases, person.PersonCase{
+		p.Cases = append(p.Cases, PersonCase{
 			UID:           formatUID(*s.CasesUID),
 			Normalizeduid: int64(*s.CasesUID),
 			Caserecnumber: s.CasesCaseRecNumber,
@@ -295,24 +204,6 @@ func addResultToPerson(a *personAdded, p *person.Person, s rowResult) {
 			Casetype:      s.CasesCaseType,
 			Casesubtype:   s.CasesCaseSubType,
 		})
-	}
-}
-
-func addResultToFirm(f *indices.Firm, s rowResultFirm) {
-	if f.ID == nil {
-		id := int64(s.ID)
-		f.ID = &id
-		f.Persontype = "Firm"
-		f.Email = s.Email
-		f.FirmName = s.FirmName
-		f.FirmNumber = strconv.Itoa(s.FirmNumber)
-		f.AddressLine1 = s.AddressLine1
-		f.AddressLine2 = s.AddressLine2
-		f.AddressLine3 = s.AddressLine3
-		f.Town = s.Town
-		f.County = s.County
-		f.Postcode = s.Postcode
-		f.Phonenumber = s.PhoneNumber
 	}
 }
 
