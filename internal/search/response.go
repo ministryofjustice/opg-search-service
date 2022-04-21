@@ -1,16 +1,14 @@
-package response
+package search
 
-import (
-	"encoding/json"
-)
+import "encoding/json"
 
-type SearchResponse struct {
+type Response struct {
 	Results      []json.RawMessage         `json:"results"`
 	Aggregations map[string]map[string]int `json:"aggregations"`
-	Total        Total                     `json:"total"`
+	Total        ResponseTotal             `json:"total"`
 }
 
-type Total struct {
+type ResponseTotal struct {
 	Count int  `json:"count"`
 	Exact bool `json:"exact"`
 }

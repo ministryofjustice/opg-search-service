@@ -11,8 +11,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TODO flaky tests when ran locally
 func TestIndexPerson(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping indexing test")
+		return
+	}
+
 	assert := assert.New(t)
 	ctx := context.Background()
 
@@ -33,24 +37,29 @@ func TestIndexPerson(t *testing.T) {
 	}
 	defer conn.Close(ctx)
 
-	schemaSql, _ := os.ReadFile("./testdata/schema.sql")
+	schemaSql, _ := os.ReadFile("../testdata/schema.sql")
 
 	_, err = conn.Exec(ctx, string(schemaSql))
 	if !assert.Nil(err) {
 		return
 	}
 
-	err = command.Run([]string{})
+	err = command.Run([]string{"--person"})
 	assert.Nil(err)
 	assert.Equal("indexing done successful=0 failed=0", hook.LastEntry().Message)
 }
 
 func TestIndexFirm(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping indexing test")
+		return
+	}
+
 	assert := assert.New(t)
 	ctx := context.Background()
 
 	l, hook := test.NewNullLogger()
-	command := NewIndex(l, &elasticsearch.MockESClient{}, nil, map[string][]byte{"test-index": indexConfig})
+	command := NewIndex(l, &elasticsearch.MockESClient{}, nil, map[string][]byte{"firm_1": indexConfig})
 
 	os.Setenv("SEARCH_SERVICE_DB_PASS", "searchservice")
 	os.Setenv("SEARCH_SERVICE_DB_USER", "searchservice")
@@ -66,7 +75,7 @@ func TestIndexFirm(t *testing.T) {
 	}
 	defer conn.Close(ctx)
 
-	schemaSql, _ := os.ReadFile("./testdata/schema.sql")
+	schemaSql, _ := os.ReadFile("../testdata/schema.sql")
 
 	_, err = conn.Exec(ctx, string(schemaSql))
 	if !assert.Nil(err) {

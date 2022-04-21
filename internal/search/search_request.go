@@ -1,4 +1,4 @@
-package searching
+package search
 
 import (
 	"bytes"
@@ -10,21 +10,21 @@ import (
 	"strings"
 )
 
-type searchRequest struct {
+type Request struct {
 	Term        string   `json:"term"`
 	Size        int      `json:"size,omitempty"`
 	From        int      `json:"from"`
 	PersonTypes []string `json:"person_types"`
 }
 
-func CreateSearchRequestFromRequest(r *http.Request) (*searchRequest, error) {
+func parseSearchRequest(r *http.Request) (*Request, error) {
 	buf := new(bytes.Buffer)
 	_, _ = buf.ReadFrom(r.Body)
 	if buf.Len() == 0 {
 		return nil, errors.New("request body is empty")
 	}
 
-	var req searchRequest
+	var req Request
 	err := json.Unmarshal(buf.Bytes(), &req)
 	if err != nil {
 		log.Println(err)
@@ -40,7 +40,7 @@ func CreateSearchRequestFromRequest(r *http.Request) (*searchRequest, error) {
 	return &req, nil
 }
 
-func (sr *searchRequest) sanitise() {
+func (sr *Request) sanitise() {
 	re := regexp.MustCompile(`[^’'\p{L}\d\-.@ \/_]`)
 	sr.Term = strings.TrimSpace(re.ReplaceAllString(sr.Term, ""))
 
