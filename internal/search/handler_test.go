@@ -1,42 +1,46 @@
-package searching
+package search
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/ministryofjustice/opg-search-service/internal/indices"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
-	"github.com/gorilla/mux"
 	"github.com/ministryofjustice/opg-search-service/internal/elasticsearch"
 	"github.com/ministryofjustice/opg-search-service/internal/middleware"
-	"github.com/ministryofjustice/opg-search-service/internal/response"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
+type mockPrepareQuery struct {
+	mock.Mock
+}
+
+func (m *mockPrepareQuery) Fn(req *Request) map[string]interface{} {
+	return m.Called(req).Get(0).(map[string]interface{})
+}
+
 type SearchHandlerTestSuite struct {
 	suite.Suite
-	logger   *logrus.Logger
-	esClient *elasticsearch.MockESClient
-	handler  *SearchHandler
-	router   *mux.Router
-	recorder *httptest.ResponseRecorder
-	respBody *string
+	logger       *logrus.Logger
+	esClient     *elasticsearch.MockESClient
+	handler      *Handler
+	recorder     *httptest.ResponseRecorder
+	respBody     *string
+	prepareQuery *mockPrepareQuery
 }
 
 func (suite *SearchHandlerTestSuite) SetupTest() {
 	suite.logger, _ = test.NewNullLogger()
 	suite.esClient = new(elasticsearch.MockESClient)
-	suite.handler = NewSearchHandler(suite.logger, suite.esClient, indices.AliasNamePersonFirm)
-	suite.router = mux.NewRouter().Methods(http.MethodPost).Subrouter()
-	suite.router.Handle("/firms/search", suite.handler)
+	suite.prepareQuery = &mockPrepareQuery{}
+	suite.handler = NewHandler(suite.logger, suite.esClient, []string{"whatever"}, suite.prepareQuery.Fn)
 	suite.recorder = httptest.NewRecorder()
 }
 
@@ -46,7 +50,7 @@ func (suite *SearchHandlerTestSuite) ServeRequest(method string, url string, bod
 		suite.T().Fatal(err)
 	}
 	ctx := context.WithValue(req.Context(), middleware.HashedEmail{}, "testHash")
-	suite.router.ServeHTTP(suite.recorder, req.WithContext(ctx))
+	suite.handler.ServeHTTP(suite.recorder, req.WithContext(ctx))
 	suite.respBody = nil
 }
 
@@ -69,7 +73,7 @@ func (suite *SearchHandlerTestSuite) RespCode() int {
 
 func (suite *SearchHandlerTestSuite) Test_InvalidJSONRequestBody() {
 	reqBody := ".\\|{."
-	suite.ServeRequest(http.MethodPost, "/firms/search", reqBody)
+	suite.ServeRequest(http.MethodPost, "", reqBody)
 
 	suite.Equal(http.StatusBadRequest, suite.RespCode())
 	suite.Contains(suite.RespBody(), `errors":[{"name":"request","description":"unable to unmarshal JSON request"}]`)
@@ -77,7 +81,7 @@ func (suite *SearchHandlerTestSuite) Test_InvalidJSONRequestBody() {
 
 func (suite *SearchHandlerTestSuite) Test_EmptyRequestBody() {
 	reqBody := ""
-	suite.ServeRequest(http.MethodPost, "/firms/search", reqBody)
+	suite.ServeRequest(http.MethodPost, "", reqBody)
 
 	suite.Equal(http.StatusBadRequest, suite.RespCode())
 	suite.Contains(suite.RespBody(), `"errors":[{"name":"request","description":"request body is empty"}]`)
@@ -85,7 +89,7 @@ func (suite *SearchHandlerTestSuite) Test_EmptyRequestBody() {
 
 func (suite *SearchHandlerTestSuite) Test_InvalidSearchRequestBody() {
 	reqBody := `{"term":1}`
-	suite.ServeRequest(http.MethodPost, "/firms/search", reqBody)
+	suite.ServeRequest(http.MethodPost, "", reqBody)
 
 	suite.Equal(http.StatusBadRequest, suite.RespCode())
 	suite.Contains(suite.RespBody(), `"errors":[{"name":"request","description":"unable to unmarshal JSON request"}]`)
@@ -93,7 +97,7 @@ func (suite *SearchHandlerTestSuite) Test_InvalidSearchRequestBody() {
 
 func (suite *SearchHandlerTestSuite) Test_EmptySearchTerm() {
 	reqBody := `{"term":"  "}`
-	suite.ServeRequest(http.MethodPost, "/firms/search", reqBody)
+	suite.ServeRequest(http.MethodPost, "", reqBody)
 
 	suite.Equal(http.StatusBadRequest, suite.RespCode())
 	suite.Contains(suite.RespBody(), `"errors":[{"name":"request","description":"search term is required and cannot be empty"}]`)
@@ -102,17 +106,26 @@ func (suite *SearchHandlerTestSuite) Test_EmptySearchTerm() {
 func (suite *SearchHandlerTestSuite) Test_ESReturnsUnexpectedError() {
 	reqBody := `{"term":"test"}`
 
+	suite.prepareQuery.
+		On("Fn", mock.Anything).
+		Return(map[string]interface{}{})
+
 	esCall := suite.esClient.On("Search", mock.Anything, mock.Anything)
 	esCall.Return(&elasticsearch.SearchResult{}, errors.New("test ES error"))
 
-	suite.ServeRequest(http.MethodPost, "/firms/search", reqBody)
+	suite.ServeRequest(http.MethodPost, "", reqBody)
 
 	suite.Equal(http.StatusInternalServerError, suite.RespCode())
-	suite.Contains(suite.RespBody(), `"errors":[{"name":"request","description":"Firm search caused an unexpected error"}]`)
+	suite.Contains(suite.RespBody(), `"errors":[{"name":"request","description":"unexpected error from elasticsearch"}]`)
 }
 
 func (suite *SearchHandlerTestSuite) Test_SearchWithAllParameters() {
 	reqBody := `{"term":"testTerm","from":10,"size":20,"person_types":["type1"]}`
+	searchBody := map[string]interface{}{"whatever": nil}
+
+	suite.prepareQuery.
+		On("Fn", mock.Anything).
+		Return(searchBody)
 
 	result := &elasticsearch.SearchResult{
 		Hits: []json.RawMessage{
@@ -129,44 +142,15 @@ func (suite *SearchHandlerTestSuite) Test_SearchWithAllParameters() {
 	}
 
 	suite.esClient.
-		On("Search", []string{indices.AliasNamePersonFirm}, mock.MatchedBy(func(req map[string]interface{}) bool {
-			return suite.Equal(map[string]interface{}{
-				"size": 20,
-				"from": 10,
-				"query": map[string]interface{}{
-					"multi_match" : map[string]interface{}{
-						"query":  "testTerm",
-						"fields": []string{ "firmName", "firmNumber", "caseRecNumber", "searchable" },
-					},
-				},
-				"aggs": map[string]interface{}{
-					"personType": map[string]interface{}{
-						"terms": map[string]string{
-							"field": "personType",
-						},
-					},
-				},
-				"post_filter": map[string]interface{}{
-					"bool": map[string]interface{}{
-						"should": []interface{}{
-							map[string]interface{}{
-								"term": map[string]string{
-									"personType": "type1",
-								},
-							},
-						},
-					},
-				},
-			}, req)
-		})).
+		On("Search", []string{"whatever"}, searchBody).
 		Return(result, nil)
 
-	suite.ServeRequest(http.MethodPost, "/firms/search", reqBody)
+	suite.ServeRequest(http.MethodPost, "", reqBody)
 
-	expectedResponse := response.SearchResponse{
+	expectedResponse := Response{
 		Results:      result.Hits,
 		Aggregations: result.Aggregations,
-		Total: response.Total{
+		Total: ResponseTotal{
 			Count: 2,
 			Exact: true,
 		},
@@ -180,4 +164,3 @@ func (suite *SearchHandlerTestSuite) Test_SearchWithAllParameters() {
 func TestSearchHandler(t *testing.T) {
 	suite.Run(t, new(SearchHandlerTestSuite))
 }
-

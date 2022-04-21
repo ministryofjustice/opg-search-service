@@ -1,4 +1,4 @@
-package indices
+package firm
 
 import (
 	"crypto/sha256"
@@ -8,13 +8,7 @@ import (
 	"github.com/ministryofjustice/opg-search-service/internal/response"
 )
 
-const AliasNameFirm = "firm"
-const AliasNamePersonFirm = "person,firm"
-
-type Entity interface {
-	Id () int64
-	Validate() []response.Error
-}
+const AliasName = "firm"
 
 type Firm struct {
 	ID           *int64 `json:"id"`
@@ -52,7 +46,7 @@ func (f Firm) Validate() []response.Error {
 	return errs
 }
 
-func IndexConfigFirm() (name string, config []byte, err error) {
+func IndexConfig() (name string, config []byte, err error) {
 	firmConfig := map[string]interface{}{
 		"settings": map[string]interface{}{
 			"number_of_shards":   1,
@@ -105,5 +99,5 @@ func IndexConfigFirm() (name string, config []byte, err error) {
 
 	sum := sha256.Sum256(data)
 
-	return fmt.Sprintf("%s_%x", AliasNameFirm, sum[:8]), data, err
+	return fmt.Sprintf("%s_%x", AliasName, sum[:8]), data, err
 }

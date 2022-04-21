@@ -1,4 +1,4 @@
-package indices
+package firm
 
 import (
 	"testing"
@@ -67,4 +67,3 @@ func TestIndexRequest_Validate(t *testing.T) {
 		assert.Equal(t, errs, test.expectErrs, test.scenario)
 	}
 }
-

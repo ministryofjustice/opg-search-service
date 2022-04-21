@@ -11,12 +11,13 @@ import (
 )
 
 type MockCommand struct {
-	name string
+	name        string
+	description string
 	mock.Mock
 }
 
-func (m *MockCommand) Name() string {
-	return m.name
+func (m *MockCommand) Info() (name, description string) {
+	return m.name, m.description
 }
 
 func (m *MockCommand) Run(xs []string) error {

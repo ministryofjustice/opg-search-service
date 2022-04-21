@@ -1,5 +1,6 @@
 # opg-search-service
-Development repository: Managed by opg-org-infra &amp; Terraform
+
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/ministryofjustice/opg-search-service)](https://pkg.go.dev/github.com/ministryofjustice/opg-search-service)
 
 ## Local Development
 
@@ -20,7 +21,9 @@ By default the local URL is http://localhost:8000/services/search-service, where
 
 ### Tests
 
-Run `make test` to execute the test suites and output code coverage for each package.
+Run `make test` to execute the test suites and output code coverage for each
+package. Most of the tests aren't dependent on external services, these can be
+run using `go test -short ./...`.
 
 Run `make gosec` to execute the [Golang Security Checker](https://github.com/securego/gosec)
 
@@ -41,12 +44,12 @@ changed:
   not be changed automatically)
 
 When the new index has been filled it can be activated by using the
-`update-alias` command. This takes a `-set` flag if for some reason you need to
-switch the alias back.
+`update-alias` command. It can be run with `-explain` first to show how the
+aliases will be set.
 
 Once you are satisfied that everything is working correctly the old index can be
-removed by using the `cleanup-indices` command. Run with `-explain` first to
-show the indices to be deleted if you want.
+removed by using the `cleanup-indices` command. It can be run with `-explain`
+first to show the indices to be deleted.
 
 ## Swagger docs
 
@@ -90,6 +93,5 @@ Required when running `index` command:
 
 ## Console commands
 
-- `docker-compose run --rm search_service hc` - Container health check. Exit code 0 on success and 1 on error.
-- `docker-compose run --rm search_service create-indices` - Creates indices in ElasticSearch
-- `docker-compose run --rm search_service index` - Index records in ElasticSearch from a database
+Use `docker-compose run --rm search_service -h` to see a list of commands that
+can be run, and pass `-h` to any of those to see further options.

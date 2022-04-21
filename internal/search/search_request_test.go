@@ -1,4 +1,4 @@
-package searching
+package search
 
 import (
 	"bytes"
@@ -15,7 +15,7 @@ func TestCreateSearchRequestFromRequest(t *testing.T) {
 		scenario        string
 		reqJson         string
 		err             error
-		expectedRequest *searchRequest
+		expectedRequest *Request
 	}{
 		{
 			"create from an empty request body",
@@ -45,7 +45,7 @@ func TestCreateSearchRequestFromRequest(t *testing.T) {
 			"created request is sanitised",
 			`{"term":"R'ené_8 D’!Eath-Smi/the()","size":1,"from":2,"person_types":["firm","person"]}`,
 			nil,
-			&searchRequest{
+			&Request{
 				Term: "R'ené_8 D’Eath-Smi/the",
 				Size: 1,
 				From: 2,
@@ -60,7 +60,7 @@ func TestCreateSearchRequestFromRequest(t *testing.T) {
 		req := http.Request{
 			Body: ioutil.NopCloser(bytes.NewReader([]byte(test.reqJson))),
 		}
-		sr, err := CreateSearchRequestFromRequest(&req)
+		sr, err := parseSearchRequest(&req)
 
 		assert.Equal(t, test.err, err, test.scenario)
 		assert.Equal(t, test.expectedRequest, sr, test.scenario)
