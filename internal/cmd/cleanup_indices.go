@@ -3,8 +3,11 @@ package cmd
 import (
 	"flag"
 	"fmt"
+	"sort"
 	"strings"
 
+	"github.com/ministryofjustice/opg-search-service/internal/firm"
+	"github.com/ministryofjustice/opg-search-service/internal/person"
 	"github.com/sirupsen/logrus"
 )
 
@@ -15,21 +18,21 @@ type CleanupIndicesClient interface {
 }
 
 type cleanupIndicesCommand struct {
-	logger 		*logrus.Logger
-	client 		CleanupIndicesClient
-	indices		map[string][]byte
+	logger         *logrus.Logger
+	client         CleanupIndicesClient
+	currentIndices map[string][]byte
 }
 
 func NewCleanupIndices(logger *logrus.Logger, client CleanupIndicesClient, indices map[string][]byte) *cleanupIndicesCommand {
 	return &cleanupIndicesCommand{
-		logger: 	logger,
-		client: 	client,
-		indices:  	indices,
+		logger:         logger,
+		client:         client,
+		currentIndices: indices,
 	}
 }
 
-func (c *cleanupIndicesCommand) Name() string {
-	return "cleanup-indices"
+func (c *cleanupIndicesCommand) Info() (name, description string) {
+	return "cleanup-indices", "remove unused indices"
 }
 
 func (c *cleanupIndicesCommand) Run(args []string) error {
@@ -41,14 +44,13 @@ func (c *cleanupIndicesCommand) Run(args []string) error {
 		return err
 	}
 
-	for indexName := range c.indices {
-		aliasName := strings.Split(indexName, "_")[0]
+	for _, aliasName := range []string{firm.AliasName, person.AliasName} {
 		aliasedIndex, err := c.client.ResolveAlias(aliasName)
 		if err != nil {
 			return err
 		}
-		if aliasedIndex != indexName {
-			return fmt.Errorf("alias '%s' does not match current index '%s'", aliasName, indexName)
+		if _, ok := c.currentIndices[aliasedIndex]; !ok {
+			return fmt.Errorf("alias '%s' is set to '%s' not a current index: %s", aliasName, aliasedIndex, mapKeys(c.currentIndices))
 		}
 
 		indices, err := c.client.Indices(aliasName + "_*")
@@ -57,7 +59,7 @@ func (c *cleanupIndicesCommand) Run(args []string) error {
 		}
 
 		for _, index := range indices {
-			if index != indexName {
+			if _, ok := c.currentIndices[index]; !ok {
 				if *explain {
 					c.logger.Println("will delete", index)
 				} else {
@@ -70,4 +72,14 @@ func (c *cleanupIndicesCommand) Run(args []string) error {
 	}
 
 	return nil
+}
+
+func mapKeys(m map[string][]byte) string {
+	var keys []string
+	for k := range m {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+	return strings.Join(keys, ", ")
 }

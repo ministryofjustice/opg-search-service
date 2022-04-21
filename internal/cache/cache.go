@@ -21,7 +21,6 @@ type AwsSecretsCache interface {
 }
 
 func applyAwsConfig(c *secretcache.Cache) {
-
 	var region string
 	var ok bool
 	if region, ok = os.LookupEnv("AWS_REGION"); !ok {

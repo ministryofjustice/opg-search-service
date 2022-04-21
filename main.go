@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"github.com/ministryofjustice/opg-search-service/internal/indices"
-	"github.com/ministryofjustice/opg-search-service/internal/searching"
 	"log"
 	"net/http"
 	"os"
@@ -14,8 +12,11 @@ import (
 	"github.com/ministryofjustice/opg-search-service/internal/cache"
 	"github.com/ministryofjustice/opg-search-service/internal/cmd"
 	"github.com/ministryofjustice/opg-search-service/internal/elasticsearch"
+	"github.com/ministryofjustice/opg-search-service/internal/firm"
+	"github.com/ministryofjustice/opg-search-service/internal/index"
 	"github.com/ministryofjustice/opg-search-service/internal/middleware"
 	"github.com/ministryofjustice/opg-search-service/internal/person"
+	"github.com/ministryofjustice/opg-search-service/internal/search"
 	"github.com/sirupsen/logrus"
 )
 
@@ -28,7 +29,7 @@ func main() {
 	if err != nil {
 		l.Fatal(err)
 	}
-	firmIndex, firmConfig, err := indices.IndexConfigFirm()
+	firmIndex, firmConfig, err := firm.IndexConfig()
 	if err != nil {
 		l.Fatal(err)
 	}
@@ -53,7 +54,7 @@ func main() {
 	)
 
 	personIndices := createIndexAndAlias(esClient, person.AliasName, personIndex, personConfig, l)
-	firmIndices := createIndexAndAlias(esClient, indices.AliasNameFirm, firmIndex, firmConfig, l)
+	firmIndices := createIndexAndAlias(esClient, firm.AliasName, firmIndex, firmConfig, l)
 
 	// Create new serveMux
 	sm := mux.NewRouter().PathPrefix(os.Getenv("PATH_PREFIX")).Subrouter()
@@ -307,15 +308,13 @@ func main() {
 	//     description: Not found
 	//   '500':
 	//     description: Unexpected error occurred
-	postRouter.Handle("/persons", person.NewIndexHandler(l, esClient, personIndices))
+	postRouter.Handle("/persons", index.NewHandler(l, esClient, personIndices, person.ParseIndexRequest))
+	postRouter.Handle("/persons/search", search.NewHandler(l, esClient, []string{person.AliasName}, search.PrepareQueryForPerson))
 
-	postRouter.Handle("/persons/search", person.NewSearchHandler(l, esClient))
+	postRouter.Handle("/firms", index.NewHandler(l, esClient, firmIndices, firm.ParseIndexRequest))
+	postRouter.Handle("/firms/search", search.NewHandler(l, esClient, []string{firm.AliasName}, search.PrepareQueryForFirm))
 
-	postRouter.Handle("/firms", indices.NewIndexHandler(l, esClient, firmIndices))
-
-	postRouter.Handle("/firms/search", searching.NewSearchHandler(l, esClient, indices.AliasNameFirm))
-
-	postRouter.Handle("/searchAll", searching.NewSearchHandler(l, esClient, indices.AliasNamePersonFirm))
+	postRouter.Handle("/searchAll", search.NewHandler(l, esClient, []string{firm.AliasName, person.AliasName}, search.PrepareQueryForFirmAndPerson))
 
 	w := l.Writer()
 	defer w.Close()
