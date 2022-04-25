@@ -1,11 +1,13 @@
-package indices
+package firm
 
 import (
+	"encoding/json"
+
+	"github.com/ministryofjustice/opg-search-service/internal/index"
 	"github.com/ministryofjustice/opg-search-service/internal/response"
 )
 
 type IndexRequest struct {
-	//tried to set this to an array of entities but as it has no idea what to unmarshal the json as - it fails
 	Firms []Firm `json:"firms"`
 }
 
@@ -23,4 +25,20 @@ func (ir *IndexRequest) Validate() []response.Error {
 	}
 
 	return errs
+}
+
+func (r *IndexRequest) Items() []index.Indexable {
+	indexables := make([]index.Indexable, len(r.Firms))
+	for i, firm := range r.Firms {
+		indexables[i] = firm
+	}
+
+	return indexables
+}
+
+func ParseIndexRequest(body []byte) (index.Validatable, error) {
+	var req IndexRequest
+	err := json.Unmarshal(body, &req)
+
+	return &req, err
 }
