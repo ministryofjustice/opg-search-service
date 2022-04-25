@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -221,14 +222,8 @@ func (c *Client) doBulkOp(op *BulkOp) (BulkResult, error) {
 }
 
 // returns an array of JSON encoded results
-func (c *Client) Search(indices[] string, requestBody map[string]interface{}) (*SearchResult, error) {
-	var endpoint string
-
-	if len(indices) > 1 {
-		endpoint = indices[0] + "," + indices[1] + "/_search"
-	} else {
-		endpoint = indices[0] + "/_search"
-	}
+func (c *Client) Search(indices []string, requestBody map[string]interface{}) (*SearchResult, error) {
+	endpoint := strings.Join(indices, ",") + "/_search"
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(requestBody); err != nil {
