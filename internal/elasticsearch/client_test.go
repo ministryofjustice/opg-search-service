@@ -18,7 +18,6 @@ import (
 
 var indexConfig = []byte("{json}")
 
-
 type MockHttpClient struct {
 	mock.Mock
 }
@@ -520,4 +519,90 @@ func TestBulkOp(t *testing.T) {
 
 	result := op.buf.String()
 	assert.Equal(t, expected, result)
+}
+
+func TestDelete(t *testing.T) {
+	tests := []struct {
+		scenario          string
+		esResponseError   error
+		esResponseCode    int
+		esResponseMessage string
+		expectedError     error
+		expectedResult    *DeleteResult
+	}{
+		{
+			scenario:          "successful delete",
+			esResponseError:   nil,
+			esResponseCode:    200,
+			esResponseMessage: `{"total":1}`,
+			expectedError:     nil,
+			expectedResult: &DeleteResult{
+				Total: 1,
+			},
+		},
+		{
+			scenario:          "delete HTTP fails",
+			esResponseError:   nil,
+			esResponseCode:    500,
+			esResponseMessage: "failure",
+			expectedError:     errors.New("delete request failed with status code 500 and response: \"failure\""),
+			expectedResult:    nil,
+		},
+		{
+			scenario:          "delete JSON fails",
+			esResponseError:   nil,
+			esResponseCode:    200,
+			esResponseMessage: `bad body`,
+			expectedError:     errors.New("error parsing the response body: invalid character 'b' looking for beginning of value"),
+			expectedResult:    nil,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.scenario, func(t *testing.T) {
+			assert := assert.New(t)
+
+			mc := new(MockHttpClient)
+			l, _ := logrus_test.NewNullLogger()
+
+			client, err := NewClient(mc, l)
+			assert.Nil(err)
+
+			reqBody := map[string]interface{}{
+				"query": map[string]interface{}{
+					"match": map[string]interface{}{
+						"uId": "7000-2837-9194",
+					},
+				},
+			}
+
+			mcCall := mc.On("Do", mock.AnythingOfType("*http.Request"))
+			mcCall.RunFn = func(args mock.Arguments) {
+				req := args[0].(*http.Request)
+				assert.Equal(http.MethodPost, req.Method)
+				assert.Equal(os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")+"/test-index/_delete_by_query", req.URL.String())
+				reqBuf := new(bytes.Buffer)
+				_, _ = reqBuf.ReadFrom(req.Body)
+				assert.Equal(`{"query":{"match":{"uId":"7000-2837-9194"}}}`, strings.TrimSpace(reqBuf.String()))
+			}
+
+			mcCall.Return(
+				&http.Response{
+					StatusCode: test.esResponseCode,
+					Body:       ioutil.NopCloser(strings.NewReader(test.esResponseMessage)),
+				},
+				test.esResponseError,
+			)
+
+			result, err := client.Delete([]string{"test-index"}, reqBody)
+
+			assert.Equal(test.expectedResult, result)
+
+			if test.expectedError == nil {
+				assert.Nil(err)
+			} else {
+				assert.Equal(test.expectedError.Error(), err.Error())
+			}
+		})
+	}
 }
