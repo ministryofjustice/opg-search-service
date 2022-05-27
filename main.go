@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/ministryofjustice/opg-search-service/internal/cache"
 	"github.com/ministryofjustice/opg-search-service/internal/cmd"
+	deletePackage "github.com/ministryofjustice/opg-search-service/internal/delete"
 	"github.com/ministryofjustice/opg-search-service/internal/elasticsearch"
 	"github.com/ministryofjustice/opg-search-service/internal/firm"
 	"github.com/ministryofjustice/opg-search-service/internal/index"
@@ -315,6 +316,34 @@ func main() {
 	postRouter.Handle("/firms/search", search.NewHandler(l, esClient, []string{firm.AliasName}, search.PrepareQueryForFirm))
 
 	postRouter.Handle("/searchAll", search.NewHandler(l, esClient, []string{firm.AliasName, person.AliasName}, search.PrepareQueryForFirmAndPerson))
+
+	deleteRouter := sm.Methods(http.MethodDelete).Subrouter()
+	deleteRouter.Use(middleware.JwtVerify(secretsCache, l))
+
+	// swagger:operation DELETE /persons/:uid delete-person
+	// Delete a person
+	// ---
+	// consumes:
+	// - application/json
+	// produces:
+	// - application/json
+	// parameters:
+	// - in: path
+	//   name: uid
+	//   description: ""
+	//   required: true
+	//   schema:
+	//     type: integer
+	//     format: string
+	//     pattern: "^\\d{4}-\\d{4}-\\d{4}$"
+	// responses:
+	//   '200':
+	//     description: The person has been deleted
+	//   '400':
+	//     description: The person could not be found
+	//   '500':
+	//     description: Unexpected error occurred
+	deleteRouter.Handle("/persons/{uid:\\d{4}-\\d{4}-\\d{4}}", deletePackage.NewHandler(l, esClient, []string{person.AliasName}))
 
 	w := l.Writer()
 	defer w.Close()
