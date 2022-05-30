@@ -64,6 +64,10 @@ type SearchResult struct {
 	TotalExact   bool
 }
 
+type DeleteResult struct {
+	Total int
+}
+
 func NewClient(httpClient HTTPClient, logger *logrus.Logger) (*Client, error) {
 	client := &Client{
 		httpClient: httpClient,
@@ -460,4 +464,37 @@ func (c *Client) Indices(term string) ([]string, error) {
 	}
 
 	return ks, nil
+}
+
+func (c *Client) Delete(indices []string, requestBody map[string]interface{}) (*DeleteResult, error) {
+	endpoint := strings.Join(indices, ",") + "/_delete_by_query"
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(requestBody); err != nil {
+		return nil, err
+	}
+	body := bytes.NewReader(buf.Bytes())
+
+	resp, err := c.doRequest(http.MethodPost, endpoint, body, "application/json")
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		buf.Reset()
+		_, _ = buf.ReadFrom(resp.Body)
+		return nil, fmt.Errorf(`delete request failed with status code %d and response: "%s"`, resp.StatusCode, buf.String())
+	}
+
+	var esResponse struct {
+		Total int `json:"total"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&esResponse); err != nil {
+		return nil, fmt.Errorf("error parsing the response body: %w", err)
+	}
+
+	return &DeleteResult{
+		Total: esResponse.Total,
+	}, nil
 }
