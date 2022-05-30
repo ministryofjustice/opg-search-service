@@ -16,6 +16,11 @@ func (m *MockESClient) Search(indexName []string, requestBody map[string]interfa
 	return args.Get(0).(*SearchResult), args.Error(1)
 }
 
+func (m *MockESClient) Delete(indexName []string, requestBody map[string]interface{}) (*DeleteResult, error) {
+	args := m.Called(indexName, requestBody)
+	return args.Get(0).(*DeleteResult), args.Error(1)
+}
+
 func (m *MockESClient) CreateIndex(name string, config []byte, force bool) error {
 	args := m.Called(name, config, force)
 	return args.Error(0)
