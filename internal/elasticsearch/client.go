@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -61,6 +62,10 @@ type SearchResult struct {
 	Aggregations map[string]map[string]int
 	Total        int
 	TotalExact   bool
+}
+
+type DeleteResult struct {
+	Total int
 }
 
 func NewClient(httpClient HTTPClient, logger *logrus.Logger) (*Client, error) {
@@ -221,14 +226,8 @@ func (c *Client) doBulkOp(op *BulkOp) (BulkResult, error) {
 }
 
 // returns an array of JSON encoded results
-func (c *Client) Search(indices[] string, requestBody map[string]interface{}) (*SearchResult, error) {
-	var endpoint string
-
-	if len(indices) > 1 {
-		endpoint = indices[0] + "," + indices[1] + "/_search"
-	} else {
-		endpoint = indices[0] + "/_search"
-	}
+func (c *Client) Search(indices []string, requestBody map[string]interface{}) (*SearchResult, error) {
+	endpoint := strings.Join(indices, ",") + "/_search"
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(requestBody); err != nil {
@@ -465,4 +464,37 @@ func (c *Client) Indices(term string) ([]string, error) {
 	}
 
 	return ks, nil
+}
+
+func (c *Client) Delete(indices []string, requestBody map[string]interface{}) (*DeleteResult, error) {
+	endpoint := strings.Join(indices, ",") + "/_delete_by_query"
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(requestBody); err != nil {
+		return nil, err
+	}
+	body := bytes.NewReader(buf.Bytes())
+
+	resp, err := c.doRequest(http.MethodPost, endpoint, body, "application/json")
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		buf.Reset()
+		_, _ = buf.ReadFrom(resp.Body)
+		return nil, fmt.Errorf(`delete request failed with status code %d and response: "%s"`, resp.StatusCode, buf.String())
+	}
+
+	var esResponse struct {
+		Total int `json:"total"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&esResponse); err != nil {
+		return nil, fmt.Errorf("error parsing the response body: %w", err)
+	}
+
+	return &DeleteResult{
+		Total: esResponse.Total,
+	}, nil
 }

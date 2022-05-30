@@ -1,4 +1,4 @@
-package indices
+package firm
 
 import (
 	"testing"
@@ -12,12 +12,12 @@ func TestFirm_Id(t *testing.T) {
 
 	tests := []struct {
 		scenario   string
-		firm     Firm
+		firm       Firm
 		expectedId interface{}
 	}{
 		{
 			scenario:   "Blank Firm",
-			firm:     Firm{},
+			firm:       Firm{},
 			expectedId: int64(0),
 		},
 		{
@@ -39,7 +39,7 @@ func TestFirm_Validate(t *testing.T) {
 
 	tests := []struct {
 		scenario     string
-		firm       Firm
+		firm         Firm
 		expectedErrs []response.Error
 	}{
 		{
@@ -78,3 +78,9 @@ func TestFirm_Validate(t *testing.T) {
 	}
 }
 
+func TestFirm_IndexConfig(t *testing.T) {
+	name, _, err := IndexConfig()
+
+	assert.Nil(t, err)
+	assert.Regexp(t, `[a-z]+_[a-z0-9]+`, name)
+}

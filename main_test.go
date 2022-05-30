@@ -4,19 +4,20 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/ministryofjustice/opg-search-service/internal/indices"
 	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/ministryofjustice/opg-search-service/internal/elasticsearch"
+	"github.com/ministryofjustice/opg-search-service/internal/firm"
 	"github.com/ministryofjustice/opg-search-service/internal/person"
-	"github.com/ministryofjustice/opg-search-service/internal/response"
+	"github.com/ministryofjustice/opg-search-service/internal/search"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/suite"
 )
@@ -24,7 +25,7 @@ import (
 type EndToEndTestSuite struct {
 	suite.Suite
 	testPeople []person.Person
-	testFirms  []indices.Firm
+	testFirms  []firm.Firm
 	esClient   *elasticsearch.Client
 	authHeader string
 }
@@ -57,7 +58,7 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 
 	suite.testPeople = []person.Person{
 		{
-			ID:         id(0),
+			ID:         i64(0),
 			Firstname:  "John0",
 			Surname:    "Doe0",
 			Persontype: "Type0",
@@ -67,11 +68,12 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 			}},
 		},
 		{
-			ID:         id(1),
-			Firstname:  "John1",
-			Surname:    "Doe1",
-			Persontype: "Type1",
-			Dob:        "20/03/1987",
+			ID:           i64(1),
+			Firstname:    "John1",
+			Surname:      "Doe1",
+			Persontype:   "Type1",
+			DeputyNumber: i64(12345),
+			Dob:          "20/03/1987",
 			Addresses: []person.PersonAddress{{
 				Postcode: "NG1 1AB",
 			}},
@@ -81,9 +83,9 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 		},
 	}
 
-	suite.testFirms = []indices.Firm{
+	suite.testFirms = []firm.Firm{
 		{
-			ID:           id(0),
+			ID:           i64(0),
 			FirmName:     "Firm1",
 			FirmNumber:   "1",
 			Persontype:   "Firm",
@@ -97,7 +99,7 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 			Phonenumber:  "0123 456 789",
 		},
 		{
-			ID:           id(1),
+			ID:           i64(1),
 			FirmName:     "Firm2",
 			FirmNumber:   "2",
 			Persontype:   "Firm",
@@ -129,7 +131,7 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 	suite.Equal(http.StatusOK, resp.StatusCode)
 
 	indexName, _, _ := person.IndexConfig()
-	indexNameFirm, _, _ := indices.IndexConfigFirm()
+	indexNameFirm, _, _ := firm.IndexConfig()
 
 	exists, err := suite.esClient.IndexExists(indexName)
 	suite.False(exists, "Person index should not exist at this point")
@@ -185,22 +187,22 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
 	testCases := []struct {
 		scenario         string
 		term             string
-		expectedResponse func() response.SearchResponse
+		expectedResponse func() search.Response
 	}{
 		{
 			scenario: "search by surname",
 			term:     suite.testPeople[1].Surname,
-			expectedResponse: func() response.SearchResponse {
+			expectedResponse: func() search.Response {
 				hit, _ := json.Marshal(suite.testPeople[1])
 
-				return response.SearchResponse{
+				return search.Response{
 					Results: []json.RawMessage{hit},
 					Aggregations: map[string]map[string]int{
 						"personType": {
 							"Type1": 1,
 						},
 					},
-					Total: response.Total{
+					Total: search.ResponseTotal{
 						Count: 1,
 						Exact: true,
 					},
@@ -210,17 +212,17 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
 		{
 			scenario: "search by dob",
 			term:     "01/02/1990",
-			expectedResponse: func() response.SearchResponse {
+			expectedResponse: func() search.Response {
 				hit, _ := json.Marshal(suite.testPeople[0])
 
-				return response.SearchResponse{
+				return search.Response{
 					Results: []json.RawMessage{hit},
 					Aggregations: map[string]map[string]int{
 						"personType": {
 							"Type0": 1,
 						},
 					},
-					Total: response.Total{
+					Total: search.ResponseTotal{
 						Count: 1,
 						Exact: true,
 					},
@@ -230,17 +232,17 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
 		{
 			scenario: "search by postcode",
 			term:     "NG1 2CD",
-			expectedResponse: func() response.SearchResponse {
+			expectedResponse: func() search.Response {
 				hit, _ := json.Marshal(suite.testPeople[0])
 
-				return response.SearchResponse{
+				return search.Response{
 					Results: []json.RawMessage{hit},
 					Aggregations: map[string]map[string]int{
 						"personType": {
 							"Type0": 1,
 						},
 					},
-					Total: response.Total{
+					Total: search.ResponseTotal{
 						Count: 1,
 						Exact: true,
 					},
@@ -250,17 +252,37 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
 		{
 			scenario: "search by a-ref",
 			term:     suite.testPeople[1].Cases[0].OnlineLpaId,
-			expectedResponse: func() response.SearchResponse {
+			expectedResponse: func() search.Response {
 				hit, _ := json.Marshal(suite.testPeople[1])
 
-				return response.SearchResponse{
+				return search.Response{
 					Results: []json.RawMessage{hit},
 					Aggregations: map[string]map[string]int{
 						"personType": {
 							"Type1": 1,
 						},
 					},
-					Total: response.Total{
+					Total: search.ResponseTotal{
+						Count: 1,
+						Exact: true,
+					},
+				}
+			},
+		},
+		{
+			scenario: "search by deputy number",
+			term:     strconv.FormatInt(*suite.testPeople[1].DeputyNumber, 10),
+			expectedResponse: func() search.Response {
+				hit, _ := json.Marshal(suite.testPeople[1])
+
+				return search.Response{
+					Results: []json.RawMessage{hit},
+					Aggregations: map[string]map[string]int{
+						"personType": {
+							"Type1": 1,
+						},
+					},
+					Total: search.ResponseTotal{
 						Count: 1,
 						Exact: true,
 					},
@@ -299,7 +321,7 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
 }
 
 func (suite *EndToEndTestSuite) TestIndexAndSearchFirm() {
-	resp, err := doRequest(suite.authHeader, "/firms", indices.IndexRequest{Firms: suite.testFirms})
+	resp, err := doRequest(suite.authHeader, "/firms", firm.IndexRequest{Firms: suite.testFirms})
 	if err != nil {
 		suite.Fail("Error indexing firm", err)
 	}
@@ -314,22 +336,22 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchFirm() {
 	testCases := []struct {
 		scenario         string
 		term             string
-		expectedResponse func() response.SearchResponse
+		expectedResponse func() search.Response
 	}{
 		{
 			scenario: "search by firmname",
 			term:     suite.testFirms[1].FirmName,
-			expectedResponse: func() response.SearchResponse {
+			expectedResponse: func() search.Response {
 				hit, _ := json.Marshal(suite.testFirms[1])
 
-				return response.SearchResponse{
+				return search.Response{
 					Results: []json.RawMessage{hit},
 					Aggregations: map[string]map[string]int{
 						"personType": {
 							"Firm": 1,
 						},
 					},
-					Total: response.Total{
+					Total: search.ResponseTotal{
 						Count: 1,
 						Exact: true,
 					},
@@ -368,10 +390,15 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchFirm() {
 }
 
 func TestEndToEnd(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping end to end tests")
+		return
+	}
+
 	suite.Run(t, new(EndToEndTestSuite))
 }
 
-func id(i int) *int64 {
+func i64(i int) *int64 {
 	x := int64(i)
 	return &x
 }

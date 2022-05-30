@@ -7,7 +7,7 @@ require (
 	github.com/aws/aws-secretsmanager-caching-go v1.1.0
 	github.com/golang-jwt/jwt/v4 v4.2.0
 	github.com/gorilla/mux v1.8.0
-	github.com/jackc/pgx/v4 v4.14.1
+	github.com/jackc/pgx/v4 v4.16.1
 	github.com/lib/pq v1.10.4 // indirect
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.7.1

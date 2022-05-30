@@ -1,4 +1,4 @@
-package indices
+package index
 
 import (
 	"bytes"
@@ -16,24 +16,26 @@ type IndexClient interface {
 	DoBulk(op *elasticsearch.BulkOp) (elasticsearch.BulkResult, error)
 }
 
-type IndexHandler struct {
+type Parser func([]byte) (Validatable, error)
+
+type Handler struct {
 	logger  *logrus.Logger
 	client  IndexClient
 	indices []string
+	parser  Parser
 }
 
-func NewIndexHandler(logger *logrus.Logger, client IndexClient, indices []string) *IndexHandler {
-	return &IndexHandler{
+func NewHandler(logger *logrus.Logger, client IndexClient, indices []string, parser Parser) *Handler {
+	return &Handler{
 		logger:  logger,
 		client:  client,
 		indices: indices,
+		parser:  parser,
 	}
 }
 
-func (i *IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (i *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
-
-	var req IndexRequest
 
 	bodyBuf := new(bytes.Buffer)
 	_, _ = bodyBuf.ReadFrom(r.Body)
@@ -44,7 +46,7 @@ func (i *IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := json.Unmarshal(bodyBuf.Bytes(), &req)
+	req, err := i.parser(bodyBuf.Bytes())
 	if err != nil {
 		i.logger.Println(err.Error())
 		response.WriteJSONError(w, "request", "Unable to unmarshal JSON request", http.StatusBadRequest)
@@ -61,7 +63,7 @@ func (i *IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	response := &indexResponse{}
 
 	for _, index := range i.indices {
-		if err := i.doIndex(index, response, req.Firms); err != nil {
+		if err := i.doIndex(index, response, req.Items()); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 		}
 	}
@@ -75,11 +77,10 @@ func (i *IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	i.logger.Println("Request took: ", time.Since(start))
 }
 
-func (i *IndexHandler) doIndex(indexName string, response *indexResponse, firms []Firm) error {
+func (i *Handler) doIndex(indexName string, response *indexResponse, items []Indexable) error {
 	op := elasticsearch.NewBulkOp(indexName)
 
-	for _, f := range firms {
-
+	for _, f := range items {
 		err := op.Index(f.Id(), f)
 
 		if err == elasticsearch.ErrOpTooLarge {
@@ -100,19 +101,4 @@ func (i *IndexHandler) doIndex(indexName string, response *indexResponse, firms 
 	}
 
 	return nil
-}
-
-type indexResponse struct {
-	Successful int      `json:"successful"`
-	Failed     int      `json:"failed"`
-	Errors     []string `json:"errors,omitempty"`
-}
-
-func (r *indexResponse) Add(result elasticsearch.BulkResult, err error) {
-	r.Successful += result.Successful
-	r.Failed += result.Failed
-
-	if err != nil {
-		r.Errors = append(r.Errors, err.Error())
-	}
 }
