@@ -46,6 +46,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				"uId": uid,
 			},
 		},
+		"conflicts": "proceed",
+		"max_docs":  1,
 	}
 
 	result, err := h.client.Delete(h.indices, requestBody)
