@@ -115,6 +115,8 @@ func (suite *DeleteHandlerTestSuite) Test_Delete() {
 				"uId": "7000-9000-9201",
 			},
 		},
+		"conflicts": "proceed",
+		"max_docs":  1,
 	}
 
 	result := &elasticsearch.DeleteResult{
