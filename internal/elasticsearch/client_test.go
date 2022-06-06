@@ -580,7 +580,7 @@ func TestDelete(t *testing.T) {
 			mcCall.RunFn = func(args mock.Arguments) {
 				req := args[0].(*http.Request)
 				assert.Equal(http.MethodPost, req.Method)
-				assert.Equal(os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")+"/test-index/_delete_by_query", req.URL.String())
+				assert.Equal(os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")+"/test-index/_delete_by_query?conflicts=proceed", req.URL.String())
 				reqBuf := new(bytes.Buffer)
 				_, _ = reqBuf.ReadFrom(req.Body)
 				assert.Equal(`{"query":{"match":{"uId":"7000-2837-9194"}}}`, strings.TrimSpace(reqBuf.String()))
