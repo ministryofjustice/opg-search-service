@@ -46,7 +46,6 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				"uId": uid,
 			},
 		},
-		"conflicts": "proceed",
 		"max_docs":  1,
 	}
 
