@@ -467,7 +467,7 @@ func (c *Client) Indices(term string) ([]string, error) {
 }
 
 func (c *Client) Delete(indices []string, requestBody map[string]interface{}) (*DeleteResult, error) {
-	endpoint := strings.Join(indices, ",") + "/_delete_by_query"
+	endpoint := strings.Join(indices, ",") + "/_delete_by_query?conflicts=proceed"
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(requestBody); err != nil {
