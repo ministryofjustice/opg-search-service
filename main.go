@@ -354,12 +354,13 @@ func main() {
 	defer w.Close()
 
 	s := &http.Server{
-		Addr:         ":8000",           // configure the bind address
-		Handler:      sm,                // set the default handler
-		ErrorLog:     log.New(w, "", 0), // Set the logger for the server
-		IdleTimeout:  120 * time.Second, // max time for connections using TCP Keep-Alive
-		ReadTimeout:  1 * time.Second,   // max time to read request from the client
-		WriteTimeout: 1 * time.Minute,   // max time to write response to the client
+		Addr:        	 	":8000",           	// configure the bind address
+		Handler:     	 	sm,                	// set the default handler
+		ErrorLog:     		log.New(w, "", 0), 	// Set the logger for the server
+		IdleTimeout:  		120 * time.Second, 	// max time for connections using TCP Keep-Alive
+		ReadHeaderTimeout: 	2 * time.Second, 	// max time allowed to read request headers
+		ReadTimeout:  		1 * time.Second,   	// max time to read request from the client
+		WriteTimeout: 		1 * time.Minute,   	// max time to write response to the client
 	}
 
 	// start the server
