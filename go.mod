@@ -10,5 +10,5 @@ require (
 	github.com/jackc/pgx/v4 v4.16.1
 	github.com/lib/pq v1.10.4 // indirect
 	github.com/sirupsen/logrus v1.8.1
-	github.com/stretchr/testify v1.7.2
+	github.com/stretchr/testify v1.7.4
 )
