@@ -358,9 +358,9 @@ func main() {
 		Handler:     	 	sm,                	// set the default handler
 		ErrorLog:     		log.New(w, "", 0), 	// Set the logger for the server
 		IdleTimeout:  		120 * time.Second, 	// max time for connections using TCP Keep-Alive
-		ReadHeaderTimeout: 	2 * time.second 	// max time allowed to read request headers
+		ReadHeaderTimeout: 	2 * time.Second, 	// max time allowed to read request headers
 		ReadTimeout:  		1 * time.Second,   	// max time to read request from the client
-		WriteTimeout: 		1 * time.Minute,   	// max time to write response to the client
+		WriteTimeout: 		1 * time.Minute   	// max time to write response to the client
 	}
 
 	// start the server
