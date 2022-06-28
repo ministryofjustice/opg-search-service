@@ -18,4 +18,5 @@ tests.json
 .idea
 *.iml
 .terraform
+.vscode
 opg-search-service
