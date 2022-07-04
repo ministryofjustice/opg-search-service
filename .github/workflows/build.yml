@@ -61,6 +61,12 @@ jobs:
       - name: Run Unit and Integration Tests
         run: |
           make test
+      - name: SonarQube
+        uses: sonarsource/sonarqube-scan-action@master
+        if: github.actor != 'dependabot[bot]'
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
   gosec:
     name: Security Scan
