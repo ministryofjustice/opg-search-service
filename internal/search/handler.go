@@ -3,8 +3,8 @@ package search
 import (
 	"encoding/json"
 	"net/http"
-	"time"
 
+	"github.com/aws/aws-xray-sdk-go/xray"
 	"github.com/ministryofjustice/opg-search-service/internal/elasticsearch"
 	"github.com/ministryofjustice/opg-search-service/internal/response"
 	"github.com/sirupsen/logrus"
@@ -33,8 +33,6 @@ func NewHandler(logger *logrus.Logger, client SearchClient, indices []string, pr
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	start := time.Now()
-
 	req, err := parseSearchRequest(r)
 	if err != nil {
 		h.logger.Println(err)
@@ -42,7 +40,10 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	_, subsegment := xray.BeginSubsegment(r.Context(), "do-search")
 	result, err := h.client.Search(h.indices, h.prepareQuery(req))
+	subsegment.Close(nil)
+
 	if err != nil {
 		h.logger.Println(err.Error())
 		response.WriteJSONError(w, "request", "unexpected error from elasticsearch", http.StatusInternalServerError)
@@ -61,6 +62,4 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	jsonResp, _ := json.Marshal(resp)
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(jsonResp)
-
-	h.logger.Printf("Request took: %d", time.Since(start))
 }
