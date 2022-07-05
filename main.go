@@ -8,6 +8,8 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/aws/aws-xray-sdk-go/awsplugins/ecs"
+	"github.com/aws/aws-xray-sdk-go/xray"
 	"github.com/gorilla/mux"
 	"github.com/ministryofjustice/opg-search-service/internal/cache"
 	"github.com/ministryofjustice/opg-search-service/internal/cmd"
@@ -21,6 +23,16 @@ import (
 	"github.com/ministryofjustice/opg-search-service/internal/search"
 	"github.com/sirupsen/logrus"
 )
+
+func xrayMiddleware(h http.Handler) http.Handler {
+	return xray.Handler(xray.NewDynamicSegmentNamer("router", "*.ecs"), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h.ServeHTTP(w, r)
+	}))
+}
+
+func init() {
+	ecs.Init()
+}
 
 func main() {
 	l := logrus.New()
@@ -67,9 +79,11 @@ func main() {
 	firmIndices := createIndexAndAlias(esClient, firm.AliasName, firmIndex, firmConfig, l)
 
 	poaDraftApplicationIndices := createIndexAndAlias(esClient, poadraftapplication.AliasName, poaDraftApplicationIndex, poaDraftApplicationConfig, l)
+	esClient.SetHttpClient(xray.Client(&http.Client{}))
 
 	// Create new serveMux
 	sm := mux.NewRouter().PathPrefix(os.Getenv("PATH_PREFIX")).Subrouter()
+	sm.Use(xrayMiddleware)
 
 	// swagger:operation GET /health-check health-check
 	// Check if the service is up and running
