@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aws/aws-xray-sdk-go/xray"
 	"github.com/ministryofjustice/opg-search-service/internal/elasticsearch"
 	"github.com/ministryofjustice/opg-search-service/internal/middleware"
 	"github.com/sirupsen/logrus"
@@ -50,7 +51,11 @@ func (suite *SearchHandlerTestSuite) ServeRequest(method string, url string, bod
 		suite.T().Fatal(err)
 	}
 	ctx := context.WithValue(req.Context(), middleware.HashedEmail{}, "testHash")
-	suite.handler.ServeHTTP(suite.recorder, req.WithContext(ctx))
+
+	xrayCtx, segment := xray.BeginSegment(ctx, "opg-search-service")
+	defer segment.Close(nil)
+
+	suite.handler.ServeHTTP(suite.recorder, req.WithContext(xrayCtx))
 	suite.respBody = nil
 }
 

@@ -8,18 +8,30 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/aws/aws-xray-sdk-go/awsplugins/ecs"
+	"github.com/aws/aws-xray-sdk-go/xray"
 	"github.com/gorilla/mux"
 	"github.com/ministryofjustice/opg-search-service/internal/cache"
 	"github.com/ministryofjustice/opg-search-service/internal/cmd"
-	"github.com/ministryofjustice/opg-search-service/internal/remove"
 	"github.com/ministryofjustice/opg-search-service/internal/elasticsearch"
 	"github.com/ministryofjustice/opg-search-service/internal/firm"
 	"github.com/ministryofjustice/opg-search-service/internal/index"
 	"github.com/ministryofjustice/opg-search-service/internal/middleware"
 	"github.com/ministryofjustice/opg-search-service/internal/person"
+	"github.com/ministryofjustice/opg-search-service/internal/remove"
 	"github.com/ministryofjustice/opg-search-service/internal/search"
 	"github.com/sirupsen/logrus"
 )
+
+func xrayMiddleware(h http.Handler) http.Handler {
+	return xray.Handler(xray.NewDynamicSegmentNamer("router", "*.ecs"), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h.ServeHTTP(w, r)
+	}))
+}
+
+func init() {
+	ecs.Init()
+}
 
 func main() {
 	l := logrus.New()
@@ -57,8 +69,11 @@ func main() {
 	personIndices := createIndexAndAlias(esClient, person.AliasName, personIndex, personConfig, l)
 	firmIndices := createIndexAndAlias(esClient, firm.AliasName, firmIndex, firmConfig, l)
 
+	// esClient.SetHttpClient(xray.Client(&http.Client{}))
+
 	// Create new serveMux
 	sm := mux.NewRouter().PathPrefix(os.Getenv("PATH_PREFIX")).Subrouter()
+	sm.Use(xrayMiddleware)
 
 	// swagger:operation GET /health-check health-check
 	// Check if the service is up and running
@@ -354,13 +369,13 @@ func main() {
 	defer w.Close()
 
 	s := &http.Server{
-		Addr:        	 	":8000",           	// configure the bind address
-		Handler:     	 	sm,                	// set the default handler
-		ErrorLog:     		log.New(w, "", 0), 	// Set the logger for the server
-		IdleTimeout:  		120 * time.Second, 	// max time for connections using TCP Keep-Alive
-		ReadHeaderTimeout: 	2 * time.Second, 	// max time allowed to read request headers
-		ReadTimeout:  		1 * time.Second,   	// max time to read request from the client
-		WriteTimeout: 		1 * time.Minute,   	// max time to write response to the client
+		Addr:              ":8000",           // configure the bind address
+		Handler:           sm,                // set the default handler
+		ErrorLog:          log.New(w, "", 0), // Set the logger for the server
+		IdleTimeout:       120 * time.Second, // max time for connections using TCP Keep-Alive
+		ReadHeaderTimeout: 2 * time.Second,   // max time allowed to read request headers
+		ReadTimeout:       1 * time.Second,   // max time to read request from the client
+		WriteTimeout:      1 * time.Minute,   // max time to write response to the client
 	}
 
 	// start the server
