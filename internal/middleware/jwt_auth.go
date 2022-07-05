@@ -52,7 +52,6 @@ func JwtVerify(secretsCache Cacheable, logger *logrus.Logger) func(next http.Han
 					return
 				}
 				hashedEmail := hashEmail(email, salt)
-				logger.Println("JWT Token is valid for user ", hashedEmail)
 
 				ctx := context.WithValue(r.Context(), HashedEmail{}, hashedEmail)
 				next.ServeHTTP(rw, r.WithContext(ctx))

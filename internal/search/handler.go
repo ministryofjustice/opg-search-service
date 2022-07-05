@@ -3,7 +3,6 @@ package search
 import (
 	"encoding/json"
 	"net/http"
-	"time"
 
 	"github.com/ministryofjustice/opg-search-service/internal/elasticsearch"
 	"github.com/ministryofjustice/opg-search-service/internal/response"
@@ -33,8 +32,6 @@ func NewHandler(logger *logrus.Logger, client SearchClient, indices []string, pr
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	start := time.Now()
-
 	req, err := parseSearchRequest(r)
 	if err != nil {
 		h.logger.Println(err)
@@ -61,6 +58,4 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	jsonResp, _ := json.Marshal(resp)
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(jsonResp)
-
-	h.logger.Printf("Request took: %d", time.Since(start))
 }
