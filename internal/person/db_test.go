@@ -2,11 +2,11 @@ package person
 
 import (
 	"context"
+	"github.com/jackc/pgx/v4"
 	"os"
 	"testing"
 	"time"
 
-	"github.com/jackc/pgx/v4"
 	"github.com/ministryofjustice/opg-search-service/internal/index"
 	"github.com/stretchr/testify/assert"
 )
@@ -102,6 +102,9 @@ func TestQueryByID(t *testing.T) {
 		(2, 700656728312, '545532', 'A124', 'y', 'lpa', 'pfa');
 
 		INSERT INTO person_caseitem (person_id, caseitem_id) VALUES (1, 1), (1, 2);
+
+		INSERT INTO deputy_important_information (id, deputy_id, complaints, panel_deputy, annualbillinginvoice, independentvisitorcharges)
+		VALUES (1,78,'UNKNOWN',true,'UNKNOWN',null)
 	`)
 	if !assert.Nil(err) {
 		return
@@ -133,6 +136,7 @@ func TestQueryByID(t *testing.T) {
 		CompanyName:      "& co",
 		Persontype:       "Donor",
 		OrganisationName: "Orgz",
+		IsPanelDeputy:    true,
 		Phonenumbers: []PersonPhonenumber{{
 			Phonenumber: "077777777",
 		}},
@@ -248,6 +252,9 @@ func TestQueryFromDate(t *testing.T) {
 		(2, 7002, '545532', 'A124', 'y', 'lpa', 'pfa');
 
 		INSERT INTO person_caseitem (person_id, caseitem_id) VALUES (1, 1), (1, 2);
+
+		INSERT INTO deputy_important_information (id, deputy_id, complaints, panel_deputy, annualbillinginvoice, independentvisitorcharges)
+		VALUES (1,78,'UNKNOWN',true,'UNKNOWN',null)
 	`)
 	if !assert.Nil(err) {
 		return
@@ -279,6 +286,7 @@ func TestQueryFromDate(t *testing.T) {
 		CompanyName:      "& co",
 		Persontype:       "Attorney",
 		OrganisationName: "Orgz",
+		IsPanelDeputy:    true,
 		Phonenumbers: []PersonPhonenumber{{
 			Phonenumber: "077777777",
 		}},

@@ -3,10 +3,10 @@ package person
 import (
 	"context"
 	"fmt"
+	"github.com/jackc/pgx/v4"
 	"strconv"
 	"time"
 
-	"github.com/jackc/pgx/v4"
 	"github.com/ministryofjustice/opg-search-service/internal/index"
 )
 
@@ -43,18 +43,39 @@ func (db *DB) QueryFromDate(ctx context.Context, results chan<- index.Indexable,
 }
 
 func makeQueryPerson(whereClause string) string {
-	return `SELECT p.id, p.uid, coalesce(p.caseRecNumber, ''), p.deputynumber, coalesce(p.email, ''), coalesce(to_char(p.dob, 'DD/MM/YYYY'), ''),
-		coalesce(p.firstname, ''), coalesce(p.middlenames, ''), coalesce(p.surname, ''), coalesce(p.companyname, ''), p.type, coalesce(p.organisationname, ''),
-		phonenumbers.id, coalesce(phonenumbers.phone_number, ''),
-		addresses.id, addresses.address_lines, coalesce(addresses.postcode, ''),
-		cases.id, cases.uid, coalesce(cases.caserecnumber, ''), coalesce(cases.onlinelpaid, ''), coalesce(cases.batchid, ''), coalesce(cases.casetype, ''), coalesce(cases.casesubtype, '')
-FROM persons p
-LEFT JOIN phonenumbers ON p.id = phonenumbers.person_id
-LEFT JOIN addresses ON p.id = addresses.person_id
-LEFT JOIN person_caseitem ON p.id = person_caseitem.person_id
-LEFT JOIN cases ON person_caseitem.caseitem_id = cases.id
-WHERE ` + whereClause + `
-ORDER BY p.id`
+	return `SELECT p.id,
+			   p.uid,
+			   coalesce(p.caseRecNumber, ''),
+			   p.deputynumber,
+			   coalesce(p.email, ''),
+			   coalesce(to_char(p.dob, 'DD/MM/YYYY'), ''),
+			   coalesce(p.firstname, ''),
+			   coalesce(p.middlenames, ''),
+			   coalesce(p.surname, ''),
+			   coalesce(p.companyname, ''),
+			   p.type,
+			   coalesce(p.organisationname, ''),
+			   phonenumbers.id,
+			   coalesce(phonenumbers.phone_number, ''),
+			   addresses.id,
+			   addresses.address_lines,
+			   coalesce(addresses.postcode, ''),
+			   cases.id,
+			   cases.uid,
+			   coalesce(cases.caserecnumber, ''),
+			   coalesce(cases.onlinelpaid, ''),
+			   coalesce(cases.batchid, ''),
+			   coalesce(cases.casetype, ''),
+			   coalesce(cases.casesubtype, ''),
+			   dii.panel_deputy
+			FROM persons p
+			 LEFT JOIN phonenumbers ON p.id = phonenumbers.person_id
+			 LEFT JOIN addresses ON p.id = addresses.person_id
+			 LEFT JOIN person_caseitem ON p.id = person_caseitem.person_id
+			 LEFT JOIN cases ON person_caseitem.caseitem_id = cases.id
+			 LEFT JOIN deputy_important_information dii on p.id = dii.deputy_id
+			 WHERE ` + whereClause + `
+			 ORDER BY p.id`
 }
 
 type rowResult struct {
@@ -82,6 +103,7 @@ type rowResult struct {
 	CasesBatchID       string
 	CasesCaseType      string
 	CasesCaseSubType   string
+	IsPanelDeputy      bool
 }
 
 func scan(ctx context.Context, rows pgx.Rows, results chan<- index.Indexable) error {
@@ -97,7 +119,8 @@ func scan(ctx context.Context, rows pgx.Rows, results chan<- index.Indexable) er
 			&v.Firstname, &v.Middlenames, &v.Surname, &v.CompanyName, &v.Type, &v.OrganisationName,
 			&v.PhoneNumberID, &v.PhoneNumber,
 			&v.AddressID, &v.AddressLines, &v.Postcode,
-			&v.CaseID, &v.CasesUID, &v.CasesCaseRecNumber, &v.CasesOnlineLpaID, &v.CasesBatchID, &v.CasesCaseType, &v.CasesCaseSubType)
+			&v.CaseID, &v.CasesUID, &v.CasesCaseRecNumber, &v.CasesOnlineLpaID, &v.CasesBatchID, &v.CasesCaseType, &v.CasesCaseSubType,
+			&v.IsPanelDeputy)
 
 		if err != nil {
 			break
@@ -179,6 +202,7 @@ func addResultToPerson(a *personAdded, p *Person, s rowResult) {
 		p.CompanyName = s.CompanyName
 		p.Persontype = resolvePersonType(s.Type)
 		p.OrganisationName = s.OrganisationName
+		p.IsPanelDeputy = s.IsPanelDeputy
 	}
 
 	if s.AddressID != nil && !a.hasAddress(*s.AddressID) {

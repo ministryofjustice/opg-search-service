@@ -28,6 +28,7 @@ type Person struct {
 	Addresses        []PersonAddress     `json:"addresses"`
 	Phonenumbers     []PersonPhonenumber `json:"phoneNumbers"`
 	Cases            []PersonCase        `json:"cases"`
+	IsPanelDeputy    bool                `json:"IsPanelDeputy"`
 }
 
 type PersonCase struct {
@@ -197,6 +198,10 @@ func IndexConfig() (name string, config []byte, err error) {
 					},
 				},
 				"organisationName": map[string]interface{}{
+					"type":    "text",
+					"copy_to": "searchable",
+				},
+				"isPanelDeputy": map[string]interface{}{
 					"type":    "text",
 					"copy_to": "searchable",
 				},
