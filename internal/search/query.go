@@ -16,17 +16,9 @@ func PrepareQueryForFirm(req *Request) map[string]interface{} {
 func PrepareQueryForPerson(req *Request) map[string]interface{} {
 	body := map[string]interface{}{
 		"query": map[string]interface{}{
-			"bool": map[string]interface{}{
-				"must": map[string]interface{}{
-					"simple_query_string": map[string]interface{}{
-						"query": req.Term,
-						"fields": []string{
-							"searchable",
-							"caseRecNumber",
-						},
-						"default_operator": "AND",
-					},
-				},
+			"multi_match": map[string]interface{}{
+				"query":  req.Term,
+				"fields": []string{"uId", "normalizedUid", "caseRecNumber", "deputyNumber", "dob", "firstname", "middlenames", "surname", "companyName", "className", "phoneNumbers.phoneNumber", "addresses.addressLines", "addresses.postcode", "cases.uId", "cases.normalizedUid", "cases.caseRecNumber", "cases.onlineLpaId", "cases.batchId", "cases.caseType", "cases.caseSubtype", "organisationName"},
 			},
 		},
 	}
@@ -39,7 +31,7 @@ func PrepareQueryForFirmAndPerson(req *Request) map[string]interface{} {
 		"query": map[string]interface{}{
 			"multi_match": map[string]interface{}{
 				"query":  req.Term,
-				"fields": []string{"firmName", "firmNumber", "caseRecNumber", "searchable"},
+				"fields": []string{"firmName", "firmNumber", "uId", "normalizedUid", "caseRecNumber", "deputyNumber", "dob", "firstname", "middlenames", "surname", "companyName", "className", "phoneNumbers.phoneNumber", "addresses.addressLines", "addresses.postcode", "cases.uId", "cases.normalizedUid", "cases.caseRecNumber", "cases.onlineLpaId", "cases.batchId", "cases.caseType", "cases.caseSubtype", "organisationName"},
 			},
 		},
 	}
