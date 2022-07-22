@@ -67,7 +67,7 @@ func makeQueryPerson(whereClause string) string {
 			   coalesce(cases.batchid, ''),
 			   coalesce(cases.casetype, ''),
 			   coalesce(cases.casesubtype, ''),
-			   dii.panel_deputy
+			   coalesce(dii.panel_deputy, false)
 			FROM persons p
 			 LEFT JOIN phonenumbers ON p.id = phonenumbers.person_id
 			 LEFT JOIN addresses ON p.id = addresses.person_id
