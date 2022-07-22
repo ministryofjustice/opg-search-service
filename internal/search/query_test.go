@@ -76,17 +76,9 @@ func TestPrepareQueryForPerson(t *testing.T) {
 
 	assert.Equal(t, map[string]interface{}{
 		"query": map[string]interface{}{
-			"bool": map[string]interface{}{
-				"must": map[string]interface{}{
-					"simple_query_string": map[string]interface{}{
-						"query": "apples",
-						"fields": []string{
-							"searchable",
-							"caseRecNumber",
-						},
-						"default_operator": "AND",
-					},
-				},
+			"multi_match": map[string]interface{}{
+				"query":  "apples",
+				"fields": []string{"uId", "normalizedUid", "caseRecNumber", "deputyNumber", "dob", "firstname", "middlenames", "surname", "companyName", "className", "phoneNumbers.phoneNumber", "addresses.addressLines", "addresses.postcode", "cases.uId", "cases.normalizedUid", "cases.caseRecNumber", "cases.onlineLpaId", "cases.batchId", "cases.caseType", "cases.caseSubtype", "organisationName"},
 			},
 		},
 		"aggs": map[string]interface{}{
@@ -113,17 +105,9 @@ func TestPrepareQueryForPersonWithOptions(t *testing.T) {
 
 	assert.Equal(t, map[string]interface{}{
 		"query": map[string]interface{}{
-			"bool": map[string]interface{}{
-				"must": map[string]interface{}{
-					"simple_query_string": map[string]interface{}{
-						"query": "apples",
-						"fields": []string{
-							"searchable",
-							"caseRecNumber",
-						},
-						"default_operator": "AND",
-					},
-				},
+			"multi_match": map[string]interface{}{
+				"query":  "apples",
+				"fields": []string{"uId", "normalizedUid", "caseRecNumber", "deputyNumber", "dob", "firstname", "middlenames", "surname", "companyName", "className", "phoneNumbers.phoneNumber", "addresses.addressLines", "addresses.postcode", "cases.uId", "cases.normalizedUid", "cases.caseRecNumber", "cases.onlineLpaId", "cases.batchId", "cases.caseType", "cases.caseSubtype", "organisationName"},
 			},
 		},
 		"aggs": map[string]interface{}{
@@ -154,7 +138,7 @@ func TestPrepareQueryForFirmAndPerson(t *testing.T) {
 		"query": map[string]interface{}{
 			"multi_match": map[string]interface{}{
 				"query":  "apples",
-				"fields": []string{"firmName", "firmNumber", "caseRecNumber", "searchable"},
+				"fields": []string{"firmName", "firmNumber", "uId", "normalizedUid", "caseRecNumber", "deputyNumber", "dob", "firstname", "middlenames", "surname", "companyName", "className", "phoneNumbers.phoneNumber", "addresses.addressLines", "addresses.postcode", "cases.uId", "cases.normalizedUid", "cases.caseRecNumber", "cases.onlineLpaId", "cases.batchId", "cases.caseType", "cases.caseSubtype", "organisationName"},
 			},
 		},
 		"aggs": map[string]interface{}{
@@ -183,7 +167,7 @@ func TestPrepareQueryForFirmAndPersonWithOptions(t *testing.T) {
 		"query": map[string]interface{}{
 			"multi_match": map[string]interface{}{
 				"query":  "apples",
-				"fields": []string{"firmName", "firmNumber", "caseRecNumber", "searchable"},
+				"fields": []string{"firmName", "firmNumber", "uId", "normalizedUid", "caseRecNumber", "deputyNumber", "dob", "firstname", "middlenames", "surname", "companyName", "className", "phoneNumbers.phoneNumber", "addresses.addressLines", "addresses.postcode", "cases.uId", "cases.normalizedUid", "cases.caseRecNumber", "cases.onlineLpaId", "cases.batchId", "cases.caseType", "cases.caseSubtype", "organisationName"},
 			},
 		},
 		"aggs": map[string]interface{}{
