@@ -189,3 +189,36 @@ func TestPrepareQueryForFirmAndPersonWithOptions(t *testing.T) {
 		"size": 10,
 	}, body)
 }
+
+func TestPostcodeTerm(t *testing.T) {
+	testcases := map[string]struct {
+		term             string
+		expectedPostcode string
+	}{
+		"no postcode": {
+			term: "26 some street",
+		},
+		"short postcode": {
+			term:             "26 some street s11aa john",
+			expectedPostcode: "s11aa",
+		},
+		"long postcode": {
+			term:             "26 some street ng11aa john",
+			expectedPostcode: "ng11aa",
+		},
+		"short postcode with space": {
+			term:             "26 some street s1 1aa john",
+			expectedPostcode: "s1 1aa",
+		},
+		"long postcode with space": {
+			term:             "26 some street ng1 1aa john",
+			expectedPostcode: "ng1 1aa",
+		},
+	}
+
+	for name, tc := range testcases {
+		t.Run(name, func(t *testing.T) {
+			assert.Equal(t, tc.expectedPostcode, postcodeTerm(tc.term))
+		})
+	}
+}
