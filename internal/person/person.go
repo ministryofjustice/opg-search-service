@@ -71,135 +71,77 @@ func (p Person) Validate() []response.Error {
 }
 
 func IndexConfig() (name string, config []byte, err error) {
+	textField := map[string]interface{}{"type": "text"}
+	keywordField := map[string]interface{}{"type": "keyword"}
+
 	personConfig := map[string]interface{}{
 		"settings": map[string]interface{}{
 			"number_of_shards":   1,
 			"number_of_replicas": 1,
 			"refresh_interval":   "1s",
 			"analysis": map[string]interface{}{
+				"filter": map[string]interface{}{
+					"whitespace_remove": map[string]interface{}{
+						"type":        "pattern_replace",
+						"pattern":     " ",
+						"replacement": "",
+					},
+				},
 				"analyzer": map[string]interface{}{
-					"quick_search": map[string]interface{}{
-						"type":      "custom",
+					"default": map[string]interface{}{
 						"tokenizer": "whitespace",
-						"filter": []string{
-							"asciifolding",
-							"lowercase",
-						},
+						"filter":    []string{"asciifolding", "lowercase"},
+					},
+					"no_space_analyzer": map[string]interface{}{
+						"tokenizer": "keyword",
+						"filter":    []string{"whitespace_remove", "lowercase"},
 					},
 				},
 			},
 		},
 		"mappings": map[string]interface{}{
 			"properties": map[string]interface{}{
-				"searchable": map[string]interface{}{
-					"type":     "text",
-					"analyzer": "quick_search",
-				},
-				"uId": map[string]interface{}{
-					"type":    "keyword",
-					"copy_to": "searchable",
-				},
-				"normalizedUid": map[string]interface{}{
-					"type":    "text",
-					"index":   false,
-					"copy_to": "searchable",
-				},
-				"caseRecNumber": map[string]interface{}{
-					"type":    "keyword",
-					"copy_to": "searchable",
-				},
-				"deputyNumber": map[string]interface{}{
-					"type":    "keyword",
-					"copy_to": "searchable",
-				},
-				"personType": map[string]interface{}{
-					"type": "keyword",
-				},
-				"dob": map[string]interface{}{
-					"type":     "text",
-					"analyzer": "whitespace",
-					"copy_to":  "searchable",
-				},
-				"email": map[string]interface{}{
-					"type": "text",
-				},
-				"firstname": map[string]interface{}{
-					"type":    "text",
-					"copy_to": "searchable",
-				},
-				"middlenames": map[string]interface{}{
-					"type":    "text",
-					"copy_to": "searchable",
-				},
-				"surname": map[string]interface{}{
-					"type":    "keyword",
-					"copy_to": "searchable",
-				},
-				"companyName": map[string]interface{}{
-					"type":    "text",
-					"copy_to": "searchable",
-				},
-				"className": map[string]interface{}{
-					"type":    "text",
-					"copy_to": "searchable",
-				},
+				"uId":           keywordField,
+				"normalizedUid": keywordField,
+				"caseRecNumber": keywordField,
+				"deputyNumber":  keywordField,
+				"personType":    keywordField,
+				"dob":           textField,
+				"email":         textField,
+				"firstname":     textField,
+				"middlenames":   textField,
+				"surname":       textField,
+				"companyName":   textField,
+				"className":     textField,
 				"phoneNumbers": map[string]interface{}{
 					"properties": map[string]interface{}{
-						"phoneNumber": map[string]interface{}{
-							"type":    "keyword",
-							"copy_to": "searchable",
-						},
+						"phoneNumber": keywordField,
 					},
 				},
 				"addresses": map[string]interface{}{
 					"properties": map[string]interface{}{
-						"addressLines": map[string]interface{}{
-							"type":    "text",
-							"copy_to": "searchable",
-						},
+						"addressLines": textField,
 						"postcode": map[string]interface{}{
-							"type":    "keyword",
-							"copy_to": "searchable",
+							"type":     "text",
+							"analyzer": "no_space_analyzer",
+							"fields": map[string]interface{}{
+								"keyword": keywordField,
+							},
 						},
 					},
 				},
 				"cases": map[string]interface{}{
 					"properties": map[string]interface{}{
-						"uId": map[string]interface{}{
-							"type":    "keyword",
-							"copy_to": "searchable",
-						},
-						"normalizedUid": map[string]interface{}{
-							"type":    "text",
-							"index":   false,
-							"copy_to": "searchable",
-						},
-						"caseRecNumber": map[string]interface{}{
-							"type":    "keyword",
-							"copy_to": "searchable",
-						},
-						"onlineLpaId": map[string]interface{}{
-							"type":    "keyword",
-							"copy_to": "searchable",
-						},
-						"batchId": map[string]interface{}{
-							"type":    "keyword",
-							"copy_to": "searchable",
-						},
-						"caseType": map[string]interface{}{
-							"type":    "keyword",
-							"copy_to": "searchable",
-						},
-						"caseSubtype": map[string]interface{}{
-							"type":    "keyword",
-							"copy_to": "searchable",
-						},
+						"uId":           keywordField,
+						"normalizedUid": keywordField,
+						"caseRecNumber": keywordField,
+						"onlineLpaId":   keywordField,
+						"batchId":       keywordField,
+						"caseType":      keywordField,
+						"caseSubtype":   keywordField,
 					},
 				},
-				"organisationName": map[string]interface{}{
-					"type":    "text",
-					"copy_to": "searchable",
-				},
+				"organisationName": textField,
 			},
 		},
 	}
