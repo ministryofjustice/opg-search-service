@@ -76,17 +76,10 @@ func TestPrepareQueryForPerson(t *testing.T) {
 
 	assert.Equal(t, map[string]interface{}{
 		"query": map[string]interface{}{
-			"bool": map[string]interface{}{
-				"must": map[string]interface{}{
-					"simple_query_string": map[string]interface{}{
-						"query": "apples",
-						"fields": []string{
-							"searchable",
-							"caseRecNumber",
-						},
-						"default_operator": "AND",
-					},
-				},
+			"multi_match": map[string]interface{}{
+				"type":   "most_fields",
+				"query":  "apples",
+				"fields": []string{"uId", "normalizedUid", "caseRecNumber", "deputyNumber", "dob", "firstname", "middlenames", "surname^3", "companyName", "className", "phoneNumbers.phoneNumber", "addresses.addressLines", "addresses.postcode", "cases.uId", "cases.normalizedUid", "cases.caseRecNumber", "cases.onlineLpaId", "cases.batchId", "cases.caseType", "cases.caseSubtype", "organisationName"},
 			},
 		},
 		"aggs": map[string]interface{}{
@@ -113,17 +106,10 @@ func TestPrepareQueryForPersonWithOptions(t *testing.T) {
 
 	assert.Equal(t, map[string]interface{}{
 		"query": map[string]interface{}{
-			"bool": map[string]interface{}{
-				"must": map[string]interface{}{
-					"simple_query_string": map[string]interface{}{
-						"query": "apples",
-						"fields": []string{
-							"searchable",
-							"caseRecNumber",
-						},
-						"default_operator": "AND",
-					},
-				},
+			"multi_match": map[string]interface{}{
+				"type":   "most_fields",
+				"query":  "apples",
+				"fields": []string{"uId", "normalizedUid", "caseRecNumber", "deputyNumber", "dob", "firstname", "middlenames", "surname^3", "companyName", "className", "phoneNumbers.phoneNumber", "addresses.addressLines", "addresses.postcode", "cases.uId", "cases.normalizedUid", "cases.caseRecNumber", "cases.onlineLpaId", "cases.batchId", "cases.caseType", "cases.caseSubtype", "organisationName"},
 			},
 		},
 		"aggs": map[string]interface{}{
@@ -153,8 +139,9 @@ func TestPrepareQueryForFirmAndPerson(t *testing.T) {
 	assert.Equal(t, map[string]interface{}{
 		"query": map[string]interface{}{
 			"multi_match": map[string]interface{}{
+				"type":   "most_fields",
 				"query":  "apples",
-				"fields": []string{"firmName", "firmNumber", "caseRecNumber", "searchable"},
+				"fields": []string{"uId", "normalizedUid", "caseRecNumber", "deputyNumber", "dob", "firstname", "middlenames", "surname^3", "companyName", "className", "phoneNumbers.phoneNumber", "addresses.addressLines", "addresses.postcode", "cases.uId", "cases.normalizedUid", "cases.caseRecNumber", "cases.onlineLpaId", "cases.batchId", "cases.caseType", "cases.caseSubtype", "organisationName", "firmName", "firmNumber"},
 			},
 		},
 		"aggs": map[string]interface{}{
@@ -182,8 +169,9 @@ func TestPrepareQueryForFirmAndPersonWithOptions(t *testing.T) {
 	assert.Equal(t, map[string]interface{}{
 		"query": map[string]interface{}{
 			"multi_match": map[string]interface{}{
+				"type":   "most_fields",
 				"query":  "apples",
-				"fields": []string{"firmName", "firmNumber", "caseRecNumber", "searchable"},
+				"fields": []string{"uId", "normalizedUid", "caseRecNumber", "deputyNumber", "dob", "firstname", "middlenames", "surname^3", "companyName", "className", "phoneNumbers.phoneNumber", "addresses.addressLines", "addresses.postcode", "cases.uId", "cases.normalizedUid", "cases.caseRecNumber", "cases.onlineLpaId", "cases.batchId", "cases.caseType", "cases.caseSubtype", "organisationName", "firmName", "firmNumber"},
 			},
 		},
 		"aggs": map[string]interface{}{
@@ -200,4 +188,37 @@ func TestPrepareQueryForFirmAndPersonWithOptions(t *testing.T) {
 		"from": 123,
 		"size": 10,
 	}, body)
+}
+
+func TestPostcodeTerm(t *testing.T) {
+	testcases := map[string]struct {
+		term             string
+		expectedPostcode string
+	}{
+		"no postcode": {
+			term: "26 some street",
+		},
+		"short postcode": {
+			term:             "26 some street s11aa john",
+			expectedPostcode: "s11aa",
+		},
+		"long postcode": {
+			term:             "26 some street ng11aa john",
+			expectedPostcode: "ng11aa",
+		},
+		"short postcode with space": {
+			term:             "26 some street s1 1aa john",
+			expectedPostcode: "s1 1aa",
+		},
+		"long postcode with space": {
+			term:             "26 some street ng1 1aa john",
+			expectedPostcode: "ng1 1aa",
+		},
+	}
+
+	for name, tc := range testcases {
+		t.Run(name, func(t *testing.T) {
+			assert.Equal(t, tc.expectedPostcode, postcodeTerm(tc.term))
+		})
+	}
 }
