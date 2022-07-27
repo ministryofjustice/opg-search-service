@@ -64,7 +64,7 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 			Persontype: "Type0",
 			Dob:        "01/02/1990",
 			Addresses: []person.PersonAddress{{
-				Postcode: "NG12CD",
+				Postcode: "NG1 2CD",
 			}},
 		},
 		{
@@ -191,27 +191,7 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
 	}{
 		{
 			scenario: "search by surname",
-			term:     "Doe1",
-			expectedResponse: func() search.Response {
-				hit, _ := json.Marshal(suite.testPeople[1])
-
-				return search.Response{
-					Results: []json.RawMessage{hit},
-					Aggregations: map[string]map[string]int{
-						"personType": {
-							"Type1": 1,
-						},
-					},
-					Total: search.ResponseTotal{
-						Count: 1,
-						Exact: true,
-					},
-				}
-			},
-		},
-		{
-			scenario: "search by lowercase surname",
-			term:     "doe1",
+			term:     suite.testPeople[1].Surname,
 			expectedResponse: func() search.Response {
 				hit, _ := json.Marshal(suite.testPeople[1])
 
@@ -250,68 +230,8 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
 			},
 		},
 		{
-			scenario: "search postcode by postcode",
-			term:     "NG1 1AB",
-			expectedResponse: func() search.Response {
-				hit, _ := json.Marshal(suite.testPeople[1])
-
-				return search.Response{
-					Results: []json.RawMessage{hit},
-					Aggregations: map[string]map[string]int{
-						"personType": {
-							"Type1": 1,
-						},
-					},
-					Total: search.ResponseTotal{
-						Count: 1,
-						Exact: true,
-					},
-				}
-			},
-		},
-		{
-			scenario: "search postcode by spaceless postcode",
-			term:     "NG11AB",
-			expectedResponse: func() search.Response {
-				hit, _ := json.Marshal(suite.testPeople[1])
-
-				return search.Response{
-					Results: []json.RawMessage{hit},
-					Aggregations: map[string]map[string]int{
-						"personType": {
-							"Type1": 1,
-						},
-					},
-					Total: search.ResponseTotal{
-						Count: 1,
-						Exact: true,
-					},
-				}
-			},
-		},
-		{
-			scenario: "search spaceless postcode by postcode",
+			scenario: "search by postcode",
 			term:     "NG1 2CD",
-			expectedResponse: func() search.Response {
-				hit, _ := json.Marshal(suite.testPeople[0])
-
-				return search.Response{
-					Results: []json.RawMessage{hit},
-					Aggregations: map[string]map[string]int{
-						"personType": {
-							"Type0": 1,
-						},
-					},
-					Total: search.ResponseTotal{
-						Count: 1,
-						Exact: true,
-					},
-				}
-			},
-		},
-		{
-			scenario: "search spaceless postcode by spaceless postcode",
-			term:     "NG12CD",
 			expectedResponse: func() search.Response {
 				hit, _ := json.Marshal(suite.testPeople[0])
 
