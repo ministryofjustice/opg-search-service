@@ -113,7 +113,7 @@ func IndexConfig() (name string, config []byte, err error) {
 				"email":         textField,
 				"firstname":     searchableTextField,
 				"middlenames":   searchableTextField,
-				"surname":       searchableKeywordField,
+				"surname":       searchableTextField,
 				"companyName":   searchableTextField,
 				"className":     searchableTextField,
 				"phoneNumbers": map[string]interface{}{
