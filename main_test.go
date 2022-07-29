@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -63,7 +64,7 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 			Persontype: "Type0",
 			Dob:        "01/02/1990",
 			Addresses: []person.PersonAddress{{
-				Postcode: "NG12CD",
+				Postcode: "NG1 2CD",
 			}},
 		},
 		{
@@ -183,83 +184,118 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
 
 	suite.Equal(`{"successful":2,"failed":0}`, string(data))
 
-	person0, _ := json.Marshal(suite.testPeople[0])
-
-	person0Response := search.Response{
-		Results: []json.RawMessage{person0},
-		Aggregations: map[string]map[string]int{
-			"personType": {
-				"Type0": 1,
-			},
-		},
-		Total: search.ResponseTotal{
-			Count: 1,
-			Exact: true,
-		},
-	}
-
-	person1, _ := json.Marshal(suite.testPeople[1])
-
-	person1Response := search.Response{
-		Results: []json.RawMessage{person1},
-		Aggregations: map[string]map[string]int{
-			"personType": {
-				"Type1": 1,
-			},
-		},
-		Total: search.ResponseTotal{
-			Count: 1,
-			Exact: true,
-		},
-	}
-
-	testCases := map[string]struct {
+	testCases := []struct {
+		scenario         string
 		term             string
-		expectedResponse search.Response
+		expectedResponse func() search.Response
 	}{
-		"search by surname": {
-			term:             "Doe1",
-			expectedResponse: person1Response,
+		{
+			scenario: "search by surname",
+			term:     suite.testPeople[1].Surname,
+			expectedResponse: func() search.Response {
+				hit, _ := json.Marshal(suite.testPeople[1])
+
+				return search.Response{
+					Results: []json.RawMessage{hit},
+					Aggregations: map[string]map[string]int{
+						"personType": {
+							"Type1": 1,
+						},
+					},
+					Total: search.ResponseTotal{
+						Count: 1,
+						Exact: true,
+					},
+				}
+			},
 		},
-		"search by lowercase surname": {
-			term:             "doe1",
-			expectedResponse: person1Response,
+		{
+			scenario: "search by dob",
+			term:     "01/02/1990",
+			expectedResponse: func() search.Response {
+				hit, _ := json.Marshal(suite.testPeople[0])
+
+				return search.Response{
+					Results: []json.RawMessage{hit},
+					Aggregations: map[string]map[string]int{
+						"personType": {
+							"Type0": 1,
+						},
+					},
+					Total: search.ResponseTotal{
+						Count: 1,
+						Exact: true,
+					},
+				}
+			},
 		},
-		"search by dob": {
-			term:             "01/02/1990",
-			expectedResponse: person0Response,
+		{
+			scenario: "search by postcode",
+			term:     "NG1 2CD",
+			expectedResponse: func() search.Response {
+				hit, _ := json.Marshal(suite.testPeople[0])
+
+				return search.Response{
+					Results: []json.RawMessage{hit},
+					Aggregations: map[string]map[string]int{
+						"personType": {
+							"Type0": 1,
+						},
+					},
+					Total: search.ResponseTotal{
+						Count: 1,
+						Exact: true,
+					},
+				}
+			},
 		},
-		"search postcode by postcode": {
-			term:             "NG1 1AB",
-			expectedResponse: person1Response,
+		{
+			scenario: "search by a-ref",
+			term:     suite.testPeople[1].Cases[0].OnlineLpaId,
+			expectedResponse: func() search.Response {
+				hit, _ := json.Marshal(suite.testPeople[1])
+
+				return search.Response{
+					Results: []json.RawMessage{hit},
+					Aggregations: map[string]map[string]int{
+						"personType": {
+							"Type1": 1,
+						},
+					},
+					Total: search.ResponseTotal{
+						Count: 1,
+						Exact: true,
+					},
+				}
+			},
 		},
-		"search postcode by spaceless postcode": {
-			term:             "NG11AB",
-			expectedResponse: person1Response,
-		},
-		"search spaceless postcode by postcode": {
-			term:             "NG1 2CD",
-			expectedResponse: person0Response,
-		},
-		"search spaceless postcode by spaceless postcode": {
-			term:             "NG12CD",
-			expectedResponse: person0Response,
-		},
-		"search by a-ref": {
-			term:             "ABCDEFGH",
-			expectedResponse: person1Response,
-		},
-		"search by deputy number": {
-			term:             "12345",
-			expectedResponse: person1Response,
+		{
+			scenario: "search by deputy number",
+			term:     strconv.FormatInt(*suite.testPeople[1].DeputyNumber, 10),
+			expectedResponse: func() search.Response {
+				hit, _ := json.Marshal(suite.testPeople[1])
+
+				return search.Response{
+					Results: []json.RawMessage{hit},
+					Aggregations: map[string]map[string]int{
+						"personType": {
+							"Type1": 1,
+						},
+					},
+					Total: search.ResponseTotal{
+						Count: 1,
+						Exact: true,
+					},
+				}
+			},
 		},
 	}
 
-	for name, tc := range testCases {
-		suite.Run(name, func() {
+	for _, tc := range testCases {
+		suite.Run(tc.scenario, func() {
 			var respBody []byte
 
-			expectedResponse, _ := json.Marshal(tc.expectedResponse)
+			expectedResponse, _ := json.Marshal(tc.expectedResponse())
 
 			// wait up to 2s for the indexed record to become searchable
 			for i := 0; i < 20; i++ {
@@ -380,12 +416,4 @@ func doRequest(authHeader, path string, data interface{}) (*http.Response, error
 	req.Header.Set("Authorization", authHeader)
 
 	return http.DefaultClient.Do(req)
-}
-
-func (suite *EndToEndTestSuite) expectResponse(resp *http.Response, status int, body interface{}) {
-	suite.Equal(status, resp.StatusCode)
-
-	actual, _ := ioutil.ReadAll(resp.Body)
-	expected, _ := json.Marshal(body)
-	suite.Equal(expected, actual)
 }
