@@ -72,9 +72,7 @@ func (p Person) Validate() []response.Error {
 
 func IndexConfig() (name string, config []byte, err error) {
 	textField := map[string]interface{}{"type": "text"}
-	searchableTextField := map[string]interface{}{"type": "text", "copy_to": "searchable"}
 	keywordField := map[string]interface{}{"type": "keyword"}
-	searchableKeywordField := map[string]interface{}{"type": "keyword", "copy_to": "searchable"}
 
 	personConfig := map[string]interface{}{
 		"settings": map[string]interface{}{
@@ -103,31 +101,29 @@ func IndexConfig() (name string, config []byte, err error) {
 		},
 		"mappings": map[string]interface{}{
 			"properties": map[string]interface{}{
-				"searchable":    textField,
-				"uId":           searchableKeywordField,
-				"normalizedUid": searchableKeywordField,
-				"caseRecNumber": searchableKeywordField,
-				"deputyNumber":  searchableKeywordField,
+				"uId":           keywordField,
+				"normalizedUid": keywordField,
+				"caseRecNumber": keywordField,
+				"deputyNumber":  keywordField,
 				"personType":    keywordField,
-				"dob":           searchableTextField,
+				"dob":           textField,
 				"email":         textField,
-				"firstname":     searchableTextField,
-				"middlenames":   searchableTextField,
-				"surname":       searchableTextField,
-				"companyName":   searchableTextField,
-				"className":     searchableTextField,
+				"firstname":     textField,
+				"middlenames":   textField,
+				"surname":       textField,
+				"companyName":   textField,
+				"className":     textField,
 				"phoneNumbers": map[string]interface{}{
 					"properties": map[string]interface{}{
-						"phoneNumber": searchableKeywordField,
+						"phoneNumber": keywordField,
 					},
 				},
 				"addresses": map[string]interface{}{
 					"properties": map[string]interface{}{
-						"addressLines": searchableTextField,
+						"addressLines": textField,
 						"postcode": map[string]interface{}{
 							"type":     "text",
 							"analyzer": "no_space_analyzer",
-							"copy_to":  "searchable",
 							"fields": map[string]interface{}{
 								"keyword": keywordField,
 							},
@@ -136,16 +132,16 @@ func IndexConfig() (name string, config []byte, err error) {
 				},
 				"cases": map[string]interface{}{
 					"properties": map[string]interface{}{
-						"uId":           searchableKeywordField,
-						"normalizedUid": searchableTextField,
-						"caseRecNumber": searchableKeywordField,
-						"onlineLpaId":   searchableKeywordField,
-						"batchId":       searchableKeywordField,
-						"caseType":      searchableKeywordField,
-						"caseSubtype":   searchableKeywordField,
+						"uId":           keywordField,
+						"normalizedUid": keywordField,
+						"caseRecNumber": keywordField,
+						"onlineLpaId":   keywordField,
+						"batchId":       keywordField,
+						"caseType":      keywordField,
+						"caseSubtype":   keywordField,
 					},
 				},
-				"organisationName": searchableTextField,
+				"organisationName": textField,
 			},
 		},
 	}
