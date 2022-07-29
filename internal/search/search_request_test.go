@@ -57,12 +57,14 @@ func TestCreateSearchRequestFromRequest(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		req := http.Request{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(test.reqJson))),
-		}
-		sr, err := parseSearchRequest(&req)
+		t.Run(test.scenario, func(t *testing.T) {
+			req := http.Request{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(test.reqJson))),
+			}
+			sr, err := parseSearchRequest(&req)
 
-		assert.Equal(t, test.err, err, test.scenario)
-		assert.Equal(t, test.expectedRequest, sr, test.scenario)
+			assert.Equal(t, test.err, err)
+			assert.Equal(t, test.expectedRequest, sr)
+		})
 	}
 }

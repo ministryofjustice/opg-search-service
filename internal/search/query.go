@@ -1,11 +1,21 @@
 package search
 
+import (
+	"regexp"
+	"strings"
+)
+
+var (
+	firmFields   = []string{"firmName", "firmNumber"}
+	personFields = []string{"uId", "normalizedUid", "caseRecNumber", "deputyNumber", "dob", "firstname", "middlenames", "surname^3", "companyName", "className", "phoneNumbers.phoneNumber", "addresses.addressLines", "addresses.postcode", "cases.uId", "cases.normalizedUid", "cases.caseRecNumber", "cases.onlineLpaId", "cases.batchId", "cases.caseType", "cases.caseSubtype", "organisationName"}
+)
+
 func PrepareQueryForFirm(req *Request) map[string]interface{} {
 	body := map[string]interface{}{
 		"query": map[string]interface{}{
 			"multi_match": map[string]interface{}{
 				"query":  req.Term,
-				"fields": []string{"firmName", "firmNumber"},
+				"fields": firmFields,
 			},
 		},
 	}
@@ -14,19 +24,45 @@ func PrepareQueryForFirm(req *Request) map[string]interface{} {
 }
 
 func PrepareQueryForPerson(req *Request) map[string]interface{} {
-	body := map[string]interface{}{
+	postcode := postcodeTerm(req.Term)
+
+	multiMatch := map[string]interface{}{
+		"multi_match": map[string]interface{}{
+			"type":   "most_fields",
+			"query":  req.Term,
+			"fields": personFields,
+		},
+	}
+
+	if postcode == "" {
+		return withDefaults(req, map[string]interface{}{
+			"query": multiMatch,
+		})
+	}
+
+	return withDefaults(req, map[string]interface{}{
 		"query": map[string]interface{}{
 			"bool": map[string]interface{}{
-				"must": map[string]interface{}{
-					"simple_query_string": map[string]interface{}{
-						"query": req.Term,
-						"fields": []string{
-							"searchable",
-							"caseRecNumber",
+				"should": []map[string]interface{}{
+					multiMatch,
+					{
+						"match": map[string]interface{}{
+							"addresses.postcode": map[string]interface{}{"query": postcode},
 						},
-						"default_operator": "AND",
 					},
 				},
+			},
+		},
+	})
+}
+
+func PrepareQueryForFirmAndPerson(req *Request) map[string]interface{} {
+	body := map[string]interface{}{
+		"query": map[string]interface{}{
+			"multi_match": map[string]interface{}{
+				"type":   "most_fields",
+				"query":  req.Term,
+				"fields": append(personFields, firmFields...),
 			},
 		},
 	}
@@ -34,17 +70,15 @@ func PrepareQueryForPerson(req *Request) map[string]interface{} {
 	return withDefaults(req, body)
 }
 
-func PrepareQueryForFirmAndPerson(req *Request) map[string]interface{} {
-	body := map[string]interface{}{
-		"query": map[string]interface{}{
-			"multi_match": map[string]interface{}{
-				"query":  req.Term,
-				"fields": []string{"firmName", "firmNumber", "caseRecNumber", "searchable"},
-			},
-		},
+func postcodeTerm(term string) string {
+	re, _ := regexp.Compile(`(gir 0a{2})|((([a-z][0-9]{1,2})|(([a-z][a-hj-y][0-9]{1,2})|(([a-z][0-9][a-z])|([a-z][a-hj-y][0-9][a-z]?))))\s?[0-9][a-z]{2})`)
+	matches := re.FindStringSubmatch(strings.ToLower(term))
+
+	if len(matches) > 0 {
+		return matches[0]
 	}
 
-	return withDefaults(req, body)
+	return ""
 }
 
 func withDefaults(req *Request, body map[string]interface{}) map[string]interface{} {
