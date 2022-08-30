@@ -5,11 +5,12 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/jackc/pgx/v4"
+	"github.com/ministryofjustice/opg-search-service/internal/deputy"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/jackc/pgx/v4"
 	"github.com/ministryofjustice/opg-search-service/internal/firm"
 	"github.com/ministryofjustice/opg-search-service/internal/index"
 	"github.com/ministryofjustice/opg-search-service/internal/person"
@@ -50,6 +51,7 @@ func (c *indexCommand) Run(args []string) error {
 	all := flagset.Bool("all", false, "index all records for chosen indices")
 	firmOnly := flagset.Bool("firm", false, "index records to the firm index")
 	personOnly := flagset.Bool("person", false, "index records to the person index")
+	deputyOnly := flagset.Bool("deputy", false, "index records to the deputy index")
 	from := flagset.Int("from", 0, "index an id range starting from (use with -to)")
 	to := flagset.Int("to", 100, "index an id range ending at (use with -from)")
 	batchSize := flagset.Int("batch-size", 10000, "batch size to read from db")
@@ -77,7 +79,7 @@ func (c *indexCommand) Run(args []string) error {
 	}
 
 	indexers := map[string]*index.Indexer{}
-	noneSet := !*firmOnly && !*personOnly
+	noneSet := !*firmOnly && !*personOnly && !*deputyOnly
 
 	if *firmOnly || noneSet {
 		for _, indexName := range c.currentIndices {
@@ -91,6 +93,15 @@ func (c *indexCommand) Run(args []string) error {
 		for _, indexName := range c.currentIndices {
 			if strings.HasPrefix(indexName, "person_") {
 				indexers["person"] = index.New(c.esClient, c.logger, person.NewDB(conn), indexName)
+				break
+			}
+		}
+	}
+
+	if *deputyOnly || noneSet {
+		for _, indexName := range c.currentIndices {
+			if strings.HasPrefix(indexName, "deputy_") {
+				indexers["deputy"] = index.New(c.esClient, c.logger, deputy.NewDB(conn), indexName)
 				break
 			}
 		}
