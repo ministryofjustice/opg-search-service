@@ -80,12 +80,12 @@ func IndexConfig() (name string, config []byte, err error) {
 		},
 		"mappings": map[string]interface{}{
 			"properties": map[string]interface{}{
-				"searchable":    textField,
-				"uId":           searchableKeywordField,
-				"normalizedUid": searchableKeywordField,
-				"deputyNumber":  searchableKeywordField,
-				"personType":    keywordField,
-				//"dob":              searchableTextField,
+				"searchable":       textField,
+				"uId":              searchableKeywordField,
+				"normalizedUid":    searchableKeywordField,
+				"deputyNumber":     searchableKeywordField,
+				"personType":       keywordField,
+				"dob":              searchableTextField,
 				"firstname":        searchableTextField,
 				"middlenames":      searchableTextField,
 				"surname":          searchableTextField,
