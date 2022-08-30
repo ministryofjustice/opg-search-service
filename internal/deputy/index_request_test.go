@@ -19,7 +19,7 @@ func TestIndexRequest_Validate(t *testing.T) {
 		{
 			"valid request",
 			IndexRequest{
-				Persons: []Person{
+				Deputies: []Deputy{
 					{ID: &testId},
 				},
 			},
@@ -38,7 +38,7 @@ func TestIndexRequest_Validate(t *testing.T) {
 		{
 			"empty persons",
 			IndexRequest{
-				Persons: []Person{},
+				Deputies: []Deputy{},
 			},
 			[]response.Error{
 				{
@@ -50,7 +50,7 @@ func TestIndexRequest_Validate(t *testing.T) {
 		{
 			"invalid person error propagates",
 			IndexRequest{
-				Persons: []Person{
+				Deputies: []Deputy{
 					{},
 				},
 			},

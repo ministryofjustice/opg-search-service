@@ -7,22 +7,22 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPerson_Id(t *testing.T) {
+func TestDeputy_Id(t *testing.T) {
 	testId := int64(13)
 
 	tests := []struct {
 		scenario   string
-		person     Person
+		person     Deputy
 		expectedId interface{}
 	}{
 		{
-			scenario:   "Blank Person",
-			person:     Person{},
+			scenario:   "Blank Deputy",
+			person:     Deputy{},
 			expectedId: int64(0),
 		},
 		{
-			scenario: "Person with ID",
-			person: Person{
+			scenario: "Deputy with ID",
+			person: Deputy{
 				ID: &testId,
 			},
 			expectedId: int64(13),
@@ -33,25 +33,25 @@ func TestPerson_Id(t *testing.T) {
 	}
 }
 
-func TestPerson_Validate(t *testing.T) {
+func TestDeputy_Validate(t *testing.T) {
 	testId := int64(1)
 	var noErrs []response.Error
 
 	tests := []struct {
 		scenario     string
-		person       Person
+		person       Deputy
 		expectedErrs []response.Error
 	}{
 		{
-			"valid person",
-			Person{
+			"valid deputy",
+			Deputy{
 				ID: &testId,
 			},
 			noErrs,
 		},
 		{
 			"missing person id",
-			Person{},
+			Deputy{},
 			[]response.Error{
 				{
 					Name:        "id",
@@ -60,8 +60,8 @@ func TestPerson_Validate(t *testing.T) {
 			},
 		},
 		{
-			"invalid person id",
-			Person{
+			"invalid deputy id",
+			Deputy{
 				ID: nil,
 			},
 			[]response.Error{
@@ -78,7 +78,7 @@ func TestPerson_Validate(t *testing.T) {
 	}
 }
 
-func TestPerson_IndexConfig(t *testing.T) {
+func TestDeputy_IndexConfig(t *testing.T) {
 	name, _, err := IndexConfig()
 
 	assert.Nil(t, err)

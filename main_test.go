@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/ministryofjustice/opg-search-service/internal/deputy"
 	"io/ioutil"
 	"log"
 	"net"
@@ -24,10 +25,11 @@ import (
 
 type EndToEndTestSuite struct {
 	suite.Suite
-	testPeople []person.Person
-	testFirms  []firm.Firm
-	esClient   *elasticsearch.Client
-	authHeader string
+	testPeople   []person.Person
+	testFirms    []firm.Firm
+	testDeputies []deputy.Deputy
+	esClient     *elasticsearch.Client
+	authHeader   string
 }
 
 func makeToken() string {
@@ -114,6 +116,24 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 		},
 	}
 
+	suite.testDeputies = []deputy.Deputy{
+		{
+			ID:         i64(0),
+			Firstname:  "Bob",
+			Surname:    "Builder",
+			Persontype: "actor_deputy",
+			Dob:        "01/02/1990",
+		},
+		{
+			ID:           i64(1),
+			Firstname:    "Spongebob",
+			Surname:      "Squarepants",
+			Persontype:   "actor_deputy",
+			DeputyNumber: i64(12345),
+			Dob:          "20/03/1987",
+		},
+	}
+
 	// wait for ES service to stand up
 	time.Sleep(time.Second * 10)
 
@@ -132,6 +152,7 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 
 	indexName, _, _ := person.IndexConfig()
 	indexNameFirm, _, _ := firm.IndexConfig()
+	indexNameDeputy, _, _ := deputy.IndexConfig()
 
 	exists, err := suite.esClient.IndexExists(indexName)
 	suite.False(exists, "Person index should not exist at this point")
@@ -139,6 +160,10 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 
 	existsFirmIndex, err := suite.esClient.IndexExists(indexNameFirm)
 	suite.False(existsFirmIndex, "Firm index should not exist at this point")
+	suite.Nil(err)
+
+	existsDeputyIndex, err := suite.esClient.IndexExists(indexNameDeputy)
+	suite.False(existsDeputyIndex, "Deputy index should not exist at this point")
 	suite.Nil(err)
 
 	// wait up to 5 seconds for the app to start
@@ -156,6 +181,10 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 
 		existsFirmIndex, err = suite.esClient.IndexExists(indexName)
 		suite.True(existsFirmIndex, "Firm index should exist at this point")
+		suite.Nil(err)
+
+		existsDeputyIndex, err = suite.esClient.IndexExists(indexName)
+		suite.True(existsDeputyIndex, "Deputy index should exist at this point")
 		suite.Nil(err)
 
 		conn.Close()
@@ -371,6 +400,75 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchFirm() {
 				resp, err := doRequest(suite.authHeader, "/firms/search", map[string]string{"term": tc.term})
 				if err != nil {
 					suite.Fail("Error searching for a firm", err)
+				}
+
+				suite.Equal(http.StatusOK, resp.StatusCode)
+
+				respBody, _ = ioutil.ReadAll(resp.Body)
+
+				if bytes.Equal(expectedResponse, respBody) {
+					break
+				}
+
+				time.Sleep(time.Millisecond * 100)
+			}
+
+			suite.Equal(string(expectedResponse), string(respBody))
+		})
+	}
+}
+
+func (suite *EndToEndTestSuite) TestIndexAndSearchDeputy() {
+	resp, err := doRequest(suite.authHeader, "/deputies", deputy.IndexRequest{Deputies: suite.testDeputies})
+	if err != nil {
+		suite.Fail("Error indexing deputies", err)
+	}
+	defer resp.Body.Close()
+
+	suite.Equal(http.StatusAccepted, resp.StatusCode)
+
+	data, _ := ioutil.ReadAll(resp.Body)
+
+	suite.Equal(`{"successful":2,"failed":0}`, string(data))
+
+	testCases := []struct {
+		scenario         string
+		term             string
+		expectedResponse func() search.Response
+	}{
+		{
+			scenario: "search by deputy",
+			term:     suite.testDeputies[1].Firstname,
+			expectedResponse: func() search.Response {
+				hit, _ := json.Marshal(suite.testDeputies[1])
+
+				return search.Response{
+					Results: []json.RawMessage{hit},
+					Aggregations: map[string]map[string]int{
+						"personType": {
+							"Deputy": 1,
+						},
+					},
+					Total: search.ResponseTotal{
+						Count: 1,
+						Exact: true,
+					},
+				}
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.scenario, func() {
+			var respBody []byte
+
+			expectedResponse, _ := json.Marshal(tc.expectedResponse())
+
+			// wait up to 2s for the indexed record to become searchable
+			for i := 0; i < 20; i++ {
+				resp, err := doRequest(suite.authHeader, "/deputies/search", map[string]string{"term": tc.term})
+				if err != nil {
+					suite.Fail("Error searching for a deputy", err)
 				}
 
 				suite.Equal(http.StatusOK, resp.StatusCode)
