@@ -20,6 +20,7 @@ type Deputy struct {
 	Firstname        string `json:"firstname"`
 	Middlenames      string `json:"middlenames"`
 	Surname          string `json:"surname"`
+	Othernames       string `json:"othernames"`
 	CompanyName      string `json:"companyName"`
 	Classname        string `json:"className"`
 	OrganisationName string `json:"organisationName"`
@@ -79,15 +80,16 @@ func IndexConfig() (name string, config []byte, err error) {
 		},
 		"mappings": map[string]interface{}{
 			"properties": map[string]interface{}{
-				"searchable":       textField,
-				"uId":              searchableKeywordField,
-				"normalizedUid":    searchableKeywordField,
-				"deputyNumber":     searchableKeywordField,
-				"personType":       keywordField,
-				"dob":              searchableTextField,
+				"searchable":    textField,
+				"uId":           searchableKeywordField,
+				"normalizedUid": searchableKeywordField,
+				"deputyNumber":  searchableKeywordField,
+				"personType":    keywordField,
+				//"dob":              searchableTextField,
 				"firstname":        searchableTextField,
 				"middlenames":      searchableTextField,
 				"surname":          searchableTextField,
+				"othernames":       searchableTextField,
 				"companyName":      searchableTextField,
 				"className":        searchableTextField,
 				"organisationName": searchableTextField,
