@@ -40,7 +40,7 @@ changed:
 - the service will create a new index
 - normal indexing operations will then act on _both_ indices
 - `index` command operation will act on the new index only
-- search operations will contine to use the old index (because the alias will
+- search operations will continue to use the old index (because the alias will
   not be changed automatically)
 
 When the new index has been filled it can be activated by using the
