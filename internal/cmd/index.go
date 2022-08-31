@@ -5,11 +5,11 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/jackc/pgx/v4"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/jackc/pgx/v4"
 	"github.com/ministryofjustice/opg-search-service/internal/firm"
 	"github.com/ministryofjustice/opg-search-service/internal/index"
 	"github.com/ministryofjustice/opg-search-service/internal/person"
