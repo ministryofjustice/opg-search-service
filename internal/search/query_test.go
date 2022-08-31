@@ -169,6 +169,40 @@ func TestPrepareQueryForFirmAndPerson(t *testing.T) {
 	}, body)
 }
 
+func TestPrepareQueryForDeputy(t *testing.T) {
+	req := &Request{
+		Term: "Niko",
+		From: 9,
+	}
+
+	body := PrepareQueryForDeputy(req)
+
+	assert.Equal(t, map[string]interface{}{
+		"query": map[string]interface{}{
+			"bool": map[string]interface{}{
+				"must": map[string]interface{}{
+					"simple_query_string": map[string]interface{}{
+						"query": "Niko",
+						"fields": []string{
+							"firstname", "othernames", "middlenames", "surname", "organisationName",
+						},
+						"default_operator": "AND",
+					},
+				},
+			},
+		},
+		"aggs": map[string]interface{}{
+			"personType": map[string]interface{}{
+				"terms": map[string]string{
+					"field": "personType",
+				},
+			},
+		},
+		"post_filter": map[string]interface{}{"bool": map[string]interface{}{"should": []interface{}{}}},
+		"from":        9,
+	}, body)
+}
+
 func TestPrepareQueryForFirmAndPersonWithOptions(t *testing.T) {
 	req := &Request{
 		Term:        "apples",
