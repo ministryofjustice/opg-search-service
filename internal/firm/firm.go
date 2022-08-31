@@ -62,30 +62,31 @@ func IndexConfig() (name string, config []byte, err error) {
 					"type": "text",
 				},
 				"firmName": map[string]interface{}{
-					"firmNumber": map[string]interface{}{
-						"type": "keyword",
-					},
-					"phoneNumber": map[string]interface{}{
-						"type": "keyword",
-					},
-					"addressLine1": map[string]interface{}{
-						"type": "text",
-					},
-					"addressLine2": map[string]interface{}{
-						"type": "text",
-					},
-					"addressLine3": map[string]interface{}{
-						"type": "text",
-					},
-					"town": map[string]interface{}{
-						"type": "text",
-					},
-					"county": map[string]interface{}{
-						"type": "text",
-					},
-					"postcode": map[string]interface{}{
-						"type": "keyword",
-					}, "type": "text",
+					"type": "text",
+				},
+				"firmNumber": map[string]interface{}{
+					"type": "keyword",
+				},
+				"phoneNumber": map[string]interface{}{
+					"type": "keyword",
+				},
+				"addressLine1": map[string]interface{}{
+					"type": "text",
+				},
+				"addressLine2": map[string]interface{}{
+					"type": "text",
+				},
+				"addressLine3": map[string]interface{}{
+					"type": "text",
+				},
+				"town": map[string]interface{}{
+					"type": "text",
+				},
+				"county": map[string]interface{}{
+					"type": "text",
+				},
+				"postcode": map[string]interface{}{
+					"type": "keyword",
 				},
 			},
 		},

@@ -6,7 +6,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/ministryofjustice/opg-search-service/internal/deputy"
 	"github.com/ministryofjustice/opg-search-service/internal/firm"
 	"github.com/ministryofjustice/opg-search-service/internal/person"
 	"github.com/sirupsen/logrus"
@@ -45,7 +44,7 @@ func (c *cleanupIndicesCommand) Run(args []string) error {
 		return err
 	}
 
-	for _, aliasName := range []string{firm.AliasName, person.AliasName, deputy.AliasName} {
+	for _, aliasName := range []string{firm.AliasName, person.AliasName} {
 		aliasedIndex, err := c.client.ResolveAlias(aliasName)
 		if err != nil {
 			return err

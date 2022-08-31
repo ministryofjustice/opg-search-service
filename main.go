@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"github.com/ministryofjustice/opg-search-service/internal/deputy"
 	"log"
 	"net/http"
 	"os"
@@ -31,18 +30,15 @@ func main() {
 	if err != nil {
 		l.Fatal(err)
 	}
-	deputyIndex, deputyConfig, err := deputy.IndexConfig()
-	if err != nil {
-		l.Fatal(err)
-	}
+
 	firmIndex, firmConfig, err := firm.IndexConfig()
 	if err != nil {
 		l.Fatal(err)
 	}
+
 	currentIndices := map[string][]byte{
 		personIndex: personConfig,
 		firmIndex:   firmConfig,
-		deputyIndex: deputyConfig,
 	}
 
 	secretsCache := cache.New()
@@ -62,7 +58,6 @@ func main() {
 
 	personIndices := createIndexAndAlias(esClient, person.AliasName, personIndex, personConfig, l)
 	firmIndices := createIndexAndAlias(esClient, firm.AliasName, firmIndex, firmConfig, l)
-	deputyIndices := createIndexAndAlias(esClient, deputy.AliasName, deputyIndex, deputyConfig, l)
 	// Create new serveMux
 	sm := mux.NewRouter().PathPrefix(os.Getenv("PATH_PREFIX")).Subrouter()
 
@@ -318,8 +313,8 @@ func main() {
 	postRouter.Handle("/persons", index.NewHandler(l, esClient, personIndices, person.ParseIndexRequest))
 	postRouter.Handle("/persons/search", search.NewHandler(l, esClient, []string{person.AliasName}, search.PrepareQueryForPerson))
 
-	postRouter.Handle("/deputies", index.NewHandler(l, esClient, deputyIndices, deputy.ParseIndexRequest))
-	postRouter.Handle("/deputies/search", search.NewHandler(l, esClient, []string{deputy.AliasName}, search.PrepareQueryForPerson))
+	postRouter.Handle("/deputies", index.NewHandler(l, esClient, personIndices, person.ParseIndexRequest))
+	postRouter.Handle("/deputies/search", search.NewHandler(l, esClient, []string{person.AliasName}, search.PrepareQueryForDeputy))
 	//maybe check here for future issues
 
 	postRouter.Handle("/firms", index.NewHandler(l, esClient, firmIndices, firm.ParseIndexRequest))
