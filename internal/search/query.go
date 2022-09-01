@@ -40,8 +40,14 @@ func PrepareQueryForDeputy(req *Request) map[string]interface{} {
 			"bool": map[string]interface{}{
 				"must": map[string]interface{}{
 					"simple_query_string": map[string]interface{}{
-						"query":            req.Term,
-						"fields":           []string{"firstname", "othernames", "middlenames", "surname", "organisationName"},
+						"query": req.Term,
+						"fields": []string{
+							"firstname",
+							"othernames",
+							"middlenames",
+							"surname",
+							"organisationName",
+						},
 						"default_operator": "AND",
 					},
 				},
