@@ -44,7 +44,7 @@ func (db *DB) QueryFromDate(ctx context.Context, results chan<- index.Indexable,
 
 func makeQueryPerson(whereClause string) string {
 	return `SELECT p.id, p.uid, coalesce(p.caseRecNumber, ''), p.deputynumber, coalesce(p.email, ''), coalesce(to_char(p.dob, 'DD/MM/YYYY'), ''),
-		coalesce(p.firstname, ''), coalesce(p.middlenames, ''), coalesce(p.surname, ''), coalesce(p.previousnames, '') coalesce(p.companyname, ''), p.type, coalesce(p.organisationname, ''),
+		coalesce(p.firstname, ''), coalesce(p.middlenames, ''), coalesce(p.surname, ''), coalesce(p.previousnames, ''), coalesce(p.companyname, ''), p.type, coalesce(p.organisationname, ''),
 		phonenumbers.id, coalesce(phonenumbers.phone_number, ''),
 		addresses.id, addresses.address_lines, coalesce(addresses.postcode, ''),
 		cases.id, cases.uid, coalesce(cases.caserecnumber, ''), coalesce(cases.onlinelpaid, ''), coalesce(cases.batchid, ''), coalesce(cases.casetype, ''), coalesce(cases.casesubtype, '')
