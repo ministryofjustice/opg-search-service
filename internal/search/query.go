@@ -43,9 +43,9 @@ func PrepareQueryForDeputy(req *Request) map[string]interface{} {
 						"query": req.Term,
 						"fields": []string{
 							"firstname",
-							"othernames",
 							"middlenames",
 							"surname",
+							"previousnames",
 							"organisationName",
 						},
 						"default_operator": "AND",

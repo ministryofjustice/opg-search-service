@@ -13,7 +13,7 @@ CREATE TABLE public.persons
     firstname character varying(255) COLLATE pg_catalog."default" DEFAULT NULL::character varying,
     middlenames character varying(255) COLLATE pg_catalog."default" DEFAULT NULL::character varying,
     surname character varying(255) COLLATE pg_catalog."default" DEFAULT NULL::character varying,
-    othernames character varying(255) COLLATE pg_catalog."default" DEFAULT NULL::character varying,
+    previousnames character varying(255) COLLATE pg_catalog."default" DEFAULT NULL::character varying,
     -- correspondencebypost boolean NOT NULL,
     -- correspondencebyphone boolean NOT NULL,
     -- correspondencebyemail boolean NOT NULL,

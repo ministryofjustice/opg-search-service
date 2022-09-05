@@ -20,9 +20,9 @@ type Person struct {
 	Dob              string              `json:"dob"`
 	Email            string              `json:"email"`
 	Firstname        string              `json:"firstname"`
-	Othernames       string              `json:"othernames"`
 	Middlenames      string              `json:"middlenames"`
 	Surname          string              `json:"surname"`
+	Previousnames    string              `json:"previousnames"`
 	CompanyName      string              `json:"companyName"`
 	Classname        string              `json:"className"`
 	OrganisationName string              `json:"organisationName"`
@@ -113,9 +113,9 @@ func IndexConfig() (name string, config []byte, err error) {
 				"dob":           searchableTextField,
 				"email":         textField,
 				"firstname":     searchableTextField,
-				"othernames":    searchableTextField,
 				"middlenames":   searchableTextField,
 				"surname":       searchableTextField,
+				"previousnames": searchableTextField,
 				"companyName":   searchableTextField,
 				"className":     searchableTextField,
 				"phoneNumbers": map[string]interface{}{
