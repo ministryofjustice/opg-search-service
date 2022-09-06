@@ -44,7 +44,7 @@ func (db *DB) QueryFromDate(ctx context.Context, results chan<- index.Indexable,
 
 func makeQueryPerson(whereClause string) string {
 	return `SELECT p.id, p.uid, coalesce(p.caseRecNumber, ''), p.deputynumber, coalesce(p.email, ''), coalesce(to_char(p.dob, 'DD/MM/YYYY'), ''),
-		coalesce(p.firstname, ''), coalesce(p.middlenames, ''), coalesce(p.surname, ''), coalesce(p.previousnames, ''), coalesce(p.companyname, ''), p.type, coalesce(p.organisationname, ''),
+		coalesce(p.firstname, ''), coalesce(p.middlenames, ''), coalesce(p.surname, ''), coalesce(p.previousnames, ''), coalesce(p.othernames, ''), coalesce(p.companyname, ''), p.type, coalesce(p.organisationname, ''),
 		phonenumbers.id, coalesce(phonenumbers.phone_number, ''),
 		addresses.id, addresses.address_lines, coalesce(addresses.postcode, ''),
 		cases.id, cases.uid, coalesce(cases.caserecnumber, ''), coalesce(cases.onlinelpaid, ''), coalesce(cases.batchid, ''), coalesce(cases.casetype, ''), coalesce(cases.casesubtype, '')
@@ -70,6 +70,7 @@ type rowResult struct {
 	Middlenames        string
 	Surname            string
 	Previousnames      string
+	Othernames         string
 	CompanyName        string
 	Type               string
 	OrganisationName   string
@@ -95,7 +96,7 @@ func scan(ctx context.Context, rows pgx.Rows, results chan<- index.Indexable) er
 	for rows.Next() {
 		var v rowResult
 		err = rows.Scan(&v.ID, &v.UID, &v.CaseRecNumber, &v.DeputyNumber, &v.Email, &v.Dob,
-			&v.Firstname, &v.Middlenames, &v.Surname, &v.Previousnames, &v.CompanyName, &v.Type, &v.OrganisationName,
+			&v.Firstname, &v.Middlenames, &v.Surname, &v.Previousnames, &v.Othernames, &v.CompanyName, &v.Type, &v.OrganisationName,
 			&v.PhoneNumberID, &v.PhoneNumber,
 			&v.AddressID, &v.AddressLines, &v.Postcode,
 			&v.CaseID, &v.CasesUID, &v.CasesCaseRecNumber, &v.CasesOnlineLpaID, &v.CasesBatchID, &v.CasesCaseType, &v.CasesCaseSubType)
@@ -178,6 +179,7 @@ func addResultToPerson(a *personAdded, p *Person, s rowResult) {
 		p.Middlenames = s.Middlenames
 		p.Surname = s.Surname
 		p.Previousnames = s.Previousnames
+		p.Othernames = s.Othernames
 		p.CompanyName = s.CompanyName
 		p.Persontype = resolvePersonType(s.Type)
 		p.OrganisationName = s.OrganisationName

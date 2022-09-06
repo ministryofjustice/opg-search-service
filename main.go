@@ -313,7 +313,6 @@ func main() {
 	postRouter.Handle("/persons", index.NewHandler(l, esClient, personIndices, person.ParseIndexRequest))
 	postRouter.Handle("/persons/search", search.NewHandler(l, esClient, []string{person.AliasName}, search.PrepareQueryForPerson))
 
-	postRouter.Handle("/deputies", index.NewHandler(l, esClient, personIndices, person.ParseIndexRequest))
 	postRouter.Handle("/deputies/search", search.NewHandler(l, esClient, []string{person.AliasName}, search.PrepareQueryForDeputy))
 
 	postRouter.Handle("/firms", index.NewHandler(l, esClient, firmIndices, firm.ParseIndexRequest))

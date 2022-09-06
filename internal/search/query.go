@@ -46,6 +46,7 @@ func PrepareQueryForDeputy(req *Request) map[string]interface{} {
 							"middlenames",
 							"surname",
 							"previousnames",
+							"othernames",
 							"organisationName",
 						},
 						"default_operator": "AND",
