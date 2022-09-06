@@ -34,6 +34,30 @@ func PrepareQueryForPerson(req *Request) map[string]interface{} {
 	return withDefaults(req, body)
 }
 
+func PrepareQueryForDeputy(req *Request) map[string]interface{} {
+	body := map[string]interface{}{
+		"query": map[string]interface{}{
+			"bool": map[string]interface{}{
+				"must": map[string]interface{}{
+					"simple_query_string": map[string]interface{}{
+						"query": req.Term,
+						"fields": []string{
+							"firstname",
+							"middlenames",
+							"surname",
+							"previousnames",
+							"organisationName",
+						},
+						"default_operator": "AND",
+					},
+				},
+			},
+		},
+	}
+
+	return withDefaults(req, body)
+}
+
 func PrepareQueryForFirmAndPerson(req *Request) map[string]interface{} {
 	body := map[string]interface{}{
 		"query": map[string]interface{}{

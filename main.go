@@ -11,12 +11,12 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/ministryofjustice/opg-search-service/internal/cache"
 	"github.com/ministryofjustice/opg-search-service/internal/cmd"
-	"github.com/ministryofjustice/opg-search-service/internal/remove"
 	"github.com/ministryofjustice/opg-search-service/internal/elasticsearch"
 	"github.com/ministryofjustice/opg-search-service/internal/firm"
 	"github.com/ministryofjustice/opg-search-service/internal/index"
 	"github.com/ministryofjustice/opg-search-service/internal/middleware"
 	"github.com/ministryofjustice/opg-search-service/internal/person"
+	"github.com/ministryofjustice/opg-search-service/internal/remove"
 	"github.com/ministryofjustice/opg-search-service/internal/search"
 	"github.com/sirupsen/logrus"
 )
@@ -30,10 +30,12 @@ func main() {
 	if err != nil {
 		l.Fatal(err)
 	}
+
 	firmIndex, firmConfig, err := firm.IndexConfig()
 	if err != nil {
 		l.Fatal(err)
 	}
+
 	currentIndices := map[string][]byte{
 		personIndex: personConfig,
 		firmIndex:   firmConfig,
@@ -56,7 +58,6 @@ func main() {
 
 	personIndices := createIndexAndAlias(esClient, person.AliasName, personIndex, personConfig, l)
 	firmIndices := createIndexAndAlias(esClient, firm.AliasName, firmIndex, firmConfig, l)
-
 	// Create new serveMux
 	sm := mux.NewRouter().PathPrefix(os.Getenv("PATH_PREFIX")).Subrouter()
 
@@ -312,6 +313,9 @@ func main() {
 	postRouter.Handle("/persons", index.NewHandler(l, esClient, personIndices, person.ParseIndexRequest))
 	postRouter.Handle("/persons/search", search.NewHandler(l, esClient, []string{person.AliasName}, search.PrepareQueryForPerson))
 
+	postRouter.Handle("/deputies", index.NewHandler(l, esClient, personIndices, person.ParseIndexRequest))
+	postRouter.Handle("/deputies/search", search.NewHandler(l, esClient, []string{person.AliasName}, search.PrepareQueryForDeputy))
+
 	postRouter.Handle("/firms", index.NewHandler(l, esClient, firmIndices, firm.ParseIndexRequest))
 	postRouter.Handle("/firms/search", search.NewHandler(l, esClient, []string{firm.AliasName}, search.PrepareQueryForFirm))
 
@@ -354,13 +358,13 @@ func main() {
 	defer w.Close()
 
 	s := &http.Server{
-		Addr:        	 	":8000",           	// configure the bind address
-		Handler:     	 	sm,                	// set the default handler
-		ErrorLog:     		log.New(w, "", 0), 	// Set the logger for the server
-		IdleTimeout:  		120 * time.Second, 	// max time for connections using TCP Keep-Alive
-		ReadHeaderTimeout: 	2 * time.Second, 	// max time allowed to read request headers
-		ReadTimeout:  		1 * time.Second,   	// max time to read request from the client
-		WriteTimeout: 		1 * time.Minute,   	// max time to write response to the client
+		Addr:              ":8000",           // configure the bind address
+		Handler:           sm,                // set the default handler
+		ErrorLog:          log.New(w, "", 0), // Set the logger for the server
+		IdleTimeout:       120 * time.Second, // max time for connections using TCP Keep-Alive
+		ReadHeaderTimeout: 2 * time.Second,   // max time allowed to read request headers
+		ReadTimeout:       1 * time.Second,   // max time to read request from the client
+		WriteTimeout:      1 * time.Minute,   // max time to write response to the client
 	}
 
 	// start the server

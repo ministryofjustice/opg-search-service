@@ -22,6 +22,7 @@ type Person struct {
 	Firstname        string              `json:"firstname"`
 	Middlenames      string              `json:"middlenames"`
 	Surname          string              `json:"surname"`
+	Previousnames    string              `json:"previousnames"`
 	CompanyName      string              `json:"companyName"`
 	Classname        string              `json:"className"`
 	OrganisationName string              `json:"organisationName"`
@@ -114,6 +115,7 @@ func IndexConfig() (name string, config []byte, err error) {
 				"firstname":     searchableTextField,
 				"middlenames":   searchableTextField,
 				"surname":       searchableTextField,
+				"previousnames": searchableTextField,
 				"companyName":   searchableTextField,
 				"className":     searchableTextField,
 				"phoneNumbers": map[string]interface{}{
