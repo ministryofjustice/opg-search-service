@@ -154,7 +154,7 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 		suite.True(exists, "Person index should exist at this point")
 		suite.Nil(err)
 
-		existsFirmIndex, err = suite.esClient.IndexExists(indexName)
+		existsFirmIndex, err = suite.esClient.IndexExists(indexNameFirm)
 		suite.True(existsFirmIndex, "Firm index should exist at this point")
 		suite.Nil(err)
 
