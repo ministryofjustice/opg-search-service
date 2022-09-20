@@ -1,3 +1,3 @@
-FROM golang:1.19.0
+FROM golang:1.19.1
 
 RUN go install gotest.tools/gotestsum@latest
