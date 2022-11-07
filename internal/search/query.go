@@ -14,6 +14,10 @@ func PrepareQueryForFirm(req *Request) map[string]interface{} {
 }
 
 func PrepareQueryForPerson(req *Request) map[string]interface{} {
+	if req.Prepared != nil {
+		return req.Prepared
+	}
+
 	body := map[string]interface{}{
 		"query": map[string]interface{}{
 			"bool": map[string]interface{}{

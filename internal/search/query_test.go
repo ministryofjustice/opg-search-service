@@ -142,6 +142,20 @@ func TestPrepareQueryForPersonWithOptions(t *testing.T) {
 	}, body)
 }
 
+func TestPrepareQueryForPersonAlreadyPrepared(t *testing.T) {
+	req := &Request{
+		Prepared: map[string]interface{}{
+			"query": "some prepared query",
+		},
+	}
+
+	body := PrepareQueryForPerson(req)
+
+	assert.Equal(t, map[string]interface{}{
+		"query": "some prepared query",
+	}, body)
+}
+
 func TestPrepareQueryForFirmAndPerson(t *testing.T) {
 	req := &Request{
 		Term: "apples",
