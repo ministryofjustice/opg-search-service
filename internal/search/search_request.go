@@ -11,10 +11,11 @@ import (
 )
 
 type Request struct {
-	Term        string   `json:"term"`
-	Size        int      `json:"size,omitempty"`
-	From        int      `json:"from"`
-	PersonTypes []string `json:"person_types"`
+	Term        string                 `json:"term"`
+	Size        int                    `json:"size,omitempty"`
+	From        int                    `json:"from"`
+	PersonTypes []string               `json:"person_types"`
+	Prepared    map[string]interface{} `json:"prepared"`
 }
 
 func parseSearchRequest(r *http.Request) (*Request, error) {
@@ -33,7 +34,7 @@ func parseSearchRequest(r *http.Request) (*Request, error) {
 
 	req.sanitise()
 
-	if req.Term == "" {
+	if req.Term == "" && req.Prepared == nil {
 		return nil, errors.New("search term is required and cannot be empty")
 	}
 

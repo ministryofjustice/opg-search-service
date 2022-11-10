@@ -42,6 +42,14 @@ func TestCreateSearchRequestFromRequest(t *testing.T) {
 			nil,
 		},
 		{
+			"create from a prepared request",
+			`{"prepared":{"query":"some prepared query"}}`,
+			nil,
+			&Request{
+				Prepared: map[string]interface{}{"query": "some prepared query"},
+			},
+		},
+		{
 			"created request is sanitised",
 			`{"term":"R'ené_8 D’!Eath-Smi/the()","size":1,"from":2,"person_types":["firm","person"]}`,
 			nil,
