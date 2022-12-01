@@ -4,7 +4,7 @@ import "encoding/json"
 
 type Response struct {
 	Results      []json.RawMessage         `json:"results"`
-	Aggregations map[string]map[string]int `json:"aggregations"`
+	Aggregations map[string]map[string]int `json:"aggregations,omitempty"`
 	Total        ResponseTotal             `json:"total"`
 }
 
