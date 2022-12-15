@@ -34,7 +34,7 @@ jobs:
           - 4566:4566
           - 4571:4571
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions/setup-go@v2
         with:
           go-version: 1.17.5
@@ -73,7 +73,7 @@ jobs:
     env:
       GO111MODULE: on
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Run Gosec Security Scanner
         uses: securego/gosec@master
         with:
@@ -87,7 +87,7 @@ jobs:
       branch: ${{ steps.set-outputs.outputs.branch }}
       tag: ${{ steps.bump_version.outputs.tag }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Extract branch name
         run: |
           if [ "${{ github.head_ref }}" == "" ]; then
@@ -150,7 +150,7 @@ jobs:
     needs: build
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
