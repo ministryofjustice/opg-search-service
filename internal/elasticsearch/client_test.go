@@ -2,6 +2,7 @@ package elasticsearch
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -100,7 +101,7 @@ func TestClient_DoBulkIndex(t *testing.T) {
 			op := NewBulkOp("this")
 			op.Index(1, map[string]string{"a": "b"})
 
-			result, err := c.DoBulk(op)
+			result, err := c.DoBulk(context.Background(), op)
 
 			if err != nil {
 				assert.Equal(test.expectedError, err.Error())
@@ -169,7 +170,7 @@ func TestClient_DoBulkIndexWithRetry(t *testing.T) {
 	op := NewBulkOp("this")
 	op.Index(1, map[string]string{"a": "b"})
 
-	result, err := c.DoBulk(op)
+	result, err := c.DoBulk(context.Background(), op)
 
 	assert.Nil(err)
 	assert.Equal(BulkResult{Successful: 1}, result)
@@ -203,7 +204,7 @@ func TestClientCreateIndex(t *testing.T) {
 		Return(&http.Response{StatusCode: http.StatusOK, Body: ioutil.NopCloser(strings.NewReader("test message"))}, nil).
 		Once()
 
-	err = client.CreateIndex("test-index", indexConfig, false)
+	err = client.CreateIndex(context.Background(), "test-index", indexConfig, false)
 	assert.Nil(err)
 	assert.Contains(hook.LastEntry().Message, "index 'test-index' created")
 }
@@ -225,7 +226,7 @@ func TestClientCreateIndexWhenIndexExists(t *testing.T) {
 		Return(&http.Response{StatusCode: http.StatusOK, Body: ioutil.NopCloser(strings.NewReader(""))}, nil).
 		Once()
 
-	err = client.CreateIndex("test-index", indexConfig, false)
+	err = client.CreateIndex(context.Background(), "test-index", indexConfig, false)
 	assert.Nil(err)
 	assert.Contains(hook.LastEntry().Message, "index 'test-index' already exists")
 }
@@ -266,7 +267,7 @@ func TestClientCreateIndexWhenIndexExistsAndForced(t *testing.T) {
 		Return(&http.Response{StatusCode: http.StatusOK, Body: ioutil.NopCloser(strings.NewReader("test message"))}, nil).
 		Once()
 
-	err = client.CreateIndex("test-index", indexConfig, true)
+	err = client.CreateIndex(context.Background(), "test-index", indexConfig, true)
 	assert.Nil(err)
 	assert.Contains(hook.LastEntry().Message, "index 'test-index' created")
 }
@@ -288,7 +289,7 @@ func TestClientCreateIndexErrorIndexExists(t *testing.T) {
 		Return(&http.Response{StatusCode: http.StatusInternalServerError, Body: ioutil.NopCloser(strings.NewReader(""))}, nil).
 		Once()
 
-	err = client.CreateIndex("test-index", indexConfig, false)
+	err = client.CreateIndex(context.Background(), "test-index", indexConfig, false)
 	assert.NotNil(err)
 	assert.Contains(hook.LastEntry().Message, "Checking index 'test-index' exists")
 }
@@ -318,7 +319,7 @@ func TestClientCreateIndexErrorDeleteIndex(t *testing.T) {
 		Return(&http.Response{StatusCode: http.StatusOK, Body: ioutil.NopCloser(strings.NewReader(""))}, errors.New("hey")).
 		Once()
 
-	err = client.CreateIndex("test-index", indexConfig, true)
+	err = client.CreateIndex(context.Background(), "test-index", indexConfig, true)
 	assert.NotNil(err)
 	assert.Contains(hook.LastEntry().Message, "Deleting index 'test-index'")
 }
@@ -351,7 +352,7 @@ func TestClientCreateIndexErrorCreateIndex(t *testing.T) {
 		Return(&http.Response{StatusCode: http.StatusOK}, errors.New("hey")).
 		Once()
 
-	err = client.CreateIndex("test-index", indexConfig, false)
+	err = client.CreateIndex(context.Background(), "test-index", indexConfig, false)
 	assert.NotNil(err)
 	assert.Contains(hook.LastEntry().Message, "Creating index 'test-index'")
 }
@@ -453,7 +454,7 @@ func TestClient_Search(t *testing.T) {
 				test.esResponseError,
 			)
 
-			result, err := c.Search([]string{"test-index"}, reqBody)
+			result, err := c.Search(context.Background(), []string{"test-index"}, reqBody)
 
 			assert.Equal(test.expectedResult, result)
 			if test.expectedError == nil {
@@ -475,7 +476,7 @@ func TestClient_Search_MalformedEndpoint(t *testing.T) {
 
 	c, _ := NewClient(mc, l)
 
-	res, err := c.Search([]string{"test-index"}, map[string]interface{}{})
+	res, err := c.Search(context.Background(), []string{"test-index"}, map[string]interface{}{})
 
 	assert.Nil(t, res)
 	assert.NotNil(t, err)
@@ -494,7 +495,7 @@ func TestClient_Search_InvalidESRequestBody(t *testing.T) {
 	esReqBody := map[string]interface{}{
 		"term": func() {},
 	}
-	res, err := c.Search([]string{"test-index"}, esReqBody)
+	res, err := c.Search(context.Background(), []string{"test-index"}, esReqBody)
 
 	assert.Nil(t, res)
 	assert.NotNil(t, err)
@@ -594,7 +595,7 @@ func TestDelete(t *testing.T) {
 				test.esResponseError,
 			)
 
-			result, err := client.Delete([]string{"test-index"}, reqBody)
+			result, err := client.Delete(context.Background(), []string{"test-index"}, reqBody)
 
 			assert.Equal(test.expectedResult, result)
 

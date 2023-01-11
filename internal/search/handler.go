@@ -1,6 +1,7 @@
 package search
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -11,7 +12,7 @@ import (
 )
 
 type SearchClient interface {
-	Search(indices []string, requestBody map[string]interface{}) (*elasticsearch.SearchResult, error)
+	Search(ctx context.Context, indices []string, requestBody map[string]interface{}) (*elasticsearch.SearchResult, error)
 }
 
 type PrepareQuery func(*Request) map[string]interface{}
@@ -42,7 +43,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := h.client.Search(h.indices, h.prepareQuery(req))
+	result, err := h.client.Search(r.Context(), h.indices, h.prepareQuery(req))
 	if err != nil {
 		h.logger.Println(err.Error())
 		response.WriteJSONError(w, "request", "unexpected error from elasticsearch", http.StatusInternalServerError)
