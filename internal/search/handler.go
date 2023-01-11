@@ -3,6 +3,7 @@ package search
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"time"
 
@@ -45,8 +46,12 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.client.Search(r.Context(), h.indices, h.prepareQuery(req))
 	if err != nil {
+		code := http.StatusInternalServerError
+		if errors.Is(err, context.Canceled) {
+			code = 499
+		}
 		h.logger.Println(err.Error())
-		response.WriteJSONError(w, "request", "unexpected error from elasticsearch", http.StatusInternalServerError)
+		response.WriteJSONError(w, "request", "unexpected error from elasticsearch", code)
 		return
 	}
 
