@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"flag"
 	"strings"
 
@@ -8,9 +9,9 @@ import (
 )
 
 type IndexClient interface {
-	CreateIndex(name string, config []byte, force bool) error
-	ResolveAlias(name string) (string, error)
-	CreateAlias(alias, index string) error
+	CreateIndex(ctx context.Context, name string, config []byte, force bool) error
+	ResolveAlias(ctx context.Context, name string) (string, error)
+	CreateAlias(ctx context.Context, alias, index string) error
 }
 
 type createIndicesCommand struct {
@@ -30,6 +31,7 @@ func (c *createIndicesCommand) Info() (name, description string) {
 }
 
 func (c *createIndicesCommand) Run(args []string) error {
+	ctx := context.Background()
 	flagset := flag.NewFlagSet("create-indices", flag.ExitOnError)
 
 	force := flagset.Bool("force", false, "force recreation if index already exists")
@@ -39,15 +41,15 @@ func (c *createIndicesCommand) Run(args []string) error {
 	}
 
 	for indexName, indexConfig := range c.indices {
-		if err := c.esClient.CreateIndex(indexName, indexConfig, *force); err != nil {
+		if err := c.esClient.CreateIndex(ctx, indexName, indexConfig, *force); err != nil {
 			return err
 		}
 
 		aliasName := strings.Split(indexName, "_")[0]
-		_, err := c.esClient.ResolveAlias(aliasName)
+		_, err := c.esClient.ResolveAlias(ctx, aliasName)
 
 		if err == elasticsearch.ErrAliasMissing {
-			if err := c.esClient.CreateAlias(aliasName, indexName); err != nil {
+			if err := c.esClient.CreateAlias(ctx, aliasName, indexName); err != nil {
 				return err
 			}
 		} else if err != nil {

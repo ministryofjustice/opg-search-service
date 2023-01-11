@@ -110,7 +110,7 @@ func (suite *SearchHandlerTestSuite) Test_ESReturnsUnexpectedError() {
 		On("Fn", mock.Anything).
 		Return(map[string]interface{}{})
 
-	esCall := suite.esClient.On("Search", mock.Anything, mock.Anything)
+	esCall := suite.esClient.On("Search", mock.Anything, mock.Anything, mock.Anything)
 	esCall.Return(&elasticsearch.SearchResult{}, errors.New("test ES error"))
 
 	suite.ServeRequest(http.MethodPost, "", reqBody)
@@ -142,7 +142,7 @@ func (suite *SearchHandlerTestSuite) Test_SearchWithAllParameters() {
 	}
 
 	suite.esClient.
-		On("Search", []string{"whatever"}, searchBody).
+		On("Search", mock.Anything, []string{"whatever"}, searchBody).
 		Return(result, nil)
 
 	suite.ServeRequest(http.MethodPost, "", reqBody)
