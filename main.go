@@ -386,13 +386,14 @@ func main() {
 }
 
 func createIndexAndAlias(esClient *elasticsearch.Client, aliasName string, indexName string, indexConfig []byte, l *logrus.Logger) []string {
-	if err := esClient.CreateIndex(indexName, indexConfig, false); err != nil {
+	ctx := context.Background()
+	if err := esClient.CreateIndex(ctx, indexName, indexConfig, false); err != nil {
 		l.Fatal(err)
 	}
 
-	aliasedIndex, err := esClient.ResolveAlias(aliasName)
+	aliasedIndex, err := esClient.ResolveAlias(ctx, aliasName)
 	if err == elasticsearch.ErrAliasMissing {
-		if err := esClient.CreateAlias(aliasName, indexName); err != nil {
+		if err := esClient.CreateAlias(ctx, aliasName, indexName); err != nil {
 			l.Fatal(err)
 		}
 		aliasedIndex = indexName

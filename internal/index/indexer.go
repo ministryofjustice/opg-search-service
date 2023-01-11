@@ -15,7 +15,7 @@ type DB interface {
 }
 
 type BulkClient interface {
-	DoBulk(*elasticsearch.BulkOp) (elasticsearch.BulkResult, error)
+	DoBulk(ctx context.Context, op *elasticsearch.BulkOp) (elasticsearch.BulkResult, error)
 }
 
 type Logger interface {
@@ -100,7 +100,7 @@ func (r *Indexer) index(ctx context.Context, entity <-chan Indexable) (*Result, 
 		err := op.Index(e.Id(), e)
 
 		if err == elasticsearch.ErrOpTooLarge {
-			res, bulkErr := r.es.DoBulk(op)
+			res, bulkErr := r.es.DoBulk(ctx, op)
 			if bulkErr == nil {
 				r.log.Printf("batch indexed successful=%d failed=%d error=%s", res.Successful, res.Failed, res.Error)
 			} else {
@@ -118,7 +118,7 @@ func (r *Indexer) index(ctx context.Context, entity <-chan Indexable) (*Result, 
 	}
 
 	if !op.Empty() {
-		result.Add(r.es.DoBulk(op))
+		result.Add(r.es.DoBulk(ctx, op))
 	}
 
 	return result, nil

@@ -37,8 +37,8 @@ type mockClient struct {
 	mock.Mock
 }
 
-func (m *mockClient) DoBulk(op *elasticsearch.BulkOp) (elasticsearch.BulkResult, error) {
-	args := m.Called(op)
+func (m *mockClient) DoBulk(ctx context.Context, op *elasticsearch.BulkOp) (elasticsearch.BulkResult, error) {
+	args := m.Called(ctx, op)
 	return args.Get(0).(elasticsearch.BulkResult), args.Error(1)
 }
 
@@ -68,7 +68,7 @@ func TestAll(t *testing.T) {
 
 	client := &mockClient{}
 	client.
-		On("DoBulk", bulkOp).
+		On("DoBulk", ctx, bulkOp).
 		Return(elasticsearch.BulkResult{Successful: 2, Failed: 0}, nil)
 
 	indexer := New(client, &mockLogger{}, db, "whatever")
@@ -103,7 +103,7 @@ func TestByID(t *testing.T) {
 
 	client := &mockClient{}
 	client.
-		On("DoBulk", bulkOp).
+		On("DoBulk", ctx, bulkOp).
 		Return(elasticsearch.BulkResult{Successful: 2, Failed: 0}, nil)
 
 	indexer := New(client, &mockLogger{}, db, "whatever")
@@ -140,7 +140,7 @@ func TestFromDate(t *testing.T) {
 
 	client := &mockClient{}
 	client.
-		On("DoBulk", bulkOp).
+		On("DoBulk", ctx, bulkOp).
 		Return(elasticsearch.BulkResult{Successful: 2, Failed: 0}, nil)
 
 	indexer := New(client, &mockLogger{}, db, "whatever")

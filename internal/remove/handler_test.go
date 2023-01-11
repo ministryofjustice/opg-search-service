@@ -77,7 +77,7 @@ func (suite *DeleteHandlerTestSuite) Test_MissingUid() {
 }
 
 func (suite *DeleteHandlerTestSuite) Test_ESReturnsUnexpectedError() {
-	esCall := suite.esClient.On("Delete", mock.Anything, mock.Anything)
+	esCall := suite.esClient.On("Delete", mock.Anything, mock.Anything, mock.Anything)
 	esCall.Return(&elasticsearch.DeleteResult{}, errors.New("test ES error"))
 
 	suite.ServeRequest(http.MethodDelete, "/persons/7000-9000-9201", map[string]string{"uid": "7000-9000-9201"})
@@ -88,7 +88,7 @@ func (suite *DeleteHandlerTestSuite) Test_ESReturnsUnexpectedError() {
 
 func (suite *DeleteHandlerTestSuite) Test_ESReturnsNoResults() {
 	suite.esClient.
-		On("Delete", []string{"whatever"}, mock.Anything).
+		On("Delete", mock.Anything, []string{"whatever"}, mock.Anything).
 		Return(&elasticsearch.DeleteResult{Total: 0}, nil)
 
 	suite.ServeRequest(http.MethodDelete, "/persons/7000-9000-9201", map[string]string{"uid": "7000-9000-9201"})
@@ -99,7 +99,7 @@ func (suite *DeleteHandlerTestSuite) Test_ESReturnsNoResults() {
 
 func (suite *DeleteHandlerTestSuite) Test_ESReturnsMultipleResults() {
 	suite.esClient.
-		On("Delete", []string{"whatever"}, mock.Anything).
+		On("Delete", mock.Anything, []string{"whatever"}, mock.Anything).
 		Return(&elasticsearch.DeleteResult{Total: 2}, nil)
 
 	suite.ServeRequest(http.MethodDelete, "/persons/7000-9000-9201", map[string]string{"uid": "7000-9000-9201"})
@@ -115,7 +115,7 @@ func (suite *DeleteHandlerTestSuite) Test_Delete() {
 				"uId": "7000-9000-9201",
 			},
 		},
-		"max_docs":  1,
+		"max_docs": 1,
 	}
 
 	result := &elasticsearch.DeleteResult{
@@ -123,7 +123,7 @@ func (suite *DeleteHandlerTestSuite) Test_Delete() {
 	}
 
 	suite.esClient.
-		On("Delete", []string{"whatever"}, deleteBody).
+		On("Delete", mock.Anything, []string{"whatever"}, deleteBody).
 		Return(result, nil)
 
 	suite.ServeRequest(http.MethodDelete, "/persons/7000-9000-9201", map[string]string{"uid": "7000-9000-9201"})
