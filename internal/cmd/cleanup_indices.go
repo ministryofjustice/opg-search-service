@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"sort"
@@ -12,9 +13,9 @@ import (
 )
 
 type CleanupIndicesClient interface {
-	ResolveAlias(string) (string, error)
-	Indices(string) ([]string, error)
-	DeleteIndex(string) error
+	ResolveAlias(ctx context.Context, alias string) (string, error)
+	Indices(ctx context.Context, term string) ([]string, error)
+	DeleteIndex(ctx context.Context, name string) error
 }
 
 type cleanupIndicesCommand struct {
@@ -36,6 +37,7 @@ func (c *cleanupIndicesCommand) Info() (name, description string) {
 }
 
 func (c *cleanupIndicesCommand) Run(args []string) error {
+	ctx := context.Background()
 	flagset := flag.NewFlagSet("cleanup-indices", flag.ExitOnError)
 
 	explain := flagset.Bool("explain", false, "explain the changes that will be made")
@@ -45,7 +47,7 @@ func (c *cleanupIndicesCommand) Run(args []string) error {
 	}
 
 	for _, aliasName := range []string{firm.AliasName, person.AliasName} {
-		aliasedIndex, err := c.client.ResolveAlias(aliasName)
+		aliasedIndex, err := c.client.ResolveAlias(ctx, aliasName)
 		if err != nil {
 			return err
 		}
@@ -53,7 +55,7 @@ func (c *cleanupIndicesCommand) Run(args []string) error {
 			return fmt.Errorf("alias '%s' is set to '%s' not a current index: %s", aliasName, aliasedIndex, mapKeys(c.currentIndices))
 		}
 
-		indices, err := c.client.Indices(aliasName + "_*")
+		indices, err := c.client.Indices(ctx, aliasName+"_*")
 		if err != nil {
 			return err
 		}
@@ -63,7 +65,7 @@ func (c *cleanupIndicesCommand) Run(args []string) error {
 				if *explain {
 					c.logger.Println("will delete", index)
 				} else {
-					if err := c.client.DeleteIndex(index); err != nil {
+					if err := c.client.DeleteIndex(ctx, index); err != nil {
 						return err
 					}
 				}
