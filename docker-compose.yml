@@ -20,7 +20,7 @@ services:
       - "./scripts/localstack:/docker-entrypoint-initaws.d"
 
   postgres:
-    image: postgres:10.14
+    image: postgres:15.1
     command: postgres
     environment:
       POSTGRES_USER: searchservice
