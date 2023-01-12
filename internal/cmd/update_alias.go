@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"flag"
 	"strings"
 
@@ -8,8 +9,8 @@ import (
 )
 
 type UpdateAliasClient interface {
-	ResolveAlias(string) (string, error)
-	UpdateAlias(alias, oldIndex, newIndex string) error
+	ResolveAlias(ctx context.Context, alias string) (string, error)
+	UpdateAlias(ctx context.Context, alias, oldIndex, newIndex string) error
 }
 
 type updateAliasCommand struct {
@@ -31,6 +32,7 @@ func (c *updateAliasCommand) Info() (name, description string) {
 }
 
 func (c *updateAliasCommand) Run(args []string) error {
+	ctx := context.Background()
 	flagset := flag.NewFlagSet("update-alias", flag.ExitOnError)
 
 	explain := flagset.Bool("explain", false, "explain the changes that will be made")
@@ -42,7 +44,7 @@ func (c *updateAliasCommand) Run(args []string) error {
 	for indexName := range c.currentIndices {
 		aliasName := strings.Split(indexName, "_")[0]
 
-		aliasedIndex, err := c.client.ResolveAlias(aliasName)
+		aliasedIndex, err := c.client.ResolveAlias(ctx, aliasName)
 		if err != nil {
 			return err
 		}
@@ -55,7 +57,7 @@ func (c *updateAliasCommand) Run(args []string) error {
 		if *explain {
 			c.logger.Printf("will update alias '%s' to '%s'", aliasName, indexName)
 		} else {
-			if err := c.client.UpdateAlias(aliasName, aliasedIndex, indexName); err != nil {
+			if err := c.client.UpdateAlias(ctx, aliasName, aliasedIndex, indexName); err != nil {
 				return err
 			}
 		}

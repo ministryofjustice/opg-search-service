@@ -1,6 +1,7 @@
 package remove
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -12,7 +13,7 @@ import (
 )
 
 type DeleteClient interface {
-	Delete(indices []string, requestBody map[string]interface{}) (*elasticsearch.DeleteResult, error)
+	Delete(ctx context.Context, indices []string, requestBody map[string]interface{}) (*elasticsearch.DeleteResult, error)
 }
 
 type Handler struct {
@@ -46,10 +47,10 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				"uId": uid,
 			},
 		},
-		"max_docs":  1,
+		"max_docs": 1,
 	}
 
-	result, err := h.client.Delete(h.indices, requestBody)
+	result, err := h.client.Delete(r.Context(), h.indices, requestBody)
 	if err != nil {
 		h.logger.Println(err.Error())
 		response.WriteJSONErrors(w, "unexpected error from elasticsearch", []response.Error{}, http.StatusInternalServerError)

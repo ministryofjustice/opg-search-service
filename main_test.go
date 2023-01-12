@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -132,12 +133,13 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 
 	indexName, _, _ := person.IndexConfig()
 	indexNameFirm, _, _ := firm.IndexConfig()
+	ctx := context.Background()
 
-	exists, err := suite.esClient.IndexExists(indexName)
+	exists, err := suite.esClient.IndexExists(ctx, indexName)
 	suite.False(exists, "Person index should not exist at this point")
 	suite.Nil(err)
 
-	existsFirmIndex, err := suite.esClient.IndexExists(indexNameFirm)
+	existsFirmIndex, err := suite.esClient.IndexExists(ctx, indexNameFirm)
 	suite.False(existsFirmIndex, "Firm index should not exist at this point")
 	suite.Nil(err)
 
@@ -150,11 +152,11 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 			continue
 		}
 
-		exists, err = suite.esClient.IndexExists(indexName)
+		exists, err = suite.esClient.IndexExists(ctx, indexName)
 		suite.True(exists, "Person index should exist at this point")
 		suite.Nil(err)
 
-		existsFirmIndex, err = suite.esClient.IndexExists(indexNameFirm)
+		existsFirmIndex, err = suite.esClient.IndexExists(ctx, indexNameFirm)
 		suite.True(existsFirmIndex, "Firm index should exist at this point")
 		suite.Nil(err)
 

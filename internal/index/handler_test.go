@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"github.com/stretchr/testify/mock"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -114,11 +115,11 @@ func (suite *HandlerTestSuite) Test_Index() {
 	secondOp.Index(14, mockIndexable{id: 14})
 
 	suite.esClient.
-		On("DoBulk", firstOp).
+		On("DoBulk", mock.Anything, firstOp).
 		Return(elasticsearch.BulkResult{Successful: 2, Failed: 1}, errors.New("hmm")).
 		Once()
 	suite.esClient.
-		On("DoBulk", secondOp).
+		On("DoBulk", mock.Anything, secondOp).
 		Return(elasticsearch.BulkResult{Successful: 2, Failed: 1}, errors.New("hey")).
 		Once()
 
