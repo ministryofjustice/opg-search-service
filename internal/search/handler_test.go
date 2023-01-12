@@ -119,6 +119,22 @@ func (suite *SearchHandlerTestSuite) Test_ESReturnsUnexpectedError() {
 	suite.Contains(suite.RespBody(), `"errors":[{"name":"request","description":"unexpected error from elasticsearch"}]`)
 }
 
+func (suite *SearchHandlerTestSuite) Test_ContextCancelledError() {
+	reqBody := `{"term":"test"}`
+
+	suite.prepareQuery.
+		On("Fn", mock.Anything).
+		Return(map[string]interface{}{})
+
+	esCall := suite.esClient.On("Search", mock.Anything, mock.Anything, mock.Anything)
+	esCall.Return(&elasticsearch.SearchResult{}, context.Canceled)
+
+	suite.ServeRequest(http.MethodPost, "", reqBody)
+
+	suite.Equal(499, suite.RespCode())
+	suite.Contains(suite.RespBody(), `"errors":[{"name":"request","description":"search request was cancelled"}]`)
+}
+
 func (suite *SearchHandlerTestSuite) Test_SearchWithAllParameters() {
 	reqBody := `{"term":"testTerm","from":10,"size":20,"person_types":["type1"]}`
 	searchBody := map[string]interface{}{"whatever": nil}
