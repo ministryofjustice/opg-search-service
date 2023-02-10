@@ -77,6 +77,8 @@ func IndexConfig() (name string, config []byte, err error) {
 	searchableTextField := map[string]interface{}{"type": "text", "copy_to": "searchable"}
 	keywordField := map[string]interface{}{"type": "keyword"}
 	searchableKeywordField := map[string]interface{}{"type": "keyword", "copy_to": "searchable"}
+	//composite of first and surname
+	fullNameSearchableText := map[string]interface{}{"type": "text", "copy_to": []string{"full_name", "searchable"}}
 
 	personConfig := map[string]interface{}{
 		"settings": map[string]interface{}{
@@ -106,6 +108,7 @@ func IndexConfig() (name string, config []byte, err error) {
 		"mappings": map[string]interface{}{
 			"properties": map[string]interface{}{
 				"searchable":    textField,
+				"full_name":     textField,
 				"uId":           searchableKeywordField,
 				"normalizedUid": searchableKeywordField,
 				"caseRecNumber": searchableKeywordField,
@@ -113,9 +116,9 @@ func IndexConfig() (name string, config []byte, err error) {
 				"personType":    keywordField,
 				"dob":           searchableTextField,
 				"email":         textField,
-				"firstname":     searchableTextField,
+				"firstname":     fullNameSearchableText,
 				"middlenames":   searchableTextField,
-				"surname":       searchableTextField,
+				"surname":       fullNameSearchableText,
 				"previousnames": searchableTextField,
 				"othernames":    searchableTextField,
 				"companyName":   searchableTextField,

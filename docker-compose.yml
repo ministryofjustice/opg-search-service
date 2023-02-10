@@ -18,6 +18,8 @@ services:
       SERVICES: es, secretsmanager
     volumes:
       - "./scripts/localstack:/docker-entrypoint-initaws.d"
+    ports:
+      - 9200:4571
 
   postgres:
     image: postgres:10.14
