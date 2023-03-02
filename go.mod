@@ -11,4 +11,5 @@ require (
 	github.com/lib/pq v1.10.4 // indirect
 	github.com/sirupsen/logrus v1.9.0
 	github.com/stretchr/testify v1.8.1
+	golang.org/x/text v0.3.8 // indirect
 )

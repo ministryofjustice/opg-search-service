@@ -16,6 +16,9 @@ test-down:
 build:
 	docker-compose build search_service
 
+scan:
+	trivy image 311462405659.dkr.ecr.eu-west-1.amazonaws.com/search_service:latest
+
 go-test:
 	go mod download
 	gotestsum --format short-verbose --jsonfile tests.json -- -coverprofile=./cover.out ./...
