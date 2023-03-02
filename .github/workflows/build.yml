@@ -1,6 +1,9 @@
 name: Test & Build
 
 on:
+  schedule:
+    - cron: "00 10 * * 1"
+    
   pull_request:
     branches:
       - main
@@ -96,6 +99,19 @@ jobs:
       - name: Build Container
         run: |
           docker build --file Dockerfile --tag search_service:latest .
+
+      - name: Trivy Image Vulnerability Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: search_service:latest
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v1
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
 
       - name: Bump version
         id: bump_version
