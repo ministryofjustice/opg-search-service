@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"testing"
 
 	"github.com/ministryofjustice/opg-search-service/internal/firm"
@@ -14,18 +15,18 @@ type mockCleanupIndicesClient struct {
 	mock.Mock
 }
 
-func (m *mockCleanupIndicesClient) ResolveAlias(alias string) (string, error) {
-	args := m.Called(alias)
+func (m *mockCleanupIndicesClient) ResolveAlias(ctx context.Context, alias string) (string, error) {
+	args := m.Called(ctx, alias)
 	return args.String(0), args.Error(1)
 }
 
-func (m *mockCleanupIndicesClient) Indices(term string) ([]string, error) {
-	args := m.Called(term)
+func (m *mockCleanupIndicesClient) Indices(ctx context.Context, term string) ([]string, error) {
+	args := m.Called(ctx, term)
 	return args.Get(0).([]string), args.Error(1)
 }
 
-func (m *mockCleanupIndicesClient) DeleteIndex(index string) error {
-	args := m.Called(index)
+func (m *mockCleanupIndicesClient) DeleteIndex(ctx context.Context, index string) error {
+	args := m.Called(ctx, index)
 	return args.Error(0)
 }
 
@@ -34,26 +35,26 @@ func TestCleanupIndices(t *testing.T) {
 	client := &mockCleanupIndicesClient{}
 
 	client.
-		On("ResolveAlias", person.AliasName).
+		On("ResolveAlias", mock.Anything, person.AliasName).
 		Return("person_something", nil)
 
 	client.
-		On("ResolveAlias", firm.AliasName).
+		On("ResolveAlias", mock.Anything, firm.AliasName).
 		Return("firm_something", nil)
 
 	client.
-		On("Indices", "person_*").
+		On("Indices", mock.Anything, "person_*").
 		Return([]string{"person_xyz", "person_something", "person_abc"}, nil)
 
 	client.
-		On("Indices", "firm_*").
+		On("Indices", mock.Anything, "firm_*").
 		Return([]string{"firm_xyz", "firm_something", "firm_abc"}, nil)
 
-	client.On("DeleteIndex", "person_xyz").Return(nil).Once()
-	client.On("DeleteIndex", "person_abc").Return(nil).Once()
+	client.On("DeleteIndex", mock.Anything, "person_xyz").Return(nil).Once()
+	client.On("DeleteIndex", mock.Anything, "person_abc").Return(nil).Once()
 
-	client.On("DeleteIndex", "firm_xyz").Return(nil).Once()
-	client.On("DeleteIndex", "firm_abc").Return(nil).Once()
+	client.On("DeleteIndex", mock.Anything, "firm_xyz").Return(nil).Once()
+	client.On("DeleteIndex", mock.Anything, "firm_abc").Return(nil).Once()
 
 	command := NewCleanupIndices(l, client, map[string][]byte{"firm_something": indexConfig, "person_something": indexConfig})
 	assert.Nil(t, command.Run([]string{}))
@@ -64,19 +65,19 @@ func TestCleanupIndicesWhenAliasNotCurrent(t *testing.T) {
 	client := &mockCleanupIndicesClient{}
 
 	client.
-		On("ResolveAlias", person.AliasName).
+		On("ResolveAlias", mock.Anything, person.AliasName).
 		Return("person_xyz", nil)
 
 	client.
-		On("ResolveAlias", firm.AliasName).
+		On("ResolveAlias", mock.Anything, firm.AliasName).
 		Return("firm_xyz", nil)
 
 	client.
-		On("Indices", "person_*").
+		On("Indices", mock.Anything, "person_*").
 		Return([]string{"person_xyz", "person_something", "person_abc"}, nil)
 
 	client.
-		On("Indices", "firm_*").
+		On("Indices", mock.Anything, "firm_*").
 		Return([]string{"firm_xyz", "firm_something", "firm_abc"}, nil)
 
 	command := NewCleanupIndices(l, client, map[string][]byte{"firm_something": indexConfig, "person_something": indexConfig})
@@ -88,19 +89,19 @@ func TestCleanupIndicesExplain(t *testing.T) {
 	client := &mockCleanupIndicesClient{}
 
 	client.
-		On("ResolveAlias", person.AliasName).
+		On("ResolveAlias", mock.Anything, person.AliasName).
 		Return("person_something", nil)
 
 	client.
-		On("ResolveAlias", firm.AliasName).
+		On("ResolveAlias", mock.Anything, firm.AliasName).
 		Return("firm_something", nil)
 
 	client.
-		On("Indices", "person_*").
+		On("Indices", mock.Anything, "person_*").
 		Return([]string{"person_xyz", "person_something", "person_abc"}, nil)
 
 	client.
-		On("Indices", "firm_*").
+		On("Indices", mock.Anything, "firm_*").
 		Return([]string{"firm_xyz", "firm_something", "firm_abc"}, nil)
 
 	command := NewCleanupIndices(l, client, map[string][]byte{"firm_something": indexConfig, "person_something": indexConfig})

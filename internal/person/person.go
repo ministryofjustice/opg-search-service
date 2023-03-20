@@ -120,6 +120,10 @@ func IndexConfig() (name string, config []byte, err error) {
 				"othernames":    searchableTextField,
 				"companyName":   searchableTextField,
 				"className":     searchableTextField,
+				"clientSource": map[string]interface{}{
+					"type":  "text",
+					"index": false,
+				},
 				"phoneNumbers": map[string]interface{}{
 					"properties": map[string]interface{}{
 						"phoneNumber": searchableKeywordField,

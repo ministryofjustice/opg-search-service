@@ -1,6 +1,9 @@
 name: Test & Build
 
 on:
+  schedule:
+    - cron: "00 10 * * 1"
+    
   pull_request:
     branches:
       - main
@@ -34,11 +37,11 @@ jobs:
           - 4566:4566
           - 4571:4571
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions/setup-go@v2
         with:
           go-version: 1.17.5
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v4
       - name: Setup gotestsum
         uses: autero1/action-gotestsum@v1.0.0
         with:
@@ -47,7 +50,7 @@ jobs:
       - run: |
           python -m pip install awscli-local
       - name: Resolve Go mod cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
@@ -61,11 +64,6 @@ jobs:
       - name: Run Unit and Integration Tests
         run: |
           make test
-      - name: SonarQube
-        uses: sonarsource/sonarqube-scan-action@master
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
   gosec:
     name: Security Scan
@@ -73,7 +71,7 @@ jobs:
     env:
       GO111MODULE: on
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Run Gosec Security Scanner
         uses: securego/gosec@master
         with:
@@ -87,7 +85,7 @@ jobs:
       branch: ${{ steps.set-outputs.outputs.branch }}
       tag: ${{ steps.bump_version.outputs.tag }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Extract branch name
         run: |
           if [ "${{ github.head_ref }}" == "" ]; then
@@ -102,6 +100,19 @@ jobs:
         run: |
           docker build --file Dockerfile --tag search_service:latest .
 
+      - name: Trivy Image Vulnerability Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: search_service:latest
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
       - name: Bump version
         id: bump_version
         uses: anothrNick/github-tag-action@1.52.0
@@ -115,7 +126,7 @@ jobs:
           WITH_V: true
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_ACTIONS }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_ACTIONS }}
@@ -150,10 +161,10 @@ jobs:
     needs: build
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_ACTIONS }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_ACTIONS }}

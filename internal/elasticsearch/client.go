@@ -2,6 +2,7 @@ package elasticsearch
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -85,8 +86,8 @@ func NewClient(httpClient HTTPClient, logger *logrus.Logger) (*Client, error) {
 	return client, nil
 }
 
-func (c *Client) doRequest(method, endpoint string, body io.ReadSeeker, contentType string) (*http.Response, error) {
-	req, err := http.NewRequest(method, c.domain+"/"+endpoint, body)
+func (c *Client) doRequest(ctx context.Context, method, endpoint string, body io.ReadSeeker, contentType string) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, method, c.domain+"/"+endpoint, body)
 	if err != nil {
 		return nil, err
 	}
@@ -167,11 +168,11 @@ type BulkResult struct {
 	Error      string
 }
 
-func (c *Client) DoBulk(op *BulkOp) (BulkResult, error) {
+func (c *Client) DoBulk(ctx context.Context, op *BulkOp) (BulkResult, error) {
 	retries := 0
 
 	for {
-		res, err := c.doBulkOp(op)
+		res, err := c.doBulkOp(ctx, op)
 		if err == errTooManyRequests && retries < maxRetries {
 			retries++
 			time.Sleep(time.Duration(retries) * backoff)
@@ -182,17 +183,17 @@ func (c *Client) DoBulk(op *BulkOp) (BulkResult, error) {
 	}
 }
 
-func (c *Client) doBulkOp(op *BulkOp) (BulkResult, error) {
+func (c *Client) doBulkOp(ctx context.Context, op *BulkOp) (BulkResult, error) {
 	body := bytes.NewReader(op.buf.Bytes())
 
 	endpoint := fmt.Sprintf("%s/_bulk", op.index)
-	resp, err := c.doRequest(http.MethodPost, endpoint, body, "application/json")
+	resp, err := c.doRequest(ctx, http.MethodPost, endpoint, body, "application/json")
 	if err != nil {
 		c.logger.Error(err.Error())
 
 		return BulkResult{}, fmt.Errorf("unable to process index request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //#nosec G307 false positive
 
 	if resp.StatusCode == http.StatusTooManyRequests {
 		return BulkResult{}, errTooManyRequests
@@ -226,7 +227,7 @@ func (c *Client) doBulkOp(op *BulkOp) (BulkResult, error) {
 }
 
 // returns an array of JSON encoded results
-func (c *Client) Search(indices []string, requestBody map[string]interface{}) (*SearchResult, error) {
+func (c *Client) Search(ctx context.Context, indices []string, requestBody map[string]interface{}) (*SearchResult, error) {
 	endpoint := strings.Join(indices, ",") + "/_search"
 
 	var buf bytes.Buffer
@@ -235,11 +236,11 @@ func (c *Client) Search(indices []string, requestBody map[string]interface{}) (*
 	}
 	body := bytes.NewReader(buf.Bytes())
 
-	resp, err := c.doRequest(http.MethodPost, endpoint, body, "application/json")
+	resp, err := c.doRequest(ctx, http.MethodPost, endpoint, body, "application/json")
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //#nosec G307 false positive
 
 	if resp.StatusCode != http.StatusOK {
 		buf.Reset()
@@ -276,8 +277,8 @@ func (c *Client) Search(indices []string, requestBody map[string]interface{}) (*
 	}, nil
 }
 
-func (c *Client) CreateIndex(name string, config []byte, force bool) error {
-	exists, err := c.IndexExists(name)
+func (c *Client) CreateIndex(ctx context.Context, name string, config []byte, force bool) error {
+	exists, err := c.IndexExists(ctx, name)
 	if err != nil {
 		return err
 	}
@@ -290,14 +291,14 @@ func (c *Client) CreateIndex(name string, config []byte, force bool) error {
 
 		c.logger.Printf("changes are forced, deleting old index '%s'", name)
 
-		if err := c.DeleteIndex(name); err != nil {
+		if err := c.DeleteIndex(ctx, name); err != nil {
 			return err
 		}
 
 		c.logger.Printf("index '%s' deleted", name)
 	}
 
-	if err := c.createIndex(name, config); err != nil {
+	if err := c.createIndex(ctx, name, config); err != nil {
 		return err
 	}
 
@@ -305,14 +306,14 @@ func (c *Client) CreateIndex(name string, config []byte, force bool) error {
 	return nil
 }
 
-func (c *Client) IndexExists(name string) (bool, error) {
+func (c *Client) IndexExists(ctx context.Context, name string) (bool, error) {
 	c.logger.Printf("Checking index '%s' exists", name)
 
-	resp, err := c.doRequest(http.MethodHead, name, nil, "")
+	resp, err := c.doRequest(ctx, http.MethodHead, name, nil, "")
 	if err != nil {
 		return false, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //#nosec G307 false positive
 
 	switch resp.StatusCode {
 	case http.StatusOK:
@@ -324,14 +325,14 @@ func (c *Client) IndexExists(name string) (bool, error) {
 	return false, fmt.Errorf("index check failed with status code %d", resp.StatusCode)
 }
 
-func (c *Client) createIndex(name string, config []byte) error {
+func (c *Client) createIndex(ctx context.Context, name string, config []byte) error {
 	c.logger.Printf("Creating index '%s'", name)
 
-	resp, err := c.doRequest(http.MethodPut, name, bytes.NewReader(config), "application/json")
+	resp, err := c.doRequest(ctx, http.MethodPut, name, bytes.NewReader(config), "application/json")
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //#nosec G307 false positive
 
 	if resp.StatusCode != http.StatusOK {
 		data, _ := io.ReadAll(resp.Body)
@@ -341,24 +342,24 @@ func (c *Client) createIndex(name string, config []byte) error {
 	return nil
 }
 
-func (c *Client) DeleteIndex(name string) error {
+func (c *Client) DeleteIndex(ctx context.Context, name string) error {
 	c.logger.Printf("Deleting index '%s'", name)
 
-	resp, err := c.doRequest(http.MethodDelete, name, nil, "application/json")
+	resp, err := c.doRequest(ctx, http.MethodDelete, name, nil, "application/json")
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //#nosec G307 false positive
 
 	return nil
 }
 
-func (c *Client) ResolveAlias(name string) (string, error) {
-	resp, err := c.doRequest(http.MethodGet, "/_alias/"+name, nil, "")
+func (c *Client) ResolveAlias(ctx context.Context, name string) (string, error) {
+	resp, err := c.doRequest(ctx, http.MethodGet, "/_alias/"+name, nil, "")
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //#nosec G307 false positive
 
 	if resp.StatusCode == http.StatusNotFound {
 		return "", ErrAliasMissing
@@ -376,12 +377,12 @@ func (c *Client) ResolveAlias(name string) (string, error) {
 	return "", ErrAliasMissing
 }
 
-func (c *Client) CreateAlias(alias, index string) error {
-	resp, err := c.doRequest(http.MethodPut, fmt.Sprintf("%s/_alias/%s", index, alias), nil, "")
+func (c *Client) CreateAlias(ctx context.Context, alias, index string) error {
+	resp, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("%s/_alias/%s", index, alias), nil, "")
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //#nosec G307 false positive
 
 	var v struct {
 		Acknowledged bool `json:"acknowledged"`
@@ -407,7 +408,7 @@ type aliasRequestAction struct {
 	Alias string `json:"alias"`
 }
 
-func (c *Client) UpdateAlias(alias, oldIndex, newIndex string) error {
+func (c *Client) UpdateAlias(ctx context.Context, alias, oldIndex, newIndex string) error {
 	c.logger.Printf("Updating alias '%s' from index '%s' to '%s'", alias, oldIndex, newIndex)
 
 	request, err := json.Marshal(aliasRequest{
@@ -426,11 +427,11 @@ func (c *Client) UpdateAlias(alias, oldIndex, newIndex string) error {
 		return err
 	}
 
-	resp, err := c.doRequest(http.MethodPost, "_aliases", bytes.NewReader(request), "application/json")
+	resp, err := c.doRequest(ctx, http.MethodPost, "_aliases", bytes.NewReader(request), "application/json")
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //#nosec G307 false positive
 
 	var v struct {
 		Acknowledged bool `json:"acknowledged"`
@@ -446,12 +447,12 @@ func (c *Client) UpdateAlias(alias, oldIndex, newIndex string) error {
 	return nil
 }
 
-func (c *Client) Indices(term string) ([]string, error) {
-	resp, err := c.doRequest(http.MethodGet, term, nil, "")
+func (c *Client) Indices(ctx context.Context, term string) ([]string, error) {
+	resp, err := c.doRequest(ctx, http.MethodGet, term, nil, "")
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //#nosec G307 false positive
 
 	var v map[string]struct{}
 	if err := json.NewDecoder(resp.Body).Decode(&v); err != nil {
@@ -466,7 +467,7 @@ func (c *Client) Indices(term string) ([]string, error) {
 	return ks, nil
 }
 
-func (c *Client) Delete(indices []string, requestBody map[string]interface{}) (*DeleteResult, error) {
+func (c *Client) Delete(ctx context.Context, indices []string, requestBody map[string]interface{}) (*DeleteResult, error) {
 	endpoint := strings.Join(indices, ",") + "/_delete_by_query?conflicts=proceed"
 
 	var buf bytes.Buffer
@@ -475,11 +476,11 @@ func (c *Client) Delete(indices []string, requestBody map[string]interface{}) (*
 	}
 	body := bytes.NewReader(buf.Bytes())
 
-	resp, err := c.doRequest(http.MethodPost, endpoint, body, "application/json")
+	resp, err := c.doRequest(ctx, http.MethodPost, endpoint, body, "application/json")
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //#nosec G307 false positive
 
 	if resp.StatusCode != http.StatusOK {
 		buf.Reset()

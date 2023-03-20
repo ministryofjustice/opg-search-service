@@ -2,6 +2,7 @@ package index
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -13,7 +14,7 @@ import (
 )
 
 type IndexClient interface {
-	DoBulk(op *elasticsearch.BulkOp) (elasticsearch.BulkResult, error)
+	DoBulk(ctx context.Context, op *elasticsearch.BulkOp) (elasticsearch.BulkResult, error)
 }
 
 type Parser func([]byte) (Validatable, error)
@@ -63,7 +64,7 @@ func (i *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	response := &indexResponse{}
 
 	for _, index := range i.indices {
-		if err := i.doIndex(index, response, req.Items()); err != nil {
+		if err := i.doIndex(r.Context(), index, response, req.Items()); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 		}
 	}
@@ -77,14 +78,14 @@ func (i *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	i.logger.Println("Request took: ", time.Since(start))
 }
 
-func (i *Handler) doIndex(indexName string, response *indexResponse, items []Indexable) error {
+func (i *Handler) doIndex(ctx context.Context, indexName string, response *indexResponse, items []Indexable) error {
 	op := elasticsearch.NewBulkOp(indexName)
 
 	for _, f := range items {
 		err := op.Index(f.Id(), f)
 
 		if err == elasticsearch.ErrOpTooLarge {
-			response.Add(i.client.DoBulk(op))
+			response.Add(i.client.DoBulk(ctx, op))
 			op.Reset()
 			err = op.Index(f.Id(), f)
 		}
@@ -97,7 +98,7 @@ func (i *Handler) doIndex(indexName string, response *indexResponse, items []Ind
 	}
 
 	if !op.Empty() {
-		response.Add(i.client.DoBulk(op))
+		response.Add(i.client.DoBulk(ctx, op))
 	}
 
 	return nil

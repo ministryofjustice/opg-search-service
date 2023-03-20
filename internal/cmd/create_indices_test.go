@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"errors"
+	"github.com/stretchr/testify/mock"
 	"testing"
 
 	"github.com/ministryofjustice/opg-search-service/internal/elasticsearch"
@@ -39,10 +40,10 @@ func TestCreateIndicesRun(t *testing.T) {
 		t.Run(tc.scenario, func(t *testing.T) {
 			esClient := new(elasticsearch.MockESClient)
 			esClient.
-				On("CreateIndex", "person_test", indexConfig, tc.force).Times(1).Return(tc.error)
+				On("CreateIndex", mock.Anything, "person_test", indexConfig, tc.force).Times(1).Return(tc.error)
 
 			if tc.error == nil {
-				esClient.On("ResolveAlias", "person").Times(1).Return("", nil)
+				esClient.On("ResolveAlias", mock.Anything, "person").Times(1).Return("", nil)
 			}
 
 			command := NewCreateIndices(esClient, map[string][]byte{"person_test": indexConfig})
@@ -62,9 +63,9 @@ func TestCreateIndicesRun(t *testing.T) {
 func TestCreateIndicesRunCreateAlias(t *testing.T) {
 	esClient := new(elasticsearch.MockESClient)
 	esClient.
-		On("CreateIndex", "person_test", indexConfig, true).Times(1).Return(nil).
-		On("ResolveAlias", "person").Times(1).Return("", elasticsearch.ErrAliasMissing).
-		On("CreateAlias", "person", "person_test").Times(1).Return(nil)
+		On("CreateIndex", mock.Anything, "person_test", indexConfig, true).Times(1).Return(nil).
+		On("ResolveAlias", mock.Anything, "person").Times(1).Return("", elasticsearch.ErrAliasMissing).
+		On("CreateAlias", mock.Anything, "person", "person_test").Times(1).Return(nil)
 
 	command := NewCreateIndices(esClient, map[string][]byte{"person_test": indexConfig})
 
@@ -80,9 +81,9 @@ func TestCreateIndicesRunCreateAliasFails(t *testing.T) {
 
 	esClient := new(elasticsearch.MockESClient)
 	esClient.
-		On("CreateIndex", "person_test", indexConfig, true).Times(1).Return(nil).
-		On("ResolveAlias", "person").Times(1).Return("", elasticsearch.ErrAliasMissing).
-		On("CreateAlias", "person", "person_test").Times(1).Return(creationErr)
+		On("CreateIndex", mock.Anything, "person_test", indexConfig, true).Times(1).Return(nil).
+		On("ResolveAlias", mock.Anything, "person").Times(1).Return("", elasticsearch.ErrAliasMissing).
+		On("CreateAlias", mock.Anything, "person", "person_test").Times(1).Return(creationErr)
 
 	command := NewCreateIndices(esClient, map[string][]byte{"person_test": indexConfig})
 
@@ -98,8 +99,8 @@ func TestCreateIndicesRunResolveAliasFails(t *testing.T) {
 
 	esClient := new(elasticsearch.MockESClient)
 	esClient.
-		On("CreateIndex", "person_test", indexConfig, true).Times(1).Return(nil).
-		On("ResolveAlias", "person").Times(1).Return("", resolveErr)
+		On("CreateIndex", mock.Anything, "person_test", indexConfig, true).Times(1).Return(nil).
+		On("ResolveAlias", mock.Anything, "person").Times(1).Return("", resolveErr)
 
 	command := NewCreateIndices(esClient, map[string][]byte{"person_test": indexConfig})
 
@@ -131,7 +132,7 @@ func TestCreateIndicesRunErrorInFirst(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.scenario, func(t *testing.T) {
 			esClient := new(elasticsearch.MockESClient)
-			esClient.On("CreateIndex", "person_test", indexConfig, tc.force).Times(1).Return(tc.error)
+			esClient.On("CreateIndex", mock.Anything, "person_test", indexConfig, tc.force).Times(1).Return(tc.error)
 
 			command := NewCreateIndices(esClient, map[string][]byte{"person_test": indexConfig})
 

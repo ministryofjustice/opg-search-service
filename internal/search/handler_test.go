@@ -110,13 +110,29 @@ func (suite *SearchHandlerTestSuite) Test_ESReturnsUnexpectedError() {
 		On("Fn", mock.Anything).
 		Return(map[string]interface{}{})
 
-	esCall := suite.esClient.On("Search", mock.Anything, mock.Anything)
+	esCall := suite.esClient.On("Search", mock.Anything, mock.Anything, mock.Anything)
 	esCall.Return(&elasticsearch.SearchResult{}, errors.New("test ES error"))
 
 	suite.ServeRequest(http.MethodPost, "", reqBody)
 
 	suite.Equal(http.StatusInternalServerError, suite.RespCode())
 	suite.Contains(suite.RespBody(), `"errors":[{"name":"request","description":"unexpected error from elasticsearch"}]`)
+}
+
+func (suite *SearchHandlerTestSuite) Test_ContextCancelledError() {
+	reqBody := `{"term":"test"}`
+
+	suite.prepareQuery.
+		On("Fn", mock.Anything).
+		Return(map[string]interface{}{})
+
+	esCall := suite.esClient.On("Search", mock.Anything, mock.Anything, mock.Anything)
+	esCall.Return(&elasticsearch.SearchResult{}, context.Canceled)
+
+	suite.ServeRequest(http.MethodPost, "", reqBody)
+
+	suite.Equal(499, suite.RespCode())
+	suite.Contains(suite.RespBody(), `"errors":[{"name":"request","description":"search request was cancelled"}]`)
 }
 
 func (suite *SearchHandlerTestSuite) Test_SearchWithAllParameters() {
@@ -142,7 +158,7 @@ func (suite *SearchHandlerTestSuite) Test_SearchWithAllParameters() {
 	}
 
 	suite.esClient.
-		On("Search", []string{"whatever"}, searchBody).
+		On("Search", mock.Anything, []string{"whatever"}, searchBody).
 		Return(result, nil)
 
 	suite.ServeRequest(http.MethodPost, "", reqBody)
