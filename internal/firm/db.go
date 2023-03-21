@@ -19,7 +19,7 @@ type DB struct {
 }
 
 func (db *DB) QueryIDRange(ctx context.Context) (min int, max int, err error) {
-	err = db.conn.QueryRow(ctx, "SELECT MIN(id), MAX(id) FROM firm").Scan(&min, &max)
+	err = db.conn.QueryRow(ctx, "SELECT COALESCE(MIN(id), 0), COALESCE(MAX(id), 0) FROM firm").Scan(&min, &max)
 
 	return min, max, err
 }
