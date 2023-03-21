@@ -14,8 +14,11 @@ services:
     image: localstack/localstack-full:1.4.0
     environment:
       DEFAULT_REGION: eu-west-1
-      HOSTNAME_EXTERNAL: localstack
       SERVICES: es, secretsmanager
+    networks:
+      default:
+        aliases:
+          - search-service.eu-west-1.es.localhost.localstack.cloud
     volumes:
       - "./scripts/localstack:/docker-entrypoint-initaws.d"
 
