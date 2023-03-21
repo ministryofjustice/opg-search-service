@@ -11,7 +11,7 @@ services:
       - docker-compose.env
 
   localstack:
-    image: localstack/localstack-full:1.4.0
+    image: localstack/localstack:1.4.0
     environment:
       DEFAULT_REGION: eu-west-1
       SERVICES: es, secretsmanager
@@ -20,7 +20,7 @@ services:
         aliases:
           - search-service.eu-west-1.es.localhost.localstack.cloud
     volumes:
-      - "./scripts/localstack:/docker-entrypoint-initaws.d"
+      - "./scripts/localstack:/etc/localstack/init/ready.d"
 
   postgres:
     image: postgres:15.2
