@@ -25,7 +25,7 @@ jobs:
       AWS_ACCESS_KEY_ID: localstack
       AWS_SECRET_ACCESS_KEY: localstack
       DEFAULT_REGION: eu-west-1
-      AWS_ELASTICSEARCH_ENDPOINT: http://localhost:4571
+      AWS_ELASTICSEARCH_ENDPOINT: http://search-service.eu-west-1.es.localhost.localstack.cloud:4566
       AWS_SECRETS_MANAGER_ENDPOINT: http://localhost:4566
     services:
       localstack:

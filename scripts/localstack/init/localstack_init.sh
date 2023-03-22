@@ -1,7 +1,7 @@
 #! /usr/bin/env bash
 
 # Create ES domain
-awslocal es create-elasticsearch-domain --domain-name opg
+awslocal es create-elasticsearch-domain --domain-name search-service
 
 # Set secrets in Secrets Manager
 awslocal secretsmanager create-secret --name /local/jwt-key \

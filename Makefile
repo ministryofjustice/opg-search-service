@@ -2,7 +2,6 @@
 test: test-up test-run test-down
 
 test-up:
-	docker-compose --project-name search-service-test up -d localstack
 	docker-compose --project-name search-service-test -f docker-compose.yml -f docker-compose.test.yml up -d postgres
 	docker-compose --project-name search-service-test run --rm wait-for-it -address=postgres:5432 --timeout=30
 

@@ -6,7 +6,9 @@ services:
     build:
       context: .
       dockerfile: test.DockerFile
-    depends_on: [localstack]
+    depends_on:
+      localstack:
+        condition: service_healthy
     working_dir: /go/src/app
     env_file:
       - docker-compose.env
