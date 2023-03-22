@@ -1,5 +1,5 @@
 ---
-version: "3.6"
+version: "3.7"
 
 services:
   search_service:
@@ -7,17 +7,29 @@ services:
     build: .
     ports:
       - 8000:8000
+    depends_on:
+      localstack:
+        condition: service_healthy
     env_file:
       - docker-compose.env
 
   localstack:
-    image: localstack/localstack-full:0.12.8
+    image: localstack/localstack:1.4.0
     environment:
-      DEFAULT_REGION: eu-west-1
-      HOSTNAME_EXTERNAL: localstack
+      AWS_DEFAULT_REGION: eu-west-1
       SERVICES: es, secretsmanager
+    networks:
+      default:
+        aliases:
+          - search-service.eu-west-1.es.localhost.localstack.cloud
     volumes:
-      - "./scripts/localstack:/docker-entrypoint-initaws.d"
+      - "./scripts/localstack/init:/etc/localstack/init/ready.d"
+      - "./scripts/localstack/wait:/scripts/wait"
+    healthcheck:
+      test: bash /scripts/wait/healthcheck.sh
+      interval: 30s
+      timeout: 5s
+      retries: 8
 
   postgres:
     image: postgres:15.2
