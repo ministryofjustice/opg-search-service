@@ -69,15 +69,15 @@ Another gotcha... Make sure annotations are written with 2 space tabs in order f
 
 ## Environment Variables
 
-| Variable                     | Default   | Description                                                                         |
-|------------------------------|-----------|-------------------------------------------------------------------------------------|
-| AWS_ELASTICSEARCH_ENDPOINT   |           | Used for overwriting the ElasticSearch endpoint locally e.g. http://localstack:4571 |
-| AWS_REGION                   | eu-west-1 | Set the AWS region for all operations with the SDK                                  |
-| AWS_ACCESS_KEY_ID            |           | Used for authenticating with localstack e.g. set to "localstack"                    |
-| AWS_SECRET_ACCESS_KEY        |           | Used for authenticating with localstack e.g. set to "localstack"                    |
-| AWS_SECRETS_MANAGER_ENDPOINT |           | Used for accessing the Secrets Manager endpoint locally e.g. http://localstack:4566 |
-| ENVIRONMENT                  |           | Used when creating a new secrets cache object locally                               |
-| PATH_PREFIX                  |           | Path prefix where all requested will be routed                                      |
+| Variable                     | Default   | Description                                                                                                                     |
+|------------------------------|-----------|---------------------------------------------------------------------------------------------------------------------------------|
+| AWS_ELASTICSEARCH_ENDPOINT   |           | Used for overwriting the ElasticSearch endpoint locally e.g. http://search-service.eu-west-1.es.localhost.localstack.cloud:4566 |
+| AWS_REGION                   | eu-west-1 | Set the AWS region for all operations with the SDK                                                                              |
+| AWS_ACCESS_KEY_ID            |           | Used for authenticating with localstack e.g. set to "localstack"                                                                |
+| AWS_SECRET_ACCESS_KEY        |           | Used for authenticating with localstack e.g. set to "localstack"                                                                |
+| AWS_SECRETS_MANAGER_ENDPOINT |           | Used for accessing the Secrets Manager endpoint locally e.g. http://localstack:4566                                             |
+| ENVIRONMENT                  |           | Used when creating a new secrets cache object locally                                                                           |
+| PATH_PREFIX                  |           | Path prefix where all requested will be routed                                                                                  |
 
 Required when running `index` command:
 
