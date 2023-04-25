@@ -90,8 +90,9 @@ func withDefaults(req *Request, body map[string]interface{}) map[string]interfac
 
 	body["aggs"] = map[string]interface{}{
 		"personType": map[string]interface{}{
-			"terms": map[string]string{
+			"terms": map[string]interface{}{
 				"field": "personType",
+				"size":  "20",
 			},
 		},
 	}

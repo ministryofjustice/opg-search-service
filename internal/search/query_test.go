@@ -23,8 +23,9 @@ func TestPrepareQueryForFirm(t *testing.T) {
 		},
 		"aggs": map[string]interface{}{
 			"personType": map[string]interface{}{
-				"terms": map[string]string{
+				"terms": map[string]interface{}{
 					"field": "personType",
+					"size":  "20",
 				},
 			},
 		},
@@ -52,8 +53,9 @@ func TestPrepareQueryForFirmWithOptions(t *testing.T) {
 		},
 		"aggs": map[string]interface{}{
 			"personType": map[string]interface{}{
-				"terms": map[string]string{
+				"terms": map[string]interface{}{
 					"field": "personType",
+					"size":  "20",
 				},
 			},
 		},
@@ -91,8 +93,9 @@ func TestPrepareQueryForPerson(t *testing.T) {
 		},
 		"aggs": map[string]interface{}{
 			"personType": map[string]interface{}{
-				"terms": map[string]string{
+				"terms": map[string]interface{}{
 					"field": "personType",
+					"size":  "20",
 				},
 			},
 		},
@@ -128,8 +131,9 @@ func TestPrepareQueryForPersonWithOptions(t *testing.T) {
 		},
 		"aggs": map[string]interface{}{
 			"personType": map[string]interface{}{
-				"terms": map[string]string{
+				"terms": map[string]interface{}{
 					"field": "personType",
+					"size":  "20",
 				},
 			},
 		},
@@ -173,8 +177,9 @@ func TestPrepareQueryForFirmAndPerson(t *testing.T) {
 		},
 		"aggs": map[string]interface{}{
 			"personType": map[string]interface{}{
-				"terms": map[string]string{
+				"terms": map[string]interface{}{
 					"field": "personType",
+					"size":  "20",
 				},
 			},
 		},
@@ -207,8 +212,9 @@ func TestPrepareQueryForDeputy(t *testing.T) {
 		},
 		"aggs": map[string]interface{}{
 			"personType": map[string]interface{}{
-				"terms": map[string]string{
+				"terms": map[string]interface{}{
 					"field": "personType",
+					"size":  "20",
 				},
 			},
 		},
@@ -236,8 +242,9 @@ func TestPrepareQueryForFirmAndPersonWithOptions(t *testing.T) {
 		},
 		"aggs": map[string]interface{}{
 			"personType": map[string]interface{}{
-				"terms": map[string]string{
+				"terms": map[string]interface{}{
 					"field": "personType",
+					"size":  "20",
 				},
 			},
 		},
