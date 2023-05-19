@@ -55,3 +55,7 @@ func (c *SecretsCache) GetSecretString(key string) (string, error) {
 func (c *SecretsCache) GetGlobalSecretString(key string) (string, error) {
 	return c.cache.GetSecretString(key)
 }
+
+func (c *SecretsCache) ClearCache() {
+	c.cache, _ = secretcache.New(applyAwsConfig)
+}

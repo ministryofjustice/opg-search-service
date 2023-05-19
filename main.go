@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/ministryofjustice/opg-search-service/internal/secrets"
 	"log"
 	"net/http"
 	"os"
@@ -54,6 +55,7 @@ func main() {
 		cmd.NewIndex(l, esClient, secretsCache, currentIndices),
 		cmd.NewUpdateAlias(l, esClient, currentIndices),
 		cmd.NewCleanupIndices(l, esClient, currentIndices),
+		cmd.NewClearSecretCache(l),
 	)
 
 	personIndices := createIndexAndAlias(esClient, person.AliasName, personIndex, personConfig, l)
@@ -72,6 +74,8 @@ func main() {
 	sm.HandleFunc("/health-check", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
+
+	sm.Handle("/clear-secret-cache", secrets.NewHandler(l, secretsCache))
 
 	// Create a sub-router for protected handlers
 	postRouter := sm.Methods(http.MethodPost).Subrouter()
