@@ -15,7 +15,7 @@
 
 ### Development environment
 
-Use docker-compose commands to build/start/stop the service locally e.g. `docker-compose up --build` will rebuild and start the service.
+Use docker compose commands to build/start/stop the service locally e.g. `docker compose up --build` will rebuild and start the service.
 
 By default the local URL is http://localhost:8000/services/search-service, where `/services/search-service` is configured by the `PATH_PREFIX` ENV variable.
 
@@ -93,5 +93,5 @@ Required when running `index` command:
 
 ## Console commands
 
-Use `docker-compose run --rm search_service -h` to see a list of commands that
+Use `docker compose run --rm search_service -h` to see a list of commands that
 can be run, and pass `-h` to any of those to see further options.
