@@ -16,7 +16,7 @@ func (ir *IndexRequest) Validate() []response.Error {
 
 	if ir.DraftApplications == nil || len(ir.DraftApplications) == 0 {
 		errs = append(errs, response.Error{
-			Name: "entity",
+			Name: "draftApplications",
 			Description: "field is empty",
 		})
 	}
