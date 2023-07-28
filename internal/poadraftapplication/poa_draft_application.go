@@ -46,7 +46,7 @@ func IndexConfig() (name string, config []byte, err error) {
 		"mappings": map[string]interface{}{
 			"properties": map[string]interface{}{
 				"donorName": map[string]interface{}{
-					"type": "keyword",
+					"type": "text",
 				},
 				/*,
 				"email": map[string]interface{}{
