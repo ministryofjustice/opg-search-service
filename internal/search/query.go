@@ -1,5 +1,18 @@
 package search
 
+func PrepareQueryForDraftApplication(req *Request) map[string]interface{} {
+	body := map[string]interface{}{
+		"query": map[string]interface{}{
+			"multi_match": map[string]interface{}{
+				"query":  req.Term,
+				"fields": []string{"donorName"},
+			},
+		},
+	}
+
+	return withDefaults(req, body)
+}
+
 func PrepareQueryForFirm(req *Request) map[string]interface{} {
 	body := map[string]interface{}{
 		"query": map[string]interface{}{
@@ -68,7 +81,7 @@ func PrepareQueryForAll(req *Request) map[string]interface{} {
 		"query": map[string]interface{}{
 			"multi_match": map[string]interface{}{
 				"query":  req.Term,
-				"fields": []string{"firmName", "firmNumber", "caseRecNumber", "searchable"},
+				"fields": []string{"firmName", "firmNumber", "caseRecNumber", "searchable", "donorName"},
 			},
 		},
 	}
