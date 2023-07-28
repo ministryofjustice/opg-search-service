@@ -160,13 +160,13 @@ func TestPrepareQueryForPersonAlreadyPrepared(t *testing.T) {
 	}, body)
 }
 
-func TestPrepareQueryForFirmAndPerson(t *testing.T) {
+func TestPrepareQueryForAll(t *testing.T) {
 	req := &Request{
 		Term: "apples",
 		From: 123,
 	}
 
-	body := PrepareQueryForFirmAndPerson(req)
+	body := PrepareQueryForAll(req)
 
 	assert.Equal(t, map[string]interface{}{
 		"query": map[string]interface{}{
@@ -223,7 +223,7 @@ func TestPrepareQueryForDeputy(t *testing.T) {
 	}, body)
 }
 
-func TestPrepareQueryForFirmAndPersonWithOptions(t *testing.T) {
+func TestPrepareQueryForAllWithOptions(t *testing.T) {
 	req := &Request{
 		Term:        "apples",
 		From:        123,
@@ -231,7 +231,7 @@ func TestPrepareQueryForFirmAndPersonWithOptions(t *testing.T) {
 		PersonTypes: []string{"deputy", "donor"},
 	}
 
-	body := PrepareQueryForFirmAndPerson(req)
+	body := PrepareQueryForAll(req)
 
 	assert.Equal(t, map[string]interface{}{
 		"query": map[string]interface{}{

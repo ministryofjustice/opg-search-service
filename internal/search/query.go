@@ -63,7 +63,7 @@ func PrepareQueryForDeputy(req *Request) map[string]interface{} {
 	return withDefaults(req, body)
 }
 
-func PrepareQueryForFirmAndPerson(req *Request) map[string]interface{} {
+func PrepareQueryForAll(req *Request) map[string]interface{} {
 	body := map[string]interface{}{
 		"query": map[string]interface{}{
 			"multi_match": map[string]interface{}{

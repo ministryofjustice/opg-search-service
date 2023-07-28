@@ -13,6 +13,7 @@ import (
 	"github.com/ministryofjustice/opg-search-service/internal/firm"
 	"github.com/ministryofjustice/opg-search-service/internal/index"
 	"github.com/ministryofjustice/opg-search-service/internal/person"
+	"github.com/ministryofjustice/opg-search-service/internal/poadraftapplication"
 	"github.com/sirupsen/logrus"
 )
 
@@ -49,6 +50,7 @@ func (c *indexCommand) Run(args []string) error {
 
 	all := flagset.Bool("all", false, "index all records for chosen indices")
 	firmOnly := flagset.Bool("firm", false, "index records to the firm index")
+	poaDraftApplicationsOnly := flagset.Bool("poa-draft-application", false, "index records to the draft applications index")
 	personOnly := flagset.Bool("person", false, "index records to the person index")
 	from := flagset.Int("from", 0, "index an id range starting from (use with -to)")
 	to := flagset.Int("to", 100, "index an id range ending at (use with -from)")
@@ -91,6 +93,14 @@ func (c *indexCommand) Run(args []string) error {
 		for _, indexName := range c.currentIndices {
 			if strings.HasPrefix(indexName, "person_") {
 				indexers["person"] = index.New(c.esClient, c.logger, person.NewDB(conn), indexName)
+				break
+			}
+		}
+	}
+	if *poaDraftApplicationsOnly || noneSet {
+		for _, indexName := range c.currentIndices {
+			if strings.HasPrefix(indexName, "draftLpa_") {
+				indexers["poaDraftApplications"] = index.New(c.esClient, c.logger, poadraftapplication.NewDB(conn), indexName)
 				break
 			}
 		}
