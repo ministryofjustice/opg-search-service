@@ -99,8 +99,8 @@ func (c *indexCommand) Run(args []string) error {
 	}
 	if *poaDraftApplicationsOnly || noneSet {
 		for _, indexName := range c.currentIndices {
-			if strings.HasPrefix(indexName, "draftLpa_") {
-				indexers["poaDraftApplications"] = index.New(c.esClient, c.logger, poadraftapplication.NewDB(conn), indexName)
+			if strings.HasPrefix(indexName, "poadraftapplication_") {
+				indexers["poadraftapplication"] = index.New(c.esClient, c.logger, poadraftapplication.NewDB(conn), indexName)
 				break
 			}
 		}
