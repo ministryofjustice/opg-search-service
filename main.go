@@ -329,10 +329,10 @@ func main() {
 	postRouter.Handle("/firms", index.NewHandler(l, esClient, firmIndices, firm.ParseIndexRequest))
 	postRouter.Handle("/firms/search", search.NewHandler(l, esClient, []string{firm.AliasName}, search.PrepareQueryForFirm))
 
-	postRouter.Handle("/draftApplications", index.NewHandler(l, esClient, poaDraftApplicationIndices, firm.ParseIndexRequest))
+	postRouter.Handle("/draftApplications", index.NewHandler(l, esClient, poaDraftApplicationIndices, poadraftapplication.ParseIndexRequest))
 	postRouter.Handle("/draftApplications/search", search.NewHandler(l, esClient, []string{poadraftapplication.AliasName}, search.PrepareQueryForDraftApplication))
 
-	postRouter.Handle("/searchAll", search.NewHandler(l, esClient, []string{firm.AliasName, person.AliasName}, search.PrepareQueryForAll))
+	postRouter.Handle("/searchAll", search.NewHandler(l, esClient, []string{firm.AliasName, person.AliasName, poadraftapplication.AliasName}, search.PrepareQueryForAll))
 
 	deleteRouter := sm.Methods(http.MethodDelete).Subrouter()
 	deleteRouter.Use(middleware.JwtVerify(secretsCache, l))
