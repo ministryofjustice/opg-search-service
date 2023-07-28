@@ -42,9 +42,12 @@ func TestGetIDRange(t *testing.T) {
 	assert.Nil(err)
 
 	_, err = conn.Exec(ctx, `
-		INSERT INTO poa.draft_applications (id, donorname)
-		VALUES (1, 'TLane Araxa'),
-		(2, 'MMosa SepIch');
+		INSERT INTO poa.draft_applications (id, donorname, donoremail, donorphone, donoraddressline1, donorpostcode,
+			correspondentname, correspondentaddressline1, correspondentpostcode)
+		VALUES (1, 'TLane Araxa', 'tlane@notarealemaildomain.com', '0101010101', '85 Nowhereville', 'X11 11X',
+			'Vilach Spinza', '101 Definitelynotreal Street', 'Z22 22Z'),
+		(2, 'MMosa SepIch', 'mmosa@notarealemaildomain.com', '0201010101', '99 Noplaceton', 'Y11 11Y',
+			'SSpaaaan Kollll', '203 Nonexistentrealm Avenue', 'Z33 33Z');
 	`)
 	assert.Nil(err)
 
@@ -77,9 +80,12 @@ func TestQueryByID(t *testing.T) {
 	assert.Nil(err)
 
 	_, err = conn.Exec(ctx, `
-		INSERT INTO poa.draft_applications (id, donorname)
-		VALUES (1, 'TLane Araxa'),
-		(2, 'MMosa SepIch');
+		INSERT INTO poa.draft_applications (id, donorname, donoremail, donorphone, donoraddressline1, donorpostcode,
+			correspondentname, correspondentaddressline1, correspondentpostcode)
+		VALUES (1, 'TLane Araxa', 'tlane@notarealemaildomain.com', '0101010101', '85 Nowhereville', 'X11 11X',
+			'Vilach Spinza', '101 Definitelynotreal Street', 'Z22 22Z'),
+		(2, 'MMosa SepIch', 'mmosa@notarealemaildomain.com', '0201010101', '99 Noplaceton', 'Y11 11Y',
+			'SSpaaaan Kollll', '203 Nonexistentrealm Avenue', 'Z33 33Z');
 	`)
 	assert.Nil(err)
 
@@ -97,6 +103,13 @@ func TestQueryByID(t *testing.T) {
 	assert.Equal(DraftApplication{
 		ID: i64(1),
 		DonorName: "TLane Araxa",
+		DonorEmail: "tlane@notarealemaildomain.com",
+		DonorPhone: "0101010101",
+		DonorAddressLine1: "85 Nowhereville",
+		DonorPostcode: "X11 11X",
+		CorrespondentName: "Vilach Spinza",
+		CorrespondentAddressLine1: "101 Definitelynotreal Street",
+		CorrespondentPostcode: "Z22 22Z",
 	}, first)
 
 	second, ok := read(resultsCh, time.Second)
@@ -105,6 +118,13 @@ func TestQueryByID(t *testing.T) {
 	assert.Equal(DraftApplication{
 		ID: i64(2),
 		DonorName: "MMosa SepIch",
+		DonorEmail: "mmosa@notarealemaildomain.com",
+		DonorPhone: "0201010101",
+		DonorAddressLine1: "99 Noplaceton",
+		DonorPostcode: "Y11 11Y",
+		CorrespondentName: "SSpaaaan Kollll",
+		CorrespondentAddressLine1: "203 Nonexistentrealm Avenue",
+		CorrespondentPostcode: "Z33 33Z",
 	}, second)
 
 	_, ok = read(resultsCh, time.Nanosecond)
