@@ -67,8 +67,7 @@ func main() {
 	firmIndices := createIndexAndAlias(esClient, firm.AliasName, firmIndex, firmConfig, l)
 
 	// TODO assign to variable with
-	// poaDraftApplicationIndices :=
-	createIndexAndAlias(esClient, poadraftapplication.AliasName, poaDraftApplicationIndex, poaDraftApplicationConfig, l)
+	poaDraftApplicationIndices := createIndexAndAlias(esClient, poadraftapplication.AliasName, poaDraftApplicationIndex, poaDraftApplicationConfig, l)
 
 	// Create new serveMux
 	sm := mux.NewRouter().PathPrefix(os.Getenv("PATH_PREFIX")).Subrouter()
@@ -329,6 +328,9 @@ func main() {
 
 	postRouter.Handle("/firms", index.NewHandler(l, esClient, firmIndices, firm.ParseIndexRequest))
 	postRouter.Handle("/firms/search", search.NewHandler(l, esClient, []string{firm.AliasName}, search.PrepareQueryForFirm))
+
+	postRouter.Handle("/draftApplications", index.NewHandler(l, esClient, poaDraftApplicationIndices, firm.ParseIndexRequest))
+	postRouter.Handle("/draftApplications/search", search.NewHandler(l, esClient, []string{poadraftapplication.AliasName}, search.PrepareQueryForDraftApplication))
 
 	postRouter.Handle("/searchAll", search.NewHandler(l, esClient, []string{firm.AliasName, person.AliasName}, search.PrepareQueryForAll))
 
