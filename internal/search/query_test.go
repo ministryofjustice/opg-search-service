@@ -6,6 +6,41 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestPrepareQueryForDraftApplication(t *testing.T) {
+	req := &Request{
+		Term: "MMMoooossssa",
+		From: 123,
+	}
+
+	body := PrepareQueryForDraftApplication(req)
+
+	assert.Equal(t, map[string]interface{}{
+		"query": map[string]interface{}{
+			"bool": map[string]interface{}{
+				"must": map[string]interface{}{
+					"simple_query_string": map[string]interface{}{
+						"query": "MMMoooossssa",
+						"fields": []string{
+							"draftApplicationSearchable",
+						},
+						"default_operator": "AND",
+					},
+				},
+			},
+		},
+		"aggs": map[string]interface{}{
+			"personType": map[string]interface{}{
+				"terms": map[string]interface{}{
+					"field": "personType",
+					"size":  "20",
+				},
+			},
+		},
+		"post_filter": map[string]interface{}{"bool": map[string]interface{}{"should": []interface{}{}}},
+		"from":        123,
+	}, body)
+}
+
 func TestPrepareQueryForFirm(t *testing.T) {
 	req := &Request{
 		Term: "apples",
@@ -172,7 +207,7 @@ func TestPrepareQueryForAll(t *testing.T) {
 		"query": map[string]interface{}{
 			"multi_match": map[string]interface{}{
 				"query":  "apples",
-				"fields": []string{"firmName", "firmNumber", "caseRecNumber", "searchable"},
+				"fields": []string{"firmName", "firmNumber", "caseRecNumber", "searchable", "draftApplicationSearchable"},
 			},
 		},
 		"aggs": map[string]interface{}{
@@ -237,7 +272,7 @@ func TestPrepareQueryForAllWithOptions(t *testing.T) {
 		"query": map[string]interface{}{
 			"multi_match": map[string]interface{}{
 				"query":  "apples",
-				"fields": []string{"firmName", "firmNumber", "caseRecNumber", "searchable"},
+				"fields": []string{"firmName", "firmNumber", "caseRecNumber", "searchable", "draftApplicationSearchable"},
 			},
 		},
 		"aggs": map[string]interface{}{

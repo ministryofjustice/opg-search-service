@@ -10,12 +10,24 @@ import (
 	"github.com/ministryofjustice/opg-search-service/internal/index"
 )
 
-func NewDB(conn *pgx.Conn) *DB {
-	return &DB{conn: conn}
-}
-
 type DB struct {
 	conn *pgx.Conn
+}
+
+type rowResult struct {
+	ID int
+	donorname string
+	donoremail string
+	donorphone string
+	donoraddressline1 string
+	donorpostcode string
+	correspondentname string
+	correspondentaddressline1 string
+	correspondentpostcode string
+}
+
+func NewDB(conn *pgx.Conn) *DB {
+	return &DB{conn: conn}
 }
 
 func (db *DB) QueryIDRange(ctx context.Context) (min int, max int, err error) {
@@ -23,13 +35,8 @@ func (db *DB) QueryIDRange(ctx context.Context) (min int, max int, err error) {
 }
 
 func (db *DB) QueryByID(ctx context.Context, results chan<- index.Indexable, from, to int) error {
-	/*fields := []string{"donorname", "donordob", "donoraddressline1", "donoraddressline2",
-		"donortown", "donorpostcode", "donorcountry", "correspondentname",
-		"correspondentaddressline1", "correspondentaddressline2",
-		"correspondenttown", "correspondentpostcode", "correspondentcountry",
-		"donoraddressline3", "correspondentaddressline3", "donoremail", "donorphone"}*/
-
-	fields := []string{"donorname"}
+	fields := []string{"donorname", "donoremail", "donorphone", "donoraddressline1", "donorpostcode",
+		"correspondentname", "correspondentaddressline1", "correspondentpostcode"}
 
 	query := `SELECT id, COALESCE(` + strings.Join(fields, ", ''), COALESCE(") + `, '')
 FROM poa.draft_applications
@@ -48,7 +55,8 @@ ORDER BY id`
 		d = &DraftApplication{}
 
 		var r rowResult
-		err = rows.Scan(&r.ID, &r.donorname)
+		err = rows.Scan(&r.ID, &r.donorname, &r.donoremail, &r.donorphone, &r.donoraddressline1,
+			&r.donorpostcode, &r.correspondentname, &r.correspondentaddressline1, &r.correspondentpostcode)
 
 		if err != nil {
 			break
@@ -56,7 +64,20 @@ ORDER BY id`
 
 		if r.ID != lastID {
 			lastID = r.ID
-			addResultToDraftApplication(d, r)
+
+			if d.ID == nil {
+				id := int64(r.ID)
+				d.ID = &id
+				d.DonorName = r.donorname
+				d.DonorEmail = r.donoremail
+				d.DonorPhone = r.donorphone
+				d.DonorAddressLine1 = r.donoraddressline1
+				d.DonorPostcode = r.donorpostcode
+				d.CorrespondentName = r.correspondentname
+				d.CorrespondentAddressLine1 = r.correspondentaddressline1
+				d.CorrespondentPostcode = r.correspondentpostcode
+			}
+
 			results <- *d
 		}
 	}
@@ -74,17 +95,4 @@ ORDER BY id`
 
 func (db *DB) QueryFromDate(ctx context.Context, results chan<- index.Indexable, fromDate time.Time) error {
 	return errors.New("draft applications cannot be queried by date")
-}
-
-type rowResult struct {
-	ID int
-	donorname string
-}
-
-func addResultToDraftApplication(d *DraftApplication, r rowResult) {
-	if d.ID == nil {
-		id := int64(r.ID)
-		d.ID = &id
-		d.DonorName = r.donorname
-	}
 }

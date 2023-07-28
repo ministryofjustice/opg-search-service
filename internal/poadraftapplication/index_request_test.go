@@ -30,7 +30,7 @@ func TestIndexRequest_Validate(t *testing.T) {
 			IndexRequest{},
 			[]response.Error{
 				{
-					Name: "entity",
+					Name: "draftApplications",
 					Description: "field is empty",
 				},
 			},
@@ -42,7 +42,7 @@ func TestIndexRequest_Validate(t *testing.T) {
 			},
 			[]response.Error{
 				{
-					Name:        "entity",
+					Name:        "draftApplications",
 					Description: "field is empty",
 				},
 			},
