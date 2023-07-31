@@ -42,12 +42,9 @@ func TestGetIDRange(t *testing.T) {
 	assert.Nil(err)
 
 	_, err = conn.Exec(ctx, `
-		INSERT INTO poa.draft_applications (id, donorname, donoremail, donorphone, donoraddressline1, donorpostcode,
-			correspondentname, correspondentaddressline1, correspondentpostcode)
-		VALUES (1, 'TLane Araxa', 'tlane@notarealemaildomain.com', '0101010101', '85 Nowhereville', 'X11 11X',
-			'Vilach Spinza', '101 Definitelynotreal Street', 'Z22 22Z'),
-		(2, 'MMosa SepIch', 'mmosa@notarealemaildomain.com', '0201010101', '99 Noplaceton', 'Y11 11Y',
-			'SSpaaaan Kollll', '203 Nonexistentrealm Avenue', 'Z33 33Z');
+		INSERT INTO poa.draft_applications (id, uid, donorname, donordob, donorpostcode)
+		VALUES (1, 'M-7QQQ-P4DF-4UX3', 'TLane Araxa', '12/12/2000', 'X11 11X'),
+		(2, 'M-8YYY-P4DF-4UX3', 'MMosa SepIch', '09/09/1999', 'Y11 11Y');
 	`)
 	assert.Nil(err)
 
@@ -80,12 +77,9 @@ func TestQueryByID(t *testing.T) {
 	assert.Nil(err)
 
 	_, err = conn.Exec(ctx, `
-		INSERT INTO poa.draft_applications (id, donorname, donoremail, donorphone, donoraddressline1, donorpostcode,
-			correspondentname, correspondentaddressline1, correspondentpostcode)
-		VALUES (1, 'TLane Araxa', 'tlane@notarealemaildomain.com', '0101010101', '85 Nowhereville', 'X11 11X',
-			'Vilach Spinza', '101 Definitelynotreal Street', 'Z22 22Z'),
-		(2, 'MMosa SepIch', 'mmosa@notarealemaildomain.com', '0201010101', '99 Noplaceton', 'Y11 11Y',
-			'SSpaaaan Kollll', '203 Nonexistentrealm Avenue', 'Z33 33Z');
+		INSERT INTO poa.draft_applications (id, uid, donorname, donordob, donorpostcode)
+		VALUES (1, 'M-7QQQ-P4DF-4UX3', 'TLane Araxa', '12/12/2000', 'X11 11X'),
+		(2, 'M-8YYY-P4DF-4UX3', 'MMosa SepIch', '09/09/1999', 'Y11 11Y');
 	`)
 	assert.Nil(err)
 
@@ -100,38 +94,29 @@ func TestQueryByID(t *testing.T) {
 	first, ok := read(resultsCh, time.Second)
 	assert.True(ok)
 
+	firstUid := "M-7QQQ-P4DF-4UX3"
 	assert.Equal(DraftApplication{
-		ID: i64(1),
-		DonorName: "TLane Araxa",
-		DonorEmail: "tlane@notarealemaildomain.com",
-		DonorPhone: "0101010101",
-		DonorAddressLine1: "85 Nowhereville",
-		DonorPostcode: "X11 11X",
-		CorrespondentName: "Vilach Spinza",
-		CorrespondentAddressLine1: "101 Definitelynotreal Street",
-		CorrespondentPostcode: "Z22 22Z",
+		UID: &firstUid,
+		Donor: DraftApplicationDonor{
+			Name: "TLane Araxa",
+			Dob: "12/12/2000",
+			Postcode: "X11 11X",
+		},
 	}, first)
 
 	second, ok := read(resultsCh, time.Second)
 	assert.True(ok)
 
+	secondUid := "M-8YYY-P4DF-4UX3"
 	assert.Equal(DraftApplication{
-		ID: i64(2),
-		DonorName: "MMosa SepIch",
-		DonorEmail: "mmosa@notarealemaildomain.com",
-		DonorPhone: "0201010101",
-		DonorAddressLine1: "99 Noplaceton",
-		DonorPostcode: "Y11 11Y",
-		CorrespondentName: "SSpaaaan Kollll",
-		CorrespondentAddressLine1: "203 Nonexistentrealm Avenue",
-		CorrespondentPostcode: "Z33 33Z",
+		UID: &secondUid,
+		Donor: DraftApplicationDonor{
+			Name: "MMosa SepIch",
+			Dob: "09/09/1999",
+			Postcode: "Y11 11Y",
+		},
 	}, second)
 
 	_, ok = read(resultsCh, time.Nanosecond)
 	assert.False(ok)
-}
-
-func i64(x int) *int64 {
-	y := int64(x)
-	return &y
 }
