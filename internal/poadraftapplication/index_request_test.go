@@ -8,19 +8,26 @@ import (
 )
 
 func TestIndexRequest_Validate(t *testing.T) {
-	testId := int64(1)
+	testId := "M-789Q-P4DF-4UX3"
 	var noErrs []response.Error
 
 	tests := []struct {
-		scenario   string
-		request    IndexRequest
+		scenario string
+		request IndexRequest
 		expectErrs []response.Error
 	}{
 		{
 			"valid request",
 			IndexRequest{
 				DraftApplications: []DraftApplication{
-					{ID: &testId},
+					{
+						UID: &testId,
+						Donor: DraftApplicationDonor{
+							Name: "Vancep BVigliaon",
+							Dob: "12/12/2000",
+							Postcode: "X11 11X",
+						},
+					},
 				},
 			},
 			noErrs,
@@ -56,7 +63,7 @@ func TestIndexRequest_Validate(t *testing.T) {
 			},
 			[]response.Error{
 				{
-					Name:        "id",
+					Name:        "uId",
 					Description: "field is empty",
 				},
 			},

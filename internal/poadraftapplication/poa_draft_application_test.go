@@ -8,79 +8,84 @@ import (
 )
 
 func TestDraftApplication_Id(t *testing.T) {
-	testId := int64(13)
+	testId := int64(0)
 
 	tests := []struct {
-		scenario   string
-		firm       DraftApplication
+		scenario string
+		draftApplication DraftApplication
 		expectedId interface{}
 	}{
 		{
-			scenario:   "Blank DraftApplication",
-			firm:       DraftApplication{},
-			expectedId: int64(0),
-		},
-		{
-			scenario: "DraftApplication with ID",
-			firm: DraftApplication{
-				ID: &testId,
-			},
-			expectedId: int64(13),
+			scenario: "Blank DraftApplication",
+			draftApplication: DraftApplication{},
+			expectedId: testId,
 		},
 	}
 	for _, test := range tests {
-		assert.Equal(t, test.expectedId, test.firm.Id(), test.scenario)
+		assert.Equal(t, test.expectedId, test.draftApplication.Id(), test.scenario)
 	}
 }
 
 func TestDraftApplication_Validate(t *testing.T) {
-	testId := int64(1)
+	testUid := "M-789Q-P4DF-4UX3"
 	var noErrs []response.Error
 
 	tests := []struct {
-		scenario     string
-		firm         DraftApplication
+		scenario string
+		draftApplication DraftApplication
 		expectedErrs []response.Error
 	}{
 		{
 			"valid DraftApplication",
 			DraftApplication{
-				ID: &testId,
+				UID: &testUid,
 			},
 			noErrs,
 		},
 		{
-			"missing DraftApplication id",
+			"missing DraftApplication uid",
 			DraftApplication{},
 			[]response.Error{
 				{
-					Name:        "id",
+					Name:        "uId",
 					Description: "field is empty",
 				},
 			},
 		},
 		{
-			"invalid DraftApplication id",
+			"nil DraftApplication uid",
 			DraftApplication{
-				ID: nil,
+				UID: nil,
 			},
 			[]response.Error{
 				{
-					Name:        "id",
+					Name:        "uId",
+					Description: "field is empty",
+				},
+			},
+		},
+		{
+			"empty DraftApplication uid",
+			DraftApplication{
+				UID: new(string),
+			},
+			[]response.Error{
+				{
+					Name:        "uId",
 					Description: "field is empty",
 				},
 			},
 		},
 	}
+
 	for _, test := range tests {
-		errs := test.firm.Validate()
+		errs := test.draftApplication.Validate()
 		assert.Equal(t, test.expectedErrs, errs, test.scenario)
 	}
 }
 
 func TestDraftApplication_IndexConfig(t *testing.T) {
 	name, _, err := IndexConfig()
-
 	assert.Nil(t, err)
 	assert.Regexp(t, `[a-z]+_[a-z0-9]+`, name)
 }
