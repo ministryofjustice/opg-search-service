@@ -10,32 +10,27 @@ import (
 
 const AliasName = "poadraftapplication"
 
+type DraftApplicationDonor struct {
+	Name string `json:"name"`
+	Dob string `json:"dob"`
+	Postcode string `json:"postcode"`
+}
+
 type DraftApplication struct {
-	ID *int64 `json:"id"`
-	DonorName string `json:"donorName"`
-	DonorEmail string `json:"donorEmail"`
-	DonorPhone string `json:"donorPhone"`
-	DonorAddressLine1 string `json:"donorAddressLine1"`
-	DonorPostcode string `json:"donorPostcode"`
-	CorrespondentName string `json:"correspondentName"`
-	CorrespondentAddressLine1 string `json:"correspondentAddressLine1"`
-	CorrespondentPostcode string `json:"correspondentPostcode"`
+	UID *string `json:"uId"`
+	Donor DraftApplicationDonor `json:"donor"`
 }
 
-func (f DraftApplication) Id() int64 {
-	val := int64(0)
-	if f.ID != nil {
-		val = *f.ID
-	}
-	return val
+func (d DraftApplication) Id() int64 {
+	return int64(0)
 }
 
-func (f DraftApplication) Validate() []response.Error {
+func (d DraftApplication) Validate() []response.Error {
 	var errs []response.Error
 
-	if f.ID == nil {
+	if d.UID == nil || len(*d.UID) == 0 {
 		errs = append(errs, response.Error{
-			Name: "id",
+			Name: "uId",
 			Description: "field is empty",
 		})
 	}
@@ -75,21 +70,17 @@ func IndexConfig() (name string, config []byte, err error) {
 		"mappings": map[string]interface{}{
 			"properties": map[string]interface{}{
 				"draftApplicationSearchable": textField,
-				"donorName": searchableTextField,
-				"donorEmail": searchableTextField,
-				"donorPhone": searchableTextField,
-				"donorAddressLine1": searchableTextField,
-				"donorPostcode": map[string]interface{}{
-					"type": "text",
-					"analyzer": "no_space_analyzer",
-					"copy_to": "draftApplicationSearchable",
-				},
-				"correspondentName": searchableTextField,
-				"correspondentAddressLine1": searchableTextField,
-				"correspondentPostcode": map[string]interface{}{
-					"type": "text",
-					"analyzer": "no_space_analyzer",
-					"copy_to": "draftApplicationSearchable",
+				"uId": searchableTextField,
+				"donor": map[string]interface{}{
+					"properties": map[string]interface{}{
+						"name": searchableTextField,
+						"dob": searchableTextField,
+						"postcode": map[string]interface{}{
+							"type": "text",
+							"analyzer": "no_space_analyzer",
+							"copy_to": "draftApplicationSearchable",
+						},
+					},
 				},
 			},
 		},
