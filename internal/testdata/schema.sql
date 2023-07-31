@@ -320,18 +320,9 @@ CREATE SCHEMA poa;
 CREATE TABLE poa.draft_applications
 (
     id integer NOT NULL,
+    uid character varying(255) NOT NULL,
     donorname character varying(255) NOT NULL,
-    donoremail character varying(255) COLLATE pg_catalog."default" default NULL::character varying,
-    donorphone character varying(255) COLLATE pg_catalog."default" default NULL::character varying,
-    donoraddressline1 character varying(255) COLLATE pg_catalog."default" default NULL::character varying,
-    donorpostcode character varying(255) COLLATE pg_catalog."default" default NULL::character varying,
-    correspondentname character varying(255) NOT NULL,
-    correspondentaddressline1 character varying(255) COLLATE pg_catalog."default" default NULL::character varying,
-    correspondentpostcode character varying(255) COLLATE pg_catalog."default" default NULL::character varying,
-
+    donordob character varying(255) NOT NULL,
+    donorpostcode character varying(255) NOT NULL,
     CONSTRAINT draft_applications_pkey PRIMARY KEY (id)
-)
-WITH (
-    OIDS = FALSE
-)
-TABLESPACE pg_default;
+);

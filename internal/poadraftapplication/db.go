@@ -16,14 +16,10 @@ type DB struct {
 
 type rowResult struct {
 	ID int
+	UID string
 	donorname string
-	donoremail string
-	donorphone string
-	donoraddressline1 string
 	donorpostcode string
-	correspondentname string
-	correspondentaddressline1 string
-	correspondentpostcode string
+	donordob string
 }
 
 func NewDB(conn *pgx.Conn) *DB {
@@ -35,8 +31,7 @@ func (db *DB) QueryIDRange(ctx context.Context) (min int, max int, err error) {
 }
 
 func (db *DB) QueryByID(ctx context.Context, results chan<- index.Indexable, from, to int) error {
-	fields := []string{"donorname", "donoremail", "donorphone", "donoraddressline1", "donorpostcode",
-		"correspondentname", "correspondentaddressline1", "correspondentpostcode"}
+	fields := []string{"uid", "donorname", "donordob", "donorpostcode"}
 
 	query := `SELECT id, COALESCE(` + strings.Join(fields, ", ''), COALESCE(") + `, '')
 FROM poa.draft_applications
@@ -55,8 +50,7 @@ ORDER BY id`
 		d = &DraftApplication{}
 
 		var r rowResult
-		err = rows.Scan(&r.ID, &r.donorname, &r.donoremail, &r.donorphone, &r.donoraddressline1,
-			&r.donorpostcode, &r.correspondentname, &r.correspondentaddressline1, &r.correspondentpostcode)
+		err = rows.Scan(&r.ID, &r.UID, &r.donorname, &r.donordob, &r.donorpostcode)
 
 		if err != nil {
 			break
@@ -65,17 +59,14 @@ ORDER BY id`
 		if r.ID != lastID {
 			lastID = r.ID
 
-			if d.ID == nil {
-				id := int64(r.ID)
-				d.ID = &id
-				d.DonorName = r.donorname
-				d.DonorEmail = r.donoremail
-				d.DonorPhone = r.donorphone
-				d.DonorAddressLine1 = r.donoraddressline1
-				d.DonorPostcode = r.donorpostcode
-				d.CorrespondentName = r.correspondentname
-				d.CorrespondentAddressLine1 = r.correspondentaddressline1
-				d.CorrespondentPostcode = r.correspondentpostcode
+			if d.UID == nil {
+				d.UID = &r.UID
+
+				d.Donor = DraftApplicationDonor{
+					Name: r.donorname,
+					Dob: r.donordob,
+					Postcode: r.donorpostcode,
+				}
 			}
 
 			results <- *d
