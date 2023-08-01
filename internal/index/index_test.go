@@ -3,11 +3,11 @@ package index
 import "github.com/ministryofjustice/opg-search-service/internal/response"
 
 type mockIndexable struct {
-	id int
+	id string
 }
 
-func (m mockIndexable) Id() int64 {
-	return int64(m.id)
+func (m mockIndexable) Id() string {
+	return m.id
 }
 
 type mockValidatable struct {
