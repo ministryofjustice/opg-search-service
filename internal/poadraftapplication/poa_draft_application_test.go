@@ -8,7 +8,7 @@ import (
 )
 
 func TestDraftApplication_Id(t *testing.T) {
-	testId := int64(0)
+	testId := "M-789Q-P4DF-4UX3"
 
 	tests := []struct {
 		scenario string
@@ -18,6 +18,13 @@ func TestDraftApplication_Id(t *testing.T) {
 		{
 			scenario: "Blank DraftApplication",
 			draftApplication: DraftApplication{},
+			expectedId: "0",
+		},
+		{
+			scenario: "DraftApplication with UID",
+			draftApplication: DraftApplication{
+				UID: &testId,
+			},
 			expectedId: testId,
 		},
 	}

@@ -21,8 +21,11 @@ type DraftApplication struct {
 	Donor DraftApplicationDonor `json:"donor"`
 }
 
-func (d DraftApplication) Id() int64 {
-	return int64(0)
+func (d DraftApplication) Id() string {
+	if d.UID == nil {
+		return "0"
+	}
+	return *d.UID
 }
 
 func (d DraftApplication) Validate() []response.Error {
