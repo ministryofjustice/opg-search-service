@@ -66,7 +66,6 @@ func main() {
 	personIndices := createIndexAndAlias(esClient, person.AliasName, personIndex, personConfig, l)
 	firmIndices := createIndexAndAlias(esClient, firm.AliasName, firmIndex, firmConfig, l)
 
-	// TODO assign to variable with
 	poaDraftApplicationIndices := createIndexAndAlias(esClient, poadraftapplication.AliasName, poaDraftApplicationIndex, poaDraftApplicationConfig, l)
 
 	// Create new serveMux
