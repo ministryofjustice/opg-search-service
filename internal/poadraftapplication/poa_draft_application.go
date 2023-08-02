@@ -43,7 +43,7 @@ func (d DraftApplication) Validate() []response.Error {
 
 func IndexConfig() (name string, config []byte, err error) {
 	textField := map[string]interface{}{"type": "text"}
-	searchableTextField := map[string]interface{}{"type": "text", "copy_to": "draftApplicationSearchable"}
+	searchableTextField := map[string]interface{}{"type": "text", "copy_to": "searchable"}
 
 	draftApplicationConfig := map[string]interface{}{
 		"settings": map[string]interface{}{
@@ -72,7 +72,7 @@ func IndexConfig() (name string, config []byte, err error) {
 		},
 		"mappings": map[string]interface{}{
 			"properties": map[string]interface{}{
-				"draftApplicationSearchable": textField,
+				"searchable": textField,
 				"uId": searchableTextField,
 				"donor": map[string]interface{}{
 					"properties": map[string]interface{}{
@@ -81,7 +81,7 @@ func IndexConfig() (name string, config []byte, err error) {
 						"postcode": map[string]interface{}{
 							"type": "text",
 							"analyzer": "no_space_analyzer",
-							"copy_to": "draftApplicationSearchable",
+							"copy_to": "searchable",
 						},
 					},
 				},
