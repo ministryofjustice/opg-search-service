@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/ministryofjustice/opg-search-service/internal/response"
 )
@@ -51,12 +52,12 @@ type PersonPhonenumber struct {
 	Phonenumber string `json:"phoneNumber"`
 }
 
-func (p Person) Id() int64 {
-	val := int64(0)
+func (p Person) Id() string {
+	val := 0
 	if p.ID != nil {
-		val = *p.ID
+		val = int(*p.ID)
 	}
-	return val
+	return strconv.Itoa(val)
 }
 
 func (p Person) Validate() []response.Error {

@@ -8,5 +8,5 @@ type Validatable interface {
 }
 
 type Indexable interface {
-	Id() int64
+	Id() string
 }
