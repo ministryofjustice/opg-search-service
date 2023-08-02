@@ -49,7 +49,7 @@ ORDER BY id`
 		}
 
 		d := DraftApplication{
-			UID: &r.UID,
+			UID: r.UID,
 			Donor: DraftApplicationDonor{
 				Name: r.donorname,
 				Dob: r.donordob,

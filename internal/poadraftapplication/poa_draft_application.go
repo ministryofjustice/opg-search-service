@@ -17,21 +17,18 @@ type DraftApplicationDonor struct {
 }
 
 type DraftApplication struct {
-	UID *string `json:"uId"`
+	UID string `json:"uId"`
 	Donor DraftApplicationDonor `json:"donor"`
 }
 
 func (d DraftApplication) Id() string {
-	if d.UID == nil {
-		return "0"
-	}
-	return *d.UID
+	return d.UID
 }
 
 func (d DraftApplication) Validate() []response.Error {
 	var errs []response.Error
 
-	if d.UID == nil || len(*d.UID) == 0 {
+	if len(d.UID) == 0 {
 		errs = append(errs, response.Error{
 			Name: "uId",
 			Description: "field is empty",

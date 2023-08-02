@@ -16,14 +16,9 @@ func TestDraftApplication_Id(t *testing.T) {
 		expectedId interface{}
 	}{
 		{
-			scenario: "Blank DraftApplication",
-			draftApplication: DraftApplication{},
-			expectedId: "0",
-		},
-		{
 			scenario: "DraftApplication with UID",
 			draftApplication: DraftApplication{
-				UID: &testId,
+				UID: testId,
 			},
 			expectedId: testId,
 		},
@@ -45,36 +40,14 @@ func TestDraftApplication_Validate(t *testing.T) {
 		{
 			"valid DraftApplication",
 			DraftApplication{
-				UID: &testUid,
+				UID: testUid,
 			},
 			noErrs,
 		},
 		{
-			"missing DraftApplication uid",
-			DraftApplication{},
-			[]response.Error{
-				{
-					Name:        "uId",
-					Description: "field is empty",
-				},
-			},
-		},
-		{
-			"nil DraftApplication uid",
-			DraftApplication{
-				UID: nil,
-			},
-			[]response.Error{
-				{
-					Name:        "uId",
-					Description: "field is empty",
-				},
-			},
-		},
-		{
 			"empty DraftApplication uid",
 			DraftApplication{
-				UID: new(string),
+				UID: "",
 			},
 			[]response.Error{
 				{
