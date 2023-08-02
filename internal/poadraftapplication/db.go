@@ -3,7 +3,6 @@ package poadraftapplication
 import (
 	"context"
 	"errors"
-	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v4"
@@ -31,9 +30,7 @@ func (db *DB) QueryIDRange(ctx context.Context) (min int, max int, err error) {
 }
 
 func (db *DB) QueryByID(ctx context.Context, results chan<- index.Indexable, from, to int) error {
-	fields := []string{"uid", "donorname", "donordob", "donorpostcode"}
-
-	query := `SELECT id, COALESCE(` + strings.Join(fields, ", ''), COALESCE(") + `, '')
+	query := `SELECT COALESCE(uid, ''), COALESCE(donorname, ''), COALESCE(donordob, ''), COALESCE(donorpostcode, '')
 FROM poa.draft_applications
 WHERE id >= $1 AND id <= $2
 ORDER BY id`
@@ -43,34 +40,24 @@ ORDER BY id`
 		return err
 	}
 
-	lastID := -1
-	var d *DraftApplication
-
 	for rows.Next() {
-		d = &DraftApplication{}
-
 		var r rowResult
-		err = rows.Scan(&r.ID, &r.UID, &r.donorname, &r.donordob, &r.donorpostcode)
+		err = rows.Scan(&r.UID, &r.donorname, &r.donordob, &r.donorpostcode)
 
 		if err != nil {
 			break
 		}
 
-		if r.ID != lastID {
-			lastID = r.ID
-
-			if d.UID == nil {
-				d.UID = &r.UID
-
-				d.Donor = DraftApplicationDonor{
-					Name: r.donorname,
-					Dob: r.donordob,
-					Postcode: r.donorpostcode,
-				}
-			}
-
-			results <- *d
+		d := DraftApplication{
+			UID: &r.UID,
+			Donor: DraftApplicationDonor{
+				Name: r.donorname,
+				Dob: r.donordob,
+				Postcode: r.donorpostcode,
+			},
 		}
+
+		results <- d
 	}
 
 	if err != nil {
