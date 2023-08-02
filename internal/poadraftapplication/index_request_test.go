@@ -21,7 +21,7 @@ func TestIndexRequest_Validate(t *testing.T) {
 			IndexRequest{
 				DraftApplications: []DraftApplication{
 					{
-						UID: &testId,
+						UID: testId,
 						Donor: DraftApplicationDonor{
 							Name: "Vancep BVigliaon",
 							Dob: "12/12/2000",

@@ -96,7 +96,7 @@ func TestQueryByID(t *testing.T) {
 
 	firstUid := "M-7QQQ-P4DF-4UX3"
 	assert.Equal(DraftApplication{
-		UID: &firstUid,
+		UID: firstUid,
 		Donor: DraftApplicationDonor{
 			Name: "TLane Araxa",
 			Dob: "12/12/2000",
@@ -109,7 +109,7 @@ func TestQueryByID(t *testing.T) {
 
 	secondUid := "M-8YYY-P4DF-4UX3"
 	assert.Equal(DraftApplication{
-		UID: &secondUid,
+		UID: secondUid,
 		Donor: DraftApplicationDonor{
 			Name: "MMosa SepIch",
 			Dob: "09/09/1999",
