@@ -21,7 +21,7 @@ func TestPrepareQueryForDraftApplication(t *testing.T) {
 					"simple_query_string": map[string]interface{}{
 						"query": "MMMoooossssa",
 						"fields": []string{
-							"draftApplicationSearchable",
+							"searchable",
 						},
 						"default_operator": "AND",
 					},
@@ -207,7 +207,7 @@ func TestPrepareQueryForAll(t *testing.T) {
 		"query": map[string]interface{}{
 			"multi_match": map[string]interface{}{
 				"query":  "apples",
-				"fields": []string{"firmName", "firmNumber", "caseRecNumber", "searchable", "draftApplicationSearchable"},
+				"fields": []string{"firmName", "firmNumber", "caseRecNumber", "searchable", "searchable"},
 			},
 		},
 		"aggs": map[string]interface{}{
@@ -272,7 +272,7 @@ func TestPrepareQueryForAllWithOptions(t *testing.T) {
 		"query": map[string]interface{}{
 			"multi_match": map[string]interface{}{
 				"query":  "apples",
-				"fields": []string{"firmName", "firmNumber", "caseRecNumber", "searchable", "draftApplicationSearchable"},
+				"fields": []string{"firmName", "firmNumber", "caseRecNumber", "searchable", "searchable"},
 			},
 		},
 		"aggs": map[string]interface{}{

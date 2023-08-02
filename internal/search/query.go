@@ -8,7 +8,7 @@ func PrepareQueryForDraftApplication(req *Request) map[string]interface{} {
 					"simple_query_string": map[string]interface{}{
 						"query": req.Term,
 						"fields": []string{
-							"draftApplicationSearchable",
+							"searchable",
 						},
 						"default_operator": "AND",
 					},
@@ -88,7 +88,7 @@ func PrepareQueryForAll(req *Request) map[string]interface{} {
 		"query": map[string]interface{}{
 			"multi_match": map[string]interface{}{
 				"query":  req.Term,
-				"fields": []string{"firmName", "firmNumber", "caseRecNumber", "searchable", "draftApplicationSearchable"},
+				"fields": []string{"firmName", "firmNumber", "caseRecNumber", "searchable", "searchable"},
 			},
 		},
 	}
