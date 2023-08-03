@@ -308,3 +308,21 @@ CREATE TABLE public.firm
         OIDS = FALSE
     )
     TABLESPACE pg_default;
+
+-- Table: poa.draft_applications
+
+DROP TABLE IF EXISTS poa.draft_applications;
+
+DROP SCHEMA IF EXISTS poa;
+
+CREATE SCHEMA poa;
+
+CREATE TABLE poa.draft_applications
+(
+    id integer NOT NULL,
+    uid character varying(255) NOT NULL,
+    donorname character varying(255) NOT NULL,
+    donordob character varying(255) NOT NULL,
+    donorpostcode character varying(255) NOT NULL,
+    CONSTRAINT draft_applications_pkey PRIMARY KEY (id)
+);

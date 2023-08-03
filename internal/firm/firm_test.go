@@ -18,14 +18,14 @@ func TestFirm_Id(t *testing.T) {
 		{
 			scenario:   "Blank Firm",
 			firm:       Firm{},
-			expectedId: int64(0),
+			expectedId: "0",
 		},
 		{
 			scenario: "Firm with ID",
 			firm: Firm{
 				ID: &testId,
 			},
-			expectedId: int64(13),
+			expectedId: "13",
 		},
 	}
 	for _, test := range tests {
