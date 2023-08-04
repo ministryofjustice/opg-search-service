@@ -92,7 +92,8 @@ func (i *Handler) doIndex(ctx context.Context, indexName string, response *index
 
 		if err != nil {
 			i.logger.Println(err)
-			return fmt.Errorf("could not construct index request for id=%s", f.Id())
+
+			return fmt.Errorf("could not construct index request for id=%d", f.Id())
 		}
 	}
 
