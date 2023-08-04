@@ -113,7 +113,7 @@ func (r *Indexer) index(ctx context.Context, entity <-chan Indexable) (*Result, 
 		}
 
 		if err != nil {
-			return nil, fmt.Errorf("could not construct index request for id=%s; %w", e.Id(), err)
+			return nil, fmt.Errorf("could not construct index request for id=%d; %w", e.Id(), err)
 		}
 	}
 

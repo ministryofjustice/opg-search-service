@@ -6,41 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPrepareQueryForDraftApplication(t *testing.T) {
-	req := &Request{
-		Term: "MMMoooossssa",
-		From: 123,
-	}
-
-	body := PrepareQueryForDraftApplication(req)
-
-	assert.Equal(t, map[string]interface{}{
-		"query": map[string]interface{}{
-			"bool": map[string]interface{}{
-				"must": map[string]interface{}{
-					"simple_query_string": map[string]interface{}{
-						"query": "MMMoooossssa",
-						"fields": []string{
-							"searchable",
-						},
-						"default_operator": "AND",
-					},
-				},
-			},
-		},
-		"aggs": map[string]interface{}{
-			"personType": map[string]interface{}{
-				"terms": map[string]interface{}{
-					"field": "personType",
-					"size":  "20",
-				},
-			},
-		},
-		"post_filter": map[string]interface{}{"bool": map[string]interface{}{"should": []interface{}{}}},
-		"from":        123,
-	}, body)
-}
-
 func TestPrepareQueryForFirm(t *testing.T) {
 	req := &Request{
 		Term: "apples",
@@ -195,19 +160,19 @@ func TestPrepareQueryForPersonAlreadyPrepared(t *testing.T) {
 	}, body)
 }
 
-func TestPrepareQueryForAll(t *testing.T) {
+func TestPrepareQueryForFirmAndPerson(t *testing.T) {
 	req := &Request{
 		Term: "apples",
 		From: 123,
 	}
 
-	body := PrepareQueryForAll(req)
+	body := PrepareQueryForFirmAndPerson(req)
 
 	assert.Equal(t, map[string]interface{}{
 		"query": map[string]interface{}{
 			"multi_match": map[string]interface{}{
 				"query":  "apples",
-				"fields": []string{"firmName", "firmNumber", "caseRecNumber", "searchable", "searchable"},
+				"fields": []string{"firmName", "firmNumber", "caseRecNumber", "searchable"},
 			},
 		},
 		"aggs": map[string]interface{}{
@@ -258,7 +223,7 @@ func TestPrepareQueryForDeputy(t *testing.T) {
 	}, body)
 }
 
-func TestPrepareQueryForAllWithOptions(t *testing.T) {
+func TestPrepareQueryForFirmAndPersonWithOptions(t *testing.T) {
 	req := &Request{
 		Term:        "apples",
 		From:        123,
@@ -266,13 +231,13 @@ func TestPrepareQueryForAllWithOptions(t *testing.T) {
 		PersonTypes: []string{"deputy", "donor"},
 	}
 
-	body := PrepareQueryForAll(req)
+	body := PrepareQueryForFirmAndPerson(req)
 
 	assert.Equal(t, map[string]interface{}{
 		"query": map[string]interface{}{
 			"multi_match": map[string]interface{}{
 				"query":  "apples",
-				"fields": []string{"firmName", "firmNumber", "caseRecNumber", "searchable", "searchable"},
+				"fields": []string{"firmName", "firmNumber", "caseRecNumber", "searchable"},
 			},
 		},
 		"aggs": map[string]interface{}{

@@ -22,7 +22,7 @@ scan:
 
 go-test:
 	go mod download
-	gotestsum --format short-verbose --jsonfile tests.json -- -p 1 -coverprofile=./cover.out ./...
+	gotestsum --format short-verbose --jsonfile tests.json -- -coverprofile=./cover.out ./...
 
 gosec: # Run Golang Security Checker
 	docker compose --project-name search-service-gosec -f docker-compose.yml -f docker-compose.test.yml run --rm search_service_gosec

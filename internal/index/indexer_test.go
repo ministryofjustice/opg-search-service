@@ -46,8 +46,8 @@ func TestAll(t *testing.T) {
 	assert := assert.New(t)
 	ctx := context.Background()
 
-	first := mockIndexable{id: "1"}
-	second := mockIndexable{id: "2"}
+	first := mockIndexable{id: 1}
+	second := mockIndexable{id: 2}
 
 	db := &mockDB{}
 	db.
@@ -63,8 +63,8 @@ func TestAll(t *testing.T) {
 		Return(nil)
 
 	bulkOp := elasticsearch.NewBulkOp("whatever")
-	bulkOp.Index("1", first)
-	bulkOp.Index("2", second)
+	bulkOp.Index(1, first)
+	bulkOp.Index(2, second)
 
 	client := &mockClient{}
 	client.
@@ -84,8 +84,8 @@ func TestByID(t *testing.T) {
 	assert := assert.New(t)
 	ctx := context.Background()
 
-	first := mockIndexable{id: "1"}
-	second := mockIndexable{id: "2"}
+	first := mockIndexable{id: 1}
+	second := mockIndexable{id: 2}
 
 	db := &mockDB{}
 	db.
@@ -98,8 +98,8 @@ func TestByID(t *testing.T) {
 		Return(nil)
 
 	bulkOp := elasticsearch.NewBulkOp("whatever")
-	bulkOp.Index("1", first)
-	bulkOp.Index("2", second)
+	bulkOp.Index(1, first)
+	bulkOp.Index(2, second)
 
 	client := &mockClient{}
 	client.
@@ -121,8 +121,8 @@ func TestFromDate(t *testing.T) {
 
 	fromDate := time.Now()
 
-	first := mockIndexable{id: "1"}
-	second := mockIndexable{id: "2"}
+	first := mockIndexable{id: 1}
+	second := mockIndexable{id: 2}
 
 	db := &mockDB{}
 	db.
@@ -135,8 +135,8 @@ func TestFromDate(t *testing.T) {
 		Return(nil)
 
 	bulkOp := elasticsearch.NewBulkOp("whatever")
-	bulkOp.Index("1", first)
-	bulkOp.Index("2", second)
+	bulkOp.Index(1, first)
+	bulkOp.Index(2, second)
 
 	client := &mockClient{}
 	client.
