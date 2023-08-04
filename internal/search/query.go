@@ -1,25 +1,5 @@
 package search
 
-func PrepareQueryForDraftApplication(req *Request) map[string]interface{} {
-	body := map[string]interface{}{
-		"query": map[string]interface{}{
-			"bool": map[string]interface{}{
-				"must": map[string]interface{}{
-					"simple_query_string": map[string]interface{}{
-						"query": req.Term,
-						"fields": []string{
-							"searchable",
-						},
-						"default_operator": "AND",
-					},
-				},
-			},
-		},
-	}
-
-	return withDefaults(req, body)
-}
-
 func PrepareQueryForFirm(req *Request) map[string]interface{} {
 	body := map[string]interface{}{
 		"query": map[string]interface{}{
@@ -83,12 +63,12 @@ func PrepareQueryForDeputy(req *Request) map[string]interface{} {
 	return withDefaults(req, body)
 }
 
-func PrepareQueryForAll(req *Request) map[string]interface{} {
+func PrepareQueryForFirmAndPerson(req *Request) map[string]interface{} {
 	body := map[string]interface{}{
 		"query": map[string]interface{}{
 			"multi_match": map[string]interface{}{
 				"query":  req.Term,
-				"fields": []string{"firmName", "firmNumber", "caseRecNumber", "searchable", "searchable"},
+				"fields": []string{"firmName", "firmNumber", "caseRecNumber", "searchable"},
 			},
 		},
 	}
