@@ -18,14 +18,14 @@ func TestPerson_Id(t *testing.T) {
 		{
 			scenario:   "Blank Person",
 			person:     Person{},
-			expectedId: int64(0),
+			expectedId: "0",
 		},
 		{
 			scenario: "Person with ID",
 			person: Person{
 				ID: &testId,
 			},
-			expectedId: int64(13),
+			expectedId: "13",
 		},
 	}
 	for _, test := range tests {

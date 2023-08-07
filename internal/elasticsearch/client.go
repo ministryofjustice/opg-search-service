@@ -10,7 +10,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -136,8 +135,8 @@ func NewBulkOp(index string) *BulkOp {
 	return op
 }
 
-func (op *BulkOp) Index(id int64, v interface{}) error {
-	if err := op.enc.Encode(bulkOp{Index: indexOp{ID: strconv.Itoa(int(id))}}); err != nil {
+func (op *BulkOp) Index(id string, v interface{}) error {
+	if err := op.enc.Encode(bulkOp{Index: indexOp{ID: id}}); err != nil {
 		return err
 	}
 
