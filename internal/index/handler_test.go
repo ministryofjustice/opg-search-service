@@ -100,19 +100,19 @@ func (suite *HandlerTestSuite) Test_InvalidIndexRequestBody() {
 func (suite *HandlerTestSuite) Test_Index() {
 	suite.parserValidatable = mockValidatable{
 		items: []Indexable{
-			mockIndexable{id: 13},
-			mockIndexable{id: 14},
+			mockIndexable{id: "13"},
+			mockIndexable{id: "14"},
 		},
 	}
 
 	reqBody := `{"whatevers":[{"id":13},{"id":14}]}`
 
 	firstOp := elasticsearch.NewBulkOp("whatever-test")
-	firstOp.Index(13, mockIndexable{id: 13})
-	firstOp.Index(14, mockIndexable{id: 14})
+	firstOp.Index("13", mockIndexable{id: "13"})
+	firstOp.Index("14", mockIndexable{id: "14"})
 	secondOp := elasticsearch.NewBulkOp("whatever-new")
-	secondOp.Index(13, mockIndexable{id: 13})
-	secondOp.Index(14, mockIndexable{id: 14})
+	secondOp.Index("13", mockIndexable{id: "13"})
+	secondOp.Index("14", mockIndexable{id: "14"})
 
 	suite.esClient.
 		On("DoBulk", mock.Anything, firstOp).
