@@ -30,10 +30,11 @@ func (db *DB) QueryIDRange(ctx context.Context) (min int, max int, err error) {
 }
 
 func (db *DB) QueryByID(ctx context.Context, results chan<- index.Indexable, from, to int) error {
-	query := `SELECT COALESCE(uid, ''), COALESCE(donorname, ''), COALESCE(donordob, ''), COALESCE(donorpostcode, '')
-FROM poa.draft_applications
-WHERE id >= $1 AND id <= $2
-ORDER BY id`
+	query := `SELECT COALESCE(c.caserecnumber, ''), COALESCE(a.donorname, ''), coalesce(to_char(a.donordob, 'DD/MM/YYYY'), ''), COALESCE(a.donorpostcode, '')
+FROM poa.draft_applications a
+INNER JOIN cases c ON c.id = a.lpa_id
+WHERE a.id >= $1 AND a.id <= $2
+ORDER BY a.id`
 
 	rows, err := db.conn.Query(ctx, query, from, to)
 	if err != nil {

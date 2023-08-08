@@ -42,9 +42,16 @@ func TestGetIDRange(t *testing.T) {
 	assert.Nil(err)
 
 	_, err = conn.Exec(ctx, `
-		INSERT INTO poa.draft_applications (id, uid, donorname, donordob, donorpostcode)
-		VALUES (1, 'M-7QQQ-P4DF-4UX3', 'TLane Araxa', '12/12/2000', 'X11 11X'),
-		(2, 'M-8YYY-P4DF-4UX3', 'MMosa SepIch', '09/09/1999', 'Y11 11Y');
+		INSERT INTO cases (id, uid, caserecnumber)
+		VALUES (101, 101, 'M-7QQQ-P4DF-4UX3'),
+		(102, 102, 'M-8YYY-P4DF-4UX3');
+	`)
+	assert.Nil(err)
+
+	_, err = conn.Exec(ctx, `
+		INSERT INTO poa.draft_applications (id, lpa_id, donorname, donordob, donorpostcode)
+		VALUES (1, 101, 'TLane Araxa', '12/12/2000', 'X11 11X'),
+		(2, 102, 'MMosa SepIch', '09/09/1999', 'Y11 11Y');
 	`)
 	assert.Nil(err)
 
@@ -77,11 +84,19 @@ func TestQueryByID(t *testing.T) {
 	assert.Nil(err)
 
 	_, err = conn.Exec(ctx, `
-		INSERT INTO poa.draft_applications (id, uid, donorname, donordob, donorpostcode)
-		VALUES (1, 'M-7QQQ-P4DF-4UX3', 'TLane Araxa', '12/12/2000', 'X11 11X'),
-		(2, 'M-8YYY-P4DF-4UX3', 'MMosa SepIch', '09/09/1999', 'Y11 11Y');
+		INSERT INTO cases (id, uid, caserecnumber)
+		VALUES (101, 101, 'M-7QQQ-P4DF-4UX3'),
+		(102, 102, 'M-8YYY-P4DF-4UX3');
 	`)
 	assert.Nil(err)
+
+	_, err = conn.Exec(ctx, `
+		INSERT INTO poa.draft_applications (id, lpa_id, donorname, donordob, donorpostcode)
+		VALUES (1, 101, 'TLane Araxa', '12/12/2000', 'X11 11X'),
+		(2, 102, 'MMosa SepIch', '09/09/1999', 'Y11 11Y');
+	`)
+	assert.Nil(err)
+
 
 	resultsCh := make(chan index.Indexable)
 	db := DB{conn: conn}
