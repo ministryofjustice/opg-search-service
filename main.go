@@ -321,17 +321,17 @@ func main() {
 	//   '500':
 	//     description: Unexpected error occurred
 	postRouter.Handle("/persons", index.NewHandler(l, esClient, personIndices, person.ParseIndexRequest))
-	postRouter.Handle("/persons/search", search.NewHandler(l, esClient, []string{person.AliasName}, search.PrepareQueryForPerson))
+	postRouter.Handle("/persons/search", search.NewHandler(l, esClient, search.PrepareQueryForPerson))
 
-	postRouter.Handle("/deputies/search", search.NewHandler(l, esClient, []string{person.AliasName}, search.PrepareQueryForDeputy))
+	postRouter.Handle("/deputies/search", search.NewHandler(l, esClient, search.PrepareQueryForDeputy))
 
 	postRouter.Handle("/firms", index.NewHandler(l, esClient, firmIndices, firm.ParseIndexRequest))
-	postRouter.Handle("/firms/search", search.NewHandler(l, esClient, []string{firm.AliasName}, search.PrepareQueryForFirm))
+	postRouter.Handle("/firms/search", search.NewHandler(l, esClient, search.PrepareQueryForFirm))
 
 	postRouter.Handle("/draftApplications", index.NewHandler(l, esClient, poaDraftApplicationIndices, poadraftapplication.ParseIndexRequest))
-	postRouter.Handle("/draftApplications/search", search.NewHandler(l, esClient, []string{poadraftapplication.AliasName}, search.PrepareQueryForDraftApplication))
+	postRouter.Handle("/draftApplications/search", search.NewHandler(l, esClient, search.PrepareQueryForDraftApplication))
 
-	postRouter.Handle("/searchAll", search.NewHandler(l, esClient, []string{firm.AliasName, person.AliasName, poadraftapplication.AliasName}, search.PrepareQueryForAll))
+	postRouter.Handle("/searchAll", search.NewHandler(l, esClient, search.PrepareQueryForAll))
 
 	deleteRouter := sm.Methods(http.MethodDelete).Subrouter()
 	deleteRouter.Use(middleware.JwtVerify(secretsCache, l))
