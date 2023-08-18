@@ -104,8 +104,13 @@ func PrepareQueryForAll(req *Request) ([]string, map[string]interface{}) {
 		},
 	}
 
-	// TODO get indices from request body
-	return allIndices, withDefaults(req, body)
+	indices := allIndices
+
+	if req.Indices != nil {
+		indices = req.Indices
+	}
+
+	return indices, withDefaults(req, body)
 }
 
 func withDefaults(req *Request, body map[string]interface{}) map[string]interface{} {
