@@ -51,7 +51,7 @@ type elasticSearchResponse struct {
 			Relation string `json:"relation"`
 		} `json:"total"`
 		Hits []struct {
-			Index string `json:"_index"`
+			Index  string          `json:"_index"`
 			Source json.RawMessage `json:"_source"`
 		} `json:"hits"`
 	} `json:"hits"`
@@ -262,17 +262,17 @@ func (c *Client) Search(ctx context.Context, indices []string, requestBody map[s
 	for i, hit := range esResponse.Hits.Hits {
 		var objs map[string]interface{}
 
-	    err := json.Unmarshal(hit.Source, &objs)
-	    if err != nil {
-	        return nil, fmt.Errorf("unable to unmarshal JSON for hit: %w", err)
-	    }
+		err := json.Unmarshal(hit.Source, &objs)
+		if err != nil {
+			return nil, fmt.Errorf("unable to unmarshal JSON for hit: %w", err)
+		}
 
-	    objs["_index"] = indexAliasCleaner.ReplaceAllString(hit.Index, "")
+		objs["_index"] = indexAliasCleaner.ReplaceAllString(hit.Index, "")
 
-	    result, err := json.Marshal(objs)
-	    if err != nil {
-	        return nil, fmt.Errorf("unable to add _index to JSON: %w", err)
-	    }
+		result, err := json.Marshal(objs)
+		if err != nil {
+			return nil, fmt.Errorf("unable to add _index to JSON: %w", err)
+		}
 
 		hits[i] = result
 	}

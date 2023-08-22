@@ -27,19 +27,19 @@ import (
 func toJSONWithIndex(objs []byte, index string) ([]byte, error) {
 	var tmp map[string]interface{}
 
-    err := json.Unmarshal(objs, &tmp)
-    if err != nil {
-        return nil, fmt.Errorf("unable to unmarshal JSON for hit: %w", err)
-    }
+	err := json.Unmarshal(objs, &tmp)
+	if err != nil {
+		return nil, fmt.Errorf("unable to unmarshal JSON for hit: %w", err)
+	}
 
-    tmp["_index"] = index
+	tmp["_index"] = index
 
-    result, err := json.Marshal(tmp)
-    if err != nil {
-        return nil, fmt.Errorf("unable to add _index to JSON: %w", err)
-    }
+	result, err := json.Marshal(tmp)
+	if err != nil {
+		return nil, fmt.Errorf("unable to add _index to JSON: %w", err)
+	}
 
-    return result, nil
+	return result, nil
 }
 
 func personToJSON(person person.Person) ([]byte, error) {
