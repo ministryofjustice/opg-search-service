@@ -63,6 +63,15 @@ func TestCreateSearchRequestFromRequest(t *testing.T) {
 				},
 			},
 		},
+		{
+			"created request can include indices to use for search",
+			`{"term":"Vega","indices":["person","firm"]}`,
+			nil,
+			&Request{
+				Term: "Vega",
+				Indices: []string{"person", "firm"},
+			},
+		},
 	}
 	for _, test := range tests {
 		req := http.Request{
