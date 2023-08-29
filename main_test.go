@@ -23,6 +23,35 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
+// add an _index field to marshalled JSON object objs
+func toJSONWithIndex(objs []byte, index string) ([]byte, error) {
+	var tmp map[string]interface{}
+
+	err := json.Unmarshal(objs, &tmp)
+	if err != nil {
+		return nil, fmt.Errorf("unable to unmarshal JSON for hit: %w", err)
+	}
+
+	tmp["_index"] = index
+
+	result, err := json.Marshal(tmp)
+	if err != nil {
+		return nil, fmt.Errorf("unable to add _index to JSON: %w", err)
+	}
+
+	return result, nil
+}
+
+func personToJSON(person person.Person) ([]byte, error) {
+	objs, _ := json.Marshal(person)
+	return toJSONWithIndex(objs, "person")
+}
+
+func firmToJSON(firm firm.Firm) ([]byte, error) {
+	objs, _ := json.Marshal(firm)
+	return toJSONWithIndex(objs, "firm")
+}
+
 type EndToEndTestSuite struct {
 	suite.Suite
 	testPeople []person.Person
@@ -195,7 +224,7 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
 			scenario: "search by surname",
 			term:     suite.testPeople[1].Surname,
 			expectedResponse: func() search.Response {
-				hit, _ := json.Marshal(suite.testPeople[1])
+				hit, _ := personToJSON(suite.testPeople[1])
 
 				return search.Response{
 					Results: []json.RawMessage{hit},
@@ -215,7 +244,7 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
 			scenario: "search by dob",
 			term:     "01/02/1990",
 			expectedResponse: func() search.Response {
-				hit, _ := json.Marshal(suite.testPeople[0])
+				hit, _ := personToJSON(suite.testPeople[0])
 
 				return search.Response{
 					Results: []json.RawMessage{hit},
@@ -235,7 +264,7 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
 			scenario: "search by postcode",
 			term:     "NG1 2CD",
 			expectedResponse: func() search.Response {
-				hit, _ := json.Marshal(suite.testPeople[0])
+				hit, _ := personToJSON(suite.testPeople[0])
 
 				return search.Response{
 					Results: []json.RawMessage{hit},
@@ -255,7 +284,7 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
 			scenario: "search by a-ref",
 			term:     suite.testPeople[1].Cases[0].OnlineLpaId,
 			expectedResponse: func() search.Response {
-				hit, _ := json.Marshal(suite.testPeople[1])
+				hit, _ := personToJSON(suite.testPeople[1])
 
 				return search.Response{
 					Results: []json.RawMessage{hit},
@@ -275,7 +304,7 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
 			scenario: "search by deputy number",
 			term:     strconv.FormatInt(*suite.testPeople[1].DeputyNumber, 10),
 			expectedResponse: func() search.Response {
-				hit, _ := json.Marshal(suite.testPeople[1])
+				hit, _ := personToJSON(suite.testPeople[1])
 
 				return search.Response{
 					Results: []json.RawMessage{hit},
@@ -344,7 +373,7 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchFirm() {
 			scenario: "search by firmname",
 			term:     suite.testFirms[1].FirmName,
 			expectedResponse: func() search.Response {
-				hit, _ := json.Marshal(suite.testFirms[1])
+				hit, _ := firmToJSON(suite.testFirms[1])
 
 				return search.Response{
 					Results: []json.RawMessage{hit},
