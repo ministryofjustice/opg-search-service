@@ -16,6 +16,7 @@ type Request struct {
 	From        int                    `json:"from"`
 	PersonTypes []string               `json:"person_types"`
 	Prepared    map[string]interface{} `json:"prepared"`
+	Indices    []string                `json:"indices"`
 }
 
 func parseSearchRequest(r *http.Request) (*Request, error) {

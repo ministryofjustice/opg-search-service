@@ -1,6 +1,17 @@
 package search
 
-func PrepareQueryForDraftApplication(req *Request) map[string]interface{} {
+import (
+	"github.com/ministryofjustice/opg-search-service/internal/firm"
+	"github.com/ministryofjustice/opg-search-service/internal/person"
+	"github.com/ministryofjustice/opg-search-service/internal/poadraftapplication"
+)
+
+var draftApplicationIndices = []string{poadraftapplication.AliasName}
+var firmIndices = []string{firm.AliasName}
+var personIndices = []string{person.AliasName}
+var allIndices = []string{firm.AliasName, person.AliasName, poadraftapplication.AliasName}
+
+func PrepareQueryForDraftApplication(req *Request) ([]string, map[string]interface{}) {
 	body := map[string]interface{}{
 		"query": map[string]interface{}{
 			"bool": map[string]interface{}{
@@ -17,10 +28,10 @@ func PrepareQueryForDraftApplication(req *Request) map[string]interface{} {
 		},
 	}
 
-	return withDefaults(req, body)
+	return draftApplicationIndices, withDefaults(req, body)
 }
 
-func PrepareQueryForFirm(req *Request) map[string]interface{} {
+func PrepareQueryForFirm(req *Request) ([]string, map[string]interface{}) {
 	body := map[string]interface{}{
 		"query": map[string]interface{}{
 			"multi_match": map[string]interface{}{
@@ -30,12 +41,12 @@ func PrepareQueryForFirm(req *Request) map[string]interface{} {
 		},
 	}
 
-	return withDefaults(req, body)
+	return firmIndices, withDefaults(req, body)
 }
 
-func PrepareQueryForPerson(req *Request) map[string]interface{} {
+func PrepareQueryForPerson(req *Request) ([]string, map[string]interface{}) {
 	if req.Prepared != nil {
-		return req.Prepared
+		return personIndices, req.Prepared
 	}
 
 	body := map[string]interface{}{
@@ -55,10 +66,10 @@ func PrepareQueryForPerson(req *Request) map[string]interface{} {
 		},
 	}
 
-	return withDefaults(req, body)
+	return personIndices, withDefaults(req, body)
 }
 
-func PrepareQueryForDeputy(req *Request) map[string]interface{} {
+func PrepareQueryForDeputy(req *Request) ([]string, map[string]interface{}) {
 	body := map[string]interface{}{
 		"query": map[string]interface{}{
 			"bool": map[string]interface{}{
@@ -80,20 +91,26 @@ func PrepareQueryForDeputy(req *Request) map[string]interface{} {
 		},
 	}
 
-	return withDefaults(req, body)
+	return personIndices, withDefaults(req, body)
 }
 
-func PrepareQueryForAll(req *Request) map[string]interface{} {
+func PrepareQueryForAll(req *Request) ([]string, map[string]interface{}) {
 	body := map[string]interface{}{
 		"query": map[string]interface{}{
 			"multi_match": map[string]interface{}{
 				"query":  req.Term,
-				"fields": []string{"firmName", "firmNumber", "caseRecNumber", "searchable", "searchable"},
+				"fields": []string{"firmName", "firmNumber", "caseRecNumber", "searchable"},
 			},
 		},
 	}
 
-	return withDefaults(req, body)
+	indices := allIndices
+
+	if req.Indices != nil {
+		indices = req.Indices
+	}
+
+	return indices, withDefaults(req, body)
 }
 
 func withDefaults(req *Request, body map[string]interface{}) map[string]interface{} {
