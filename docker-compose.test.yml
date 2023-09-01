@@ -16,7 +16,7 @@ services:
       - .:/go/src/app
 
   search_service_gosec:
-    image: securego/gosec:2.16.0
+    image: securego/gosec:2.17.0
     volumes:
       - .:/go/src/app
     working_dir: /go/src/app
