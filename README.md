@@ -57,9 +57,9 @@ Run `make docs` or `make swagger-up` to view swagger docs at http://localhost:83
 
 #### Updating swagger docs
 
-Run `make swagger-generate` to update the swagger.yml file
+Run `make swagger-generate` to update the [docs/openapi/openapi.yml](docs/openapi/openapi.yml) file
 
-The search service uses [Go Swagger](https://goswagger.io/) to generate the ./swagger.yml file from annotations in the code itself. See ./main.go for examples. [Go Swagger](https://goswagger.io/) is based on [Swagger 2.0](https://swagger.io/docs/specification/2-0/basic-structure/). Be careful not to confuse it with OpenAPI v3.
+The search service uses [Go Swagger](https://goswagger.io/) to generate the specification file from annotations in the code itself. See [main.go](main.go) for examples. [Go Swagger](https://goswagger.io/) is based on [Swagger 2.0](https://swagger.io/docs/specification/2-0/basic-structure/). Be careful not to confuse it with OpenAPI v3.
 
 Another gotcha... Make sure annotations are written with 2 space tabs in order for the parser to work correctly!
 
