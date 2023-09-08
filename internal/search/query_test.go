@@ -4,6 +4,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/ministryofjustice/opg-search-service/internal/firm"
+	"github.com/ministryofjustice/opg-search-service/internal/person"
+	"github.com/ministryofjustice/opg-search-service/internal/poadraftapplication"
 )
 
 func TestPrepareQueryForDraftApplication(t *testing.T) {
@@ -12,7 +16,7 @@ func TestPrepareQueryForDraftApplication(t *testing.T) {
 		From: 123,
 	}
 
-	body := PrepareQueryForDraftApplication(req)
+	indices, body := PrepareQueryForDraftApplication(req)
 
 	assert.Equal(t, map[string]interface{}{
 		"query": map[string]interface{}{
@@ -39,6 +43,8 @@ func TestPrepareQueryForDraftApplication(t *testing.T) {
 		"post_filter": map[string]interface{}{"bool": map[string]interface{}{"should": []interface{}{}}},
 		"from":        123,
 	}, body)
+
+	assert.Equal(t, []string{poadraftapplication.AliasName}, indices)
 }
 
 func TestPrepareQueryForFirm(t *testing.T) {
@@ -47,7 +53,7 @@ func TestPrepareQueryForFirm(t *testing.T) {
 		From: 123,
 	}
 
-	body := PrepareQueryForFirm(req)
+	indices, body := PrepareQueryForFirm(req)
 
 	assert.Equal(t, map[string]interface{}{
 		"query": map[string]interface{}{
@@ -67,6 +73,8 @@ func TestPrepareQueryForFirm(t *testing.T) {
 		"post_filter": map[string]interface{}{"bool": map[string]interface{}{"should": []interface{}{}}},
 		"from":        123,
 	}, body)
+
+	assert.Equal(t, []string{firm.AliasName}, indices)
 }
 
 func TestPrepareQueryForFirmWithOptions(t *testing.T) {
@@ -77,7 +85,7 @@ func TestPrepareQueryForFirmWithOptions(t *testing.T) {
 		PersonTypes: []string{"deputy", "donor"},
 	}
 
-	body := PrepareQueryForFirm(req)
+	indices, body := PrepareQueryForFirm(req)
 
 	assert.Equal(t, map[string]interface{}{
 		"query": map[string]interface{}{
@@ -101,6 +109,8 @@ func TestPrepareQueryForFirmWithOptions(t *testing.T) {
 		"from": 123,
 		"size": 10,
 	}, body)
+
+	assert.Equal(t, []string{firm.AliasName}, indices)
 }
 
 func TestPrepareQueryForPerson(t *testing.T) {
@@ -109,7 +119,7 @@ func TestPrepareQueryForPerson(t *testing.T) {
 		From: 123,
 	}
 
-	body := PrepareQueryForPerson(req)
+	indices, body := PrepareQueryForPerson(req)
 
 	assert.Equal(t, map[string]interface{}{
 		"query": map[string]interface{}{
@@ -137,6 +147,8 @@ func TestPrepareQueryForPerson(t *testing.T) {
 		"post_filter": map[string]interface{}{"bool": map[string]interface{}{"should": []interface{}{}}},
 		"from":        123,
 	}, body)
+
+	assert.Equal(t, []string{person.AliasName}, indices)
 }
 
 func TestPrepareQueryForPersonWithOptions(t *testing.T) {
@@ -147,7 +159,7 @@ func TestPrepareQueryForPersonWithOptions(t *testing.T) {
 		PersonTypes: []string{"deputy", "donor"},
 	}
 
-	body := PrepareQueryForPerson(req)
+	indices, body := PrepareQueryForPerson(req)
 
 	assert.Equal(t, map[string]interface{}{
 		"query": map[string]interface{}{
@@ -179,6 +191,8 @@ func TestPrepareQueryForPersonWithOptions(t *testing.T) {
 		"from": 123,
 		"size": 10,
 	}, body)
+
+	assert.Equal(t, []string{person.AliasName}, indices)
 }
 
 func TestPrepareQueryForPersonAlreadyPrepared(t *testing.T) {
@@ -188,39 +202,13 @@ func TestPrepareQueryForPersonAlreadyPrepared(t *testing.T) {
 		},
 	}
 
-	body := PrepareQueryForPerson(req)
+	indices, body := PrepareQueryForPerson(req)
 
 	assert.Equal(t, map[string]interface{}{
 		"query": "some prepared query",
 	}, body)
-}
 
-func TestPrepareQueryForAll(t *testing.T) {
-	req := &Request{
-		Term: "apples",
-		From: 123,
-	}
-
-	body := PrepareQueryForAll(req)
-
-	assert.Equal(t, map[string]interface{}{
-		"query": map[string]interface{}{
-			"multi_match": map[string]interface{}{
-				"query":  "apples",
-				"fields": []string{"firmName", "firmNumber", "caseRecNumber", "searchable", "searchable"},
-			},
-		},
-		"aggs": map[string]interface{}{
-			"personType": map[string]interface{}{
-				"terms": map[string]interface{}{
-					"field": "personType",
-					"size":  "20",
-				},
-			},
-		},
-		"post_filter": map[string]interface{}{"bool": map[string]interface{}{"should": []interface{}{}}},
-		"from":        123,
-	}, body)
+	assert.Equal(t, []string{person.AliasName}, indices)
 }
 
 func TestPrepareQueryForDeputy(t *testing.T) {
@@ -229,7 +217,7 @@ func TestPrepareQueryForDeputy(t *testing.T) {
 		From: 9,
 	}
 
-	body := PrepareQueryForDeputy(req)
+	indices, body := PrepareQueryForDeputy(req)
 
 	assert.Equal(t, map[string]interface{}{
 		"query": map[string]interface{}{
@@ -256,6 +244,38 @@ func TestPrepareQueryForDeputy(t *testing.T) {
 		"post_filter": map[string]interface{}{"bool": map[string]interface{}{"should": []interface{}{}}},
 		"from":        9,
 	}, body)
+
+	assert.Equal(t, []string{person.AliasName}, indices)
+}
+
+func TestPrepareQueryForAll(t *testing.T) {
+	req := &Request{
+		Term: "apples",
+		From: 123,
+	}
+
+	indices, body := PrepareQueryForAll(req)
+
+	assert.Equal(t, map[string]interface{}{
+		"query": map[string]interface{}{
+			"multi_match": map[string]interface{}{
+				"query":  "apples",
+				"fields": []string{"firmName", "firmNumber", "caseRecNumber", "searchable"},
+			},
+		},
+		"aggs": map[string]interface{}{
+			"personType": map[string]interface{}{
+				"terms": map[string]interface{}{
+					"field": "personType",
+					"size":  "20",
+				},
+			},
+		},
+		"post_filter": map[string]interface{}{"bool": map[string]interface{}{"should": []interface{}{}}},
+		"from":        123,
+	}, body)
+
+	assert.Equal(t, []string{firm.AliasName, person.AliasName, poadraftapplication.AliasName}, indices)
 }
 
 func TestPrepareQueryForAllWithOptions(t *testing.T) {
@@ -264,15 +284,16 @@ func TestPrepareQueryForAllWithOptions(t *testing.T) {
 		From:        123,
 		Size:        10,
 		PersonTypes: []string{"deputy", "donor"},
+		Indices:     []string{"firm", "person"},
 	}
 
-	body := PrepareQueryForAll(req)
+	indices, body := PrepareQueryForAll(req)
 
 	assert.Equal(t, map[string]interface{}{
 		"query": map[string]interface{}{
 			"multi_match": map[string]interface{}{
 				"query":  "apples",
-				"fields": []string{"firmName", "firmNumber", "caseRecNumber", "searchable", "searchable"},
+				"fields": []string{"firmName", "firmNumber", "caseRecNumber", "searchable"},
 			},
 		},
 		"aggs": map[string]interface{}{
@@ -290,4 +311,6 @@ func TestPrepareQueryForAllWithOptions(t *testing.T) {
 		"from": 123,
 		"size": 10,
 	}, body)
+
+	assert.Equal(t, []string{firm.AliasName, person.AliasName}, indices)
 }

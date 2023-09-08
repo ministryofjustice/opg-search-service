@@ -22,8 +22,8 @@ type mockPrepareQuery struct {
 	mock.Mock
 }
 
-func (m *mockPrepareQuery) Fn(req *Request) map[string]interface{} {
-	return m.Called(req).Get(0).(map[string]interface{})
+func (m *mockPrepareQuery) Fn(req *Request) ([]string, map[string]interface{}) {
+	return []string{}, m.Called(req).Get(0).(map[string]interface{})
 }
 
 type SearchHandlerTestSuite struct {
@@ -40,7 +40,7 @@ func (suite *SearchHandlerTestSuite) SetupTest() {
 	suite.logger, _ = test.NewNullLogger()
 	suite.esClient = new(elasticsearch.MockESClient)
 	suite.prepareQuery = &mockPrepareQuery{}
-	suite.handler = NewHandler(suite.logger, suite.esClient, []string{"whatever"}, suite.prepareQuery.Fn)
+	suite.handler = NewHandler(suite.logger, suite.esClient, suite.prepareQuery.Fn)
 	suite.recorder = httptest.NewRecorder()
 }
 
@@ -158,7 +158,7 @@ func (suite *SearchHandlerTestSuite) Test_SearchWithAllParameters() {
 	}
 
 	suite.esClient.
-		On("Search", mock.Anything, []string{"whatever"}, searchBody).
+		On("Search", mock.Anything, []string{}, searchBody).
 		Return(result, nil)
 
 	suite.ServeRequest(http.MethodPost, "", reqBody)

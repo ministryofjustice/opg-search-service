@@ -16,20 +16,18 @@ type SearchClient interface {
 	Search(ctx context.Context, indices []string, requestBody map[string]interface{}) (*elasticsearch.SearchResult, error)
 }
 
-type PrepareQuery func(*Request) map[string]interface{}
+type PrepareQuery func(*Request) ([]string, map[string]interface{})
 
 type Handler struct {
 	logger       *logrus.Logger
 	client       SearchClient
-	indices      []string
 	prepareQuery PrepareQuery
 }
 
-func NewHandler(logger *logrus.Logger, client SearchClient, indices []string, prepareQuery PrepareQuery) *Handler {
+func NewHandler(logger *logrus.Logger, client SearchClient, prepareQuery PrepareQuery) *Handler {
 	return &Handler{
 		logger:       logger,
 		client:       client,
-		indices:      indices,
 		prepareQuery: prepareQuery,
 	}
 }
@@ -44,7 +42,9 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := h.client.Search(r.Context(), h.indices, h.prepareQuery(req))
+	indices, requestBody := h.prepareQuery(req)
+
+	result, err := h.client.Search(r.Context(), indices, requestBody)
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
 			response.WriteJSONError(w, "request", "search request was cancelled", 499)
