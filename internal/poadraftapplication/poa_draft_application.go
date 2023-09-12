@@ -11,13 +11,14 @@ import (
 const AliasName = "poadraftapplication"
 
 type DraftApplicationDonor struct {
-	Name string `json:"name"`
-	Dob string `json:"dob"`
-	Postcode string `json:"postcode"`
+	FirstNames string `json:"firstnames"`
+	LastName   string `json:"lastname"`
+	Dob        string `json:"dob"`
+	Postcode   string `json:"postcode"`
 }
 
 type DraftApplication struct {
-	UID string `json:"uId"`
+	UID   string                `json:"uId"`
 	Donor DraftApplicationDonor `json:"donor"`
 }
 
@@ -30,7 +31,7 @@ func (d DraftApplication) Validate() []response.Error {
 
 	if len(d.UID) == 0 {
 		errs = append(errs, response.Error{
-			Name: "uId",
+			Name:        "uId",
 			Description: "field is empty",
 		})
 	}
@@ -44,25 +45,25 @@ func IndexConfig() (name string, config []byte, err error) {
 
 	draftApplicationConfig := map[string]interface{}{
 		"settings": map[string]interface{}{
-			"number_of_shards": 1,
+			"number_of_shards":   1,
 			"number_of_replicas": 1,
-			"refresh_interval": "1s",
+			"refresh_interval":   "1s",
 			"analysis": map[string]interface{}{
 				"filter": map[string]interface{}{
 					"whitespace_remove": map[string]interface{}{
-						"type": "pattern_replace",
-						"pattern": " ",
+						"type":        "pattern_replace",
+						"pattern":     " ",
 						"replacement": "",
 					},
 				},
 				"analyzer": map[string]interface{}{
 					"default": map[string]interface{}{
 						"tokenizer": "whitespace",
-						"filter": []string{"asciifolding", "lowercase"},
+						"filter":    []string{"asciifolding", "lowercase"},
 					},
 					"no_space_analyzer": map[string]interface{}{
 						"tokenizer": "keyword",
-						"filter": []string{"whitespace_remove", "lowercase"},
+						"filter":    []string{"whitespace_remove", "lowercase"},
 					},
 				},
 			},
@@ -70,15 +71,16 @@ func IndexConfig() (name string, config []byte, err error) {
 		"mappings": map[string]interface{}{
 			"properties": map[string]interface{}{
 				"searchable": textField,
-				"uId": searchableTextField,
+				"uId":        searchableTextField,
 				"donor": map[string]interface{}{
 					"properties": map[string]interface{}{
-						"name": searchableTextField,
-						"dob": searchableTextField,
+						"firstnames": searchableTextField,
+						"lastname":   searchableTextField,
+						"dob":        searchableTextField,
 						"postcode": map[string]interface{}{
-							"type": "text",
+							"type":     "text",
 							"analyzer": "no_space_analyzer",
-							"copy_to": "searchable",
+							"copy_to":  "searchable",
 						},
 					},
 				},
