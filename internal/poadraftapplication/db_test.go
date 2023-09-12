@@ -49,9 +49,9 @@ func TestGetIDRange(t *testing.T) {
 	assert.Nil(err)
 
 	_, err = conn.Exec(ctx, `
-		INSERT INTO poa.draft_applications (id, lpa_id, donorname, donordob, donorpostcode)
-		VALUES (1, 101, 'TLane Araxa', '12/12/2000', 'X11 11X'),
-		(2, 102, 'MMosa SepIch', '09/09/1999', 'Y11 11Y');
+		INSERT INTO poa.draft_applications (id, lpa_id, donorfirstnames, donorlastname, donordob, donorpostcode)
+		VALUES (1, 101, 'TLane', 'Araxa', '12/12/2000', 'X11 11X'),
+		(2, 102, 'MMosa', 'SepIch', '09/09/1999', 'Y11 11Y');
 	`)
 	assert.Nil(err)
 
@@ -91,12 +91,11 @@ func TestQueryByID(t *testing.T) {
 	assert.Nil(err)
 
 	_, err = conn.Exec(ctx, `
-		INSERT INTO poa.draft_applications (id, lpa_id, donorname, donordob, donorpostcode)
-		VALUES (1, 101, 'TLane Araxa', '12/12/2000', 'X11 11X'),
-		(2, 102, 'MMosa SepIch', '09/09/1999', 'Y11 11Y');
+		INSERT INTO poa.draft_applications (id, lpa_id, donorfirstnames, donorlastname, donordob, donorpostcode)
+		VALUES (1, 101, 'TLane', 'Araxa', '12/12/2000', 'X11 11X'),
+		(2, 102, 'MMosa', 'SepIch', '09/09/1999', 'Y11 11Y');
 	`)
 	assert.Nil(err)
-
 
 	resultsCh := make(chan index.Indexable)
 	db := DB{conn: conn}
@@ -113,9 +112,10 @@ func TestQueryByID(t *testing.T) {
 	assert.Equal(DraftApplication{
 		UID: firstUid,
 		Donor: DraftApplicationDonor{
-			Name: "TLane Araxa",
-			Dob: "12/12/2000",
-			Postcode: "X11 11X",
+			FirstNames: "TLane",
+			LastName:   "Araxa",
+			Dob:        "12/12/2000",
+			Postcode:   "X11 11X",
 		},
 	}, first)
 
@@ -126,9 +126,10 @@ func TestQueryByID(t *testing.T) {
 	assert.Equal(DraftApplication{
 		UID: secondUid,
 		Donor: DraftApplicationDonor{
-			Name: "MMosa SepIch",
-			Dob: "09/09/1999",
-			Postcode: "Y11 11Y",
+			FirstNames: "MMosa",
+			LastName:   "SepIch",
+			Dob:        "09/09/1999",
+			Postcode:   "Y11 11Y",
 		},
 	}, second)
 

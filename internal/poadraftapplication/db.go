@@ -14,11 +14,12 @@ type DB struct {
 }
 
 type rowResult struct {
-	ID int
-	UID string
-	donorname string
-	donorpostcode string
-	donordob string
+	ID              int
+	UID             string
+	donorfirstnames string
+	donorlastname   string
+	donorpostcode   string
+	donordob        string
 }
 
 func NewDB(conn *pgx.Conn) *DB {
@@ -30,7 +31,7 @@ func (db *DB) QueryIDRange(ctx context.Context) (min int, max int, err error) {
 }
 
 func (db *DB) QueryByID(ctx context.Context, results chan<- index.Indexable, from, to int) error {
-	query := `SELECT COALESCE(c.caserecnumber, ''), COALESCE(a.donorname, ''), coalesce(to_char(a.donordob, 'DD/MM/YYYY'), ''), COALESCE(a.donorpostcode, '')
+	query := `SELECT COALESCE(c.caserecnumber, ''), COALESCE(a.donorfirstnames, ''), COALESCE(a.donorlastname, ''), coalesce(to_char(a.donordob, 'DD/MM/YYYY'), ''), COALESCE(a.donorpostcode, '')
 FROM poa.draft_applications a
 INNER JOIN cases c ON c.id = a.lpa_id
 WHERE a.id >= $1 AND a.id <= $2
@@ -43,7 +44,7 @@ ORDER BY a.id`
 
 	for rows.Next() {
 		var r rowResult
-		err = rows.Scan(&r.UID, &r.donorname, &r.donordob, &r.donorpostcode)
+		err = rows.Scan(&r.UID, &r.donorfirstnames, &r.donorlastname, &r.donordob, &r.donorpostcode)
 
 		if err != nil {
 			break
@@ -52,9 +53,10 @@ ORDER BY a.id`
 		d := DraftApplication{
 			UID: r.UID,
 			Donor: DraftApplicationDonor{
-				Name: r.donorname,
-				Dob: r.donordob,
-				Postcode: r.donorpostcode,
+				FirstNames: r.donorfirstnames,
+				LastName:   r.donorlastname,
+				Dob:        r.donordob,
+				Postcode:   r.donorpostcode,
 			},
 		}
 
