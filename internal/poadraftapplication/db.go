@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/jackc/pgx/v4"
 	"github.com/ministryofjustice/opg-search-service/internal/index"
 )
 
