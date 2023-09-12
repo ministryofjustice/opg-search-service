@@ -321,7 +321,8 @@ CREATE TABLE poa.draft_applications
 (
     id integer NOT NULL,
     lpa_id integer NOT NULL,
-    donorname character varying(255) NOT NULL,
+    donorfirstnames character varying(255) NOT NULL,
+    donorlastname character varying(255) NOT NULL,
     donordob TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL,
     donorpostcode character varying(255) NOT NULL,
     CONSTRAINT draft_applications_pkey PRIMARY KEY (id)
