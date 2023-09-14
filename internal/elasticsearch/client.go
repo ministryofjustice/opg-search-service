@@ -14,7 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 	"github.com/sirupsen/logrus"
 )
@@ -75,17 +76,34 @@ type DeleteResult struct {
 }
 
 func NewClient(httpClient HTTPClient, logger *logrus.Logger) (*Client, error) {
+	region := os.Getenv("AWS_REGION")
+	if region == "" {
+		region = "eu-west-1"
+	}
+
+	sess, err := session.NewSession(&aws.Config{Region: aws.String(region)})
+	if err != nil {
+		panic(err)
+	}
+
 	client := &Client{
 		httpClient: httpClient,
 		logger:     logger,
 		domain:     os.Getenv("AWS_ELASTICSEARCH_ENDPOINT"),
-		region:     os.Getenv("AWS_REGION"),
-		service:    "es",
-		signer:     v4.NewSigner(credentials.NewEnvCredentials()),
+		region:     region,
+		service:    os.Getenv("AWS_SEARCH_PROVIDER"),
+		signer:     v4.NewSigner(sess.Config.Credentials),
 	}
+
+	client.signer.Logger = aws.NewDefaultLogger()
+	client.signer.Debug = aws.LogDebug
 
 	if client.region == "" {
 		client.region = "eu-west-1"
+	}
+
+	if client.service == "" {
+		client.service = "es"
 	}
 
 	return client, nil
@@ -96,13 +114,23 @@ func (c *Client) doRequest(ctx context.Context, method, endpoint string, body io
 	if err != nil {
 		return nil, err
 	}
-	if contentType != "" {
-		req.Header.Add("Content-Type", contentType)
+	// if contentType != "" {
+	// 	req.Header.Add("Content-Type", contentType)
+	// }
+
+	_, err = c.signer.Sign(req, body, c.service, c.region, time.Now())
+	if err != nil {
+		panic(err)
 	}
 
-	_, _ = c.signer.Sign(req, body, c.service, c.region, time.Now())
+	response, err := c.httpClient.Do(req)
+	c.logger.Warn(response)
 
-	return c.httpClient.Do(req)
+	buf := new(strings.Builder)
+	_, _ = io.Copy(buf, response.Body)
+	c.logger.Warn(buf.String())
+
+	return response, err
 }
 
 type bulkResponse struct {
@@ -342,7 +370,7 @@ func (c *Client) createIndex(ctx context.Context, name string, config []byte) er
 
 	resp, err := c.doRequest(ctx, http.MethodPut, name, bytes.NewReader(config), "application/json")
 	if err != nil {
-		return err
+		panic(err)
 	}
 	defer resp.Body.Close() //#nosec G307 false positive
 
