@@ -80,12 +80,16 @@ func NewClient(httpClient HTTPClient, logger *logrus.Logger) (*Client, error) {
 		logger:     logger,
 		domain:     os.Getenv("AWS_ELASTICSEARCH_ENDPOINT"),
 		region:     os.Getenv("AWS_REGION"),
-		service:    "es",
+		service:    os.Getenv("AWS_SEARCH_PROVIDER"),
 		signer:     v4.NewSigner(credentials.NewEnvCredentials()),
 	}
 
 	if client.region == "" {
 		client.region = "eu-west-1"
+	}
+
+	if client.service == "" {
+		client.service = "es"
 	}
 
 	return client, nil
