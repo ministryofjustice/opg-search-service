@@ -80,12 +80,16 @@ func NewClient(httpClient HTTPClient, logger *logrus.Logger) (*Client, error) {
 		logger:     logger,
 		domain:     os.Getenv("AWS_ELASTICSEARCH_ENDPOINT"),
 		region:     os.Getenv("AWS_REGION"),
-		service:    "es",
+		service:    os.Getenv("AWS_SEARCH_PROVIDER"),
 		signer:     v4.NewSigner(credentials.NewEnvCredentials()),
 	}
 
 	if client.region == "" {
 		client.region = "eu-west-1"
+	}
+
+	if client.service == "" {
+		client.service = "es"
 	}
 
 	return client, nil
@@ -98,6 +102,9 @@ func (c *Client) doRequest(ctx context.Context, method, endpoint string, body io
 	}
 	if contentType != "" {
 		req.Header.Add("Content-Type", contentType)
+	}
+	if body != nil {
+		req.Header.Add("x-amz-content-sha256", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
 	}
 
 	_, _ = c.signer.Sign(req, body, c.service, c.region, time.Now())
