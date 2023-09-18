@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 	"github.com/sirupsen/logrus"
@@ -80,12 +81,19 @@ func NewClient(httpClient HTTPClient, logger *logrus.Logger) (*Client, error) {
 		logger:     logger,
 		domain:     os.Getenv("AWS_ELASTICSEARCH_ENDPOINT"),
 		region:     os.Getenv("AWS_REGION"),
-		service:    "es",
+		service:    os.Getenv("AWS_SEARCH_PROVIDER"),
 		signer:     v4.NewSigner(credentials.NewEnvCredentials()),
 	}
 
+	client.signer.Logger = aws.NewDefaultLogger()
+	client.signer.Debug = aws.LogDebug
+
 	if client.region == "" {
 		client.region = "eu-west-1"
+	}
+
+	if client.service == "" {
+		client.service = "es"
 	}
 
 	return client, nil
@@ -100,9 +108,19 @@ func (c *Client) doRequest(ctx context.Context, method, endpoint string, body io
 		req.Header.Add("Content-Type", contentType)
 	}
 
-	_, _ = c.signer.Sign(req, body, c.service, c.region, time.Now())
+	_, err = c.signer.Sign(req, body, "aoss", c.region, time.Now())
+	if err != nil {
+		panic(err)
+	}
 
-	return c.httpClient.Do(req)
+	response, err := c.httpClient.Do(req)
+	c.logger.Warn(response)
+
+	buf := new(strings.Builder)
+	_, _ = io.Copy(buf, response.Body)
+	c.logger.Warn(buf.String())
+
+	return response, err
 }
 
 type bulkResponse struct {
