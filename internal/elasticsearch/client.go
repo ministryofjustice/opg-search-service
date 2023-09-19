@@ -80,6 +80,7 @@ func NewClient(httpClient HTTPClient, logger *logrus.Logger) (*Client, error) {
 	if region == "" {
 		region = "eu-west-1"
 	}
+	
 
 	sess, err := session.NewSession(&aws.Config{Region: aws.String(region)})
 	if err != nil {
