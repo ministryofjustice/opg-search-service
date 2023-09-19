@@ -127,6 +127,11 @@ func (c *Client) doRequest(ctx context.Context, method, endpoint string, body io
 	c.logger.Warn(req)
 	response, err := c.httpClient.Do(req)
 	c.logger.Warn(response)
+	if response.Body != nil {
+		buf := new(strings.Builder)
+		_, _ = io.Copy(buf, response.Body)
+		c.logger.Warn(buf.String())
+	}
 
 	return response, err
 }
