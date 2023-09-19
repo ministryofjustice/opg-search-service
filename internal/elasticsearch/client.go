@@ -416,7 +416,7 @@ func (c *Client) ResolveAlias(ctx context.Context, name string) (string, error) 
 }
 
 func (c *Client) CreateAlias(ctx context.Context, alias, index string) error {
-	resp, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("%s_alias/%s", index, alias), nil, "")
+	resp, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("%s/_alias/%s", index, alias), nil, "")
 	if err != nil {
 		return err
 	}
