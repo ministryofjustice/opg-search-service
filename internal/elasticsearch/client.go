@@ -14,7 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 	"github.com/sirupsen/logrus"
 )
@@ -75,17 +76,35 @@ type DeleteResult struct {
 }
 
 func NewClient(httpClient HTTPClient, logger *logrus.Logger) (*Client, error) {
+	region := os.Getenv("AWS_REGION")
+	if region == "" {
+		region = "eu-west-1"
+	}
+
+
+	sess, err := session.NewSession(&aws.Config{Region: aws.String(region)})
+	if err != nil {
+		panic(err)
+	}
+
 	client := &Client{
 		httpClient: httpClient,
 		logger:     logger,
 		domain:     os.Getenv("AWS_ELASTICSEARCH_ENDPOINT"),
-		region:     os.Getenv("AWS_REGION"),
-		service:    "es",
-		signer:     v4.NewSigner(credentials.NewEnvCredentials()),
+		region:     region,
+		service:    os.Getenv("AWS_SEARCH_PROVIDER"),
+		signer:     v4.NewSigner(sess.Config.Credentials),
 	}
+
+	client.signer.Logger = aws.NewDefaultLogger()
+	client.signer.Debug = aws.LogDebug
 
 	if client.region == "" {
 		client.region = "eu-west-1"
+	}
+
+	if client.service == "" {
+		client.service = "es"
 	}
 
 	return client, nil
@@ -100,9 +119,21 @@ func (c *Client) doRequest(ctx context.Context, method, endpoint string, body io
 		req.Header.Add("Content-Type", contentType)
 	}
 
-	_, _ = c.signer.Sign(req, body, c.service, c.region, time.Now())
+	_, err = c.signer.Sign(req, body, c.service, c.region, time.Now())
+	if err != nil {
+		panic(err)
+	}
 
-	return c.httpClient.Do(req)
+	c.logger.Warn(req)
+	response, err := c.httpClient.Do(req)
+	c.logger.Warn(response)
+	if response.Body != nil {
+		buf := new(strings.Builder)
+		_, _ = io.Copy(buf, response.Body)
+		c.logger.Warn(buf.String())
+	}
+
+	return response, err
 }
 
 type bulkResponse struct {
@@ -367,7 +398,7 @@ func (c *Client) DeleteIndex(ctx context.Context, name string) error {
 }
 
 func (c *Client) ResolveAlias(ctx context.Context, name string) (string, error) {
-	resp, err := c.doRequest(ctx, http.MethodGet, "/_alias/"+name, nil, "")
+	resp, err := c.doRequest(ctx, http.MethodGet, "_alias/"+name, nil, "")
 	if err != nil {
 		return "", err
 	}
