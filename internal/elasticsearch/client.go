@@ -116,7 +116,7 @@ func (c *Client) doRequest(ctx context.Context, method, endpoint string, body io
 		return nil, err
 	}
 	if contentType != "" {
-		req.Header.Add("Content-Type", contentType)
+		req.Header.Add("content-type", contentType)
 	}
 
 	_, err = c.signer.Sign(req, body, c.service, c.region, time.Now())
@@ -125,6 +125,9 @@ func (c *Client) doRequest(ctx context.Context, method, endpoint string, body io
 	}
 
 	c.logger.Warn(req)
+	if body != nil {
+		c.logger.Warn(body)
+	}
 	response, err := c.httpClient.Do(req)
 	c.logger.Warn(response)
 
