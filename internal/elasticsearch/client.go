@@ -80,7 +80,7 @@ func NewClient(httpClient HTTPClient, logger *logrus.Logger) (*Client, error) {
 	if region == "" {
 		region = "eu-west-1"
 	}
-	
+
 
 	sess, err := session.NewSession(&aws.Config{Region: aws.String(region)})
 	if err != nil {
@@ -397,7 +397,7 @@ func (c *Client) DeleteIndex(ctx context.Context, name string) error {
 }
 
 func (c *Client) ResolveAlias(ctx context.Context, name string) (string, error) {
-	resp, err := c.doRequest(ctx, http.MethodGet, "/_alias/"+name, nil, "")
+	resp, err := c.doRequest(ctx, http.MethodGet, "_alias/"+name, nil, "")
 	if err != nil {
 		return "", err
 	}
@@ -420,7 +420,7 @@ func (c *Client) ResolveAlias(ctx context.Context, name string) (string, error) 
 }
 
 func (c *Client) CreateAlias(ctx context.Context, alias, index string) error {
-	resp, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("%s/_alias/%s", index, alias), nil, "")
+	resp, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("%s_alias/%s", index, alias), nil, "")
 	if err != nil {
 		return err
 	}
