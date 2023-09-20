@@ -32,7 +32,7 @@ services:
       retries: 8
 
   postgres:
-    image: postgres:15.3
+    image: postgres:16.0
     command: postgres
     environment:
       POSTGRES_USER: searchservice
