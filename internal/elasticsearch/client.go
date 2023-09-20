@@ -113,7 +113,7 @@ func (c *Client) doRequest(ctx context.Context, method, endpoint string, body io
 
 	_, err = c.signer.Sign(req, body, c.service, c.region, time.Now())
 	if err != nil {
-		panic(err)
+		return nil, err 
 	}
 
 	return c.httpClient.Do(req)
