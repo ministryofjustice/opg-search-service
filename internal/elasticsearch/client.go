@@ -81,10 +81,7 @@ func NewClient(httpClient HTTPClient, logger *logrus.Logger) (*Client, error) {
 		region = "eu-west-1"
 	}
 
-	sess, err := session.NewSession(&aws.Config{Region: aws.String(region)})
-	if err != nil {
-		panic(err)
-	}
+	sess := session.Must(session.NewSession(&aws.Config{Region: aws.String(region)}))
 
 	client := &Client{
 		httpClient: httpClient,
