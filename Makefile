@@ -1,43 +1,39 @@
-all: test gosec build swagger-generate scan
+all: go-lint gosec unit-test build scan swagger-generate down
 
-.PHONY: test test-up test-run test-down build go-test gosec swagger-generate swagger-up swagger-down docs
+.PHONY: build unit-test gosec swagger-generate swagger-up swagger-down docs
 
-test: test-up test-run test-down
+up:
+	docker compose up -d --build search-service
 
-test-up:
-	docker compose --project-name search-service-test -f docker-compose.yml -f docker-compose.test.yml up -d postgres
-	docker compose --project-name search-service-test run --rm wait-for-it -address=postgres:5432 --timeout=30
+go-lint:
+	docker compose run --rm go-lint
 
-test-run:
-	docker compose --project-name search-service-test -f docker-compose.yml -f docker-compose.test.yml run --rm search_service_test make go-test
+test-results:
+	mkdir -p -m 0777 test-results .gocache .trivy-cache
 
-test-down:
-	docker compose --project-name search-service-test down
+setup-directories: test-results
 
 build:
-	docker compose build search_service
+	docker compose build search-service
 
-scan:
-	trivy image 311462405659.dkr.ecr.eu-west-1.amazonaws.com/search_service:latest
+unit-test: setup-directories
+	docker compose up -d --wait postgres localstack
+	docker compose run --rm test-runner
+	docker compose down postgres localstack
 
-go-test:
-	go mod download
-	gotestsum --format short-verbose --jsonfile tests.json -- -p 1 -coverprofile=./cover.out ./...
+scan: setup-directories
+	docker compose run --rm trivy image --format table --exit-code 0 311462405659.dkr.ecr.eu-west-1.amazonaws.com/search_service:latest
+	docker compose run --rm trivy image --format sarif --output /test-results/trivy.sarif --exit-code 1 311462405659.dkr.ecr.eu-west-1.amazonaws.com/search_service:latest
 
 gosec: # Run Golang Security Checker
-	docker compose --project-name search-service-gosec -f docker-compose.yml -f docker-compose.test.yml run --rm search_service_gosec
+	docker compose run --rm gosec
 
 swagger-generate: # Generate API swagger docs from inline code annotations using Go Swagger (https://goswagger.io/)
-	docker compose --project-name search-service-docs-generate \
-    -f docker-compose.yml run --rm swagger-generate
-	docker compose --project-name search-service-docs-generate down
+	docker compose run --rm swagger-generate
 
-swagger-up: # Serve swagger API docs on port 8383
-	docker compose --project-name search-service-docs \
-    -f docker-compose.yml up -d --force-recreate swagger-ui
+swagger-up docs: # Serve swagger API docs on port 8383
+	docker compose up -d --force-recreate swagger-ui
+	@echo "Swagger docs available on http://localhost:8383/"
 
-swagger-down:
-	docker compose --project-name search-service-docs down
-
-docs: # Alias for make swagger-up (Serve API swagger docs)
-	make swagger-up
+down:
+	docker compose down
