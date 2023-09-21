@@ -6,22 +6,17 @@
 
 ### Required Tools
 
-- Go 1.16
 - Docker with docker-compose
-
-### Optional Tools
-
-- [GoTestSum](https://github.com/gotestyourself/gotestsum) - `go test` runner with optimized output
 
 ### Development environment
 
-Use docker compose commands to build/start/stop the service locally e.g. `docker compose up --build` will rebuild and start the service.
+Use docker compose commands to build/start/stop the service locally e.g. `docker compose up --build` or `make up` will rebuild and start the service.
 
 By default the local URL is http://localhost:8000/services/search-service, where `/services/search-service` is configured by the `PATH_PREFIX` ENV variable.
 
 ### Tests
 
-Run `make test` to execute the test suites and output code coverage for each
+Run `make unit-test` to execute the test suites and output code coverage for each
 package. Most of the tests aren't dependent on external services, these can be
 run using `go test -short ./...`.
 
@@ -29,9 +24,15 @@ Run `make gosec` to execute the [Golang Security Checker](https://github.com/sec
 
 #### End-to-end tests
 
-End-to-end tests are executed as part of the `make test` command.
+End-to-end tests are executed as part of the `make unit-test` command.
 
-Generally they sit in `main_test.go`. The test suite will start up the search service in a go-routine to run tests against it, and therefore all ENV variables required for configuring the service have to be set prior to running the test suite. This is all automated with the `make test` command.
+Generally they sit in `main_test.go`. The test suite will start up the search service in a go-routine to run tests against it, and therefore all ENV variables required for configuring the service have to be set prior to running the test suite. This is all automated with the `make unit-test` command.
+
+## Formatting
+
+This project uses the standard Golang styleguide, and can be autoformatting by running `gofmt -s -w .`.
+To run the go linter run `make go-lint`.
+
 
 ## Changing the index definition
 
