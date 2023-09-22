@@ -110,7 +110,7 @@ func (c *Client) doRequest(ctx context.Context, method, endpoint string, body io
 
 	_, err = c.signer.Sign(req, body, c.service, c.region, time.Now())
 	if err != nil {
-		return nil, err 
+		return nil, err
 	}
 
 	return c.httpClient.Do(req)
@@ -359,7 +359,7 @@ func (c *Client) createIndex(ctx context.Context, name string, config []byte) er
 
 	if resp.StatusCode != http.StatusOK {
 		data, _ := io.ReadAll(resp.Body)
-		return errors.New(fmt.Sprintf(`index creation failed with status code %d and response: "%s"`, resp.StatusCode, string(data)))
+		return fmt.Errorf(`index creation failed with status code %d and response: "%s"`, resp.StatusCode, string(data))
 	}
 
 	return nil

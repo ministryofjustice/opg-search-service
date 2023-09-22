@@ -14,11 +14,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type authorisationError struct {
-	Error       string `json:"error"`
-	Description string `json:"error_description"`
-}
-
 type HashedEmail struct{}
 
 type Cacheable interface {

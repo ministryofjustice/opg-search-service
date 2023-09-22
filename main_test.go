@@ -436,7 +436,10 @@ func i64(i int) *int64 {
 
 func doRequest(authHeader, path string, data interface{}) (*http.Response, error) {
 	var buf bytes.Buffer
-	json.NewEncoder(&buf).Encode(data)
+	err := json.NewEncoder(&buf).Encode(data)
+	if err != nil {
+		return nil, err
+	}
 
 	req, err := http.NewRequest(http.MethodPost, "http://localhost:8000"+os.Getenv("PATH_PREFIX")+path, &buf)
 	if err != nil {
