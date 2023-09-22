@@ -63,8 +63,10 @@ func TestAll(t *testing.T) {
 		Return(nil)
 
 	bulkOp := elasticsearch.NewBulkOp("whatever")
-	bulkOp.Index("1", first)
-	bulkOp.Index("2", second)
+	err := bulkOp.Index("1", first)
+	assert.Nil(err)
+	err = bulkOp.Index("2", second)
+	assert.Nil(err)
 
 	client := &mockClient{}
 	client.
@@ -98,8 +100,10 @@ func TestByID(t *testing.T) {
 		Return(nil)
 
 	bulkOp := elasticsearch.NewBulkOp("whatever")
-	bulkOp.Index("1", first)
-	bulkOp.Index("2", second)
+	err := bulkOp.Index("1", first)
+	assert.Nil(err)
+	err = bulkOp.Index("2", second)
+	assert.Nil(err)
 
 	client := &mockClient{}
 	client.
@@ -135,8 +139,10 @@ func TestFromDate(t *testing.T) {
 		Return(nil)
 
 	bulkOp := elasticsearch.NewBulkOp("whatever")
-	bulkOp.Index("1", first)
-	bulkOp.Index("2", second)
+	err := bulkOp.Index("1", first)
+	assert.Nil(err)
+	err = bulkOp.Index("2", second)
+	assert.Nil(err)
 
 	client := &mockClient{}
 	client.

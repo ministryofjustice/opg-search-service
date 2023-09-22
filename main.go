@@ -43,8 +43,8 @@ func main() {
 	}
 
 	currentIndices := map[string][]byte{
-		personIndex: personConfig,
-		firmIndex: firmConfig,
+		personIndex:              personConfig,
+		firmIndex:                firmConfig,
 		poaDraftApplicationIndex: poaDraftApplicationConfig,
 	}
 
@@ -388,14 +388,21 @@ func main() {
 	}()
 
 	// Gracefully shutdown when signal received
-	c := make(chan os.Signal)
-	signal.Notify(c, os.Interrupt, os.Kill)
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
 
 	sig := <-c
 	l.Println("Received terminate, graceful shutdown", sig)
 
-	tc, _ := context.WithTimeout(context.Background(), 30*time.Second)
-	_ = s.Shutdown(tc)
+	tc, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer func() {
+		cancel()
+	}()
+
+	err = s.Shutdown(tc)
+	if err != nil {
+		l.Fatal(err)
+	}
 }
 
 func createIndexAndAlias(esClient *elasticsearch.Client, aliasName string, indexName string, indexConfig []byte, l *logrus.Logger) []string {

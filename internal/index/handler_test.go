@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"github.com/stretchr/testify/mock"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
-	"github.com/gorilla/mux"
+	"github.com/stretchr/testify/mock"
+
 	"github.com/ministryofjustice/opg-search-service/internal/elasticsearch"
 	"github.com/ministryofjustice/opg-search-service/internal/middleware"
 	"github.com/ministryofjustice/opg-search-service/internal/response"
@@ -24,7 +24,6 @@ type HandlerTestSuite struct {
 	logger            *logrus.Logger
 	esClient          *elasticsearch.MockESClient
 	handler           *Handler
-	router            *mux.Router
 	recorder          *httptest.ResponseRecorder
 	respBody          *string
 	parserValidatable Validatable
@@ -108,11 +107,15 @@ func (suite *HandlerTestSuite) Test_Index() {
 	reqBody := `{"whatevers":[{"id":13},{"id":14}]}`
 
 	firstOp := elasticsearch.NewBulkOp("whatever-test")
-	firstOp.Index("13", mockIndexable{id: "13"})
-	firstOp.Index("14", mockIndexable{id: "14"})
+	err := firstOp.Index("13", mockIndexable{id: "13"})
+	suite.Nil(err)
+	err = firstOp.Index("14", mockIndexable{id: "14"})
+	suite.Nil(err)
 	secondOp := elasticsearch.NewBulkOp("whatever-new")
-	secondOp.Index("13", mockIndexable{id: "13"})
-	secondOp.Index("14", mockIndexable{id: "14"})
+	err = secondOp.Index("13", mockIndexable{id: "13"})
+	suite.Nil(err)
+	err = secondOp.Index("14", mockIndexable{id: "14"})
+	suite.Nil(err)
 
 	suite.esClient.
 		On("DoBulk", mock.Anything, firstOp).

@@ -34,10 +34,6 @@ func (suite *DeleteHandlerTestSuite) SetupTest() {
 	suite.recorder = httptest.NewRecorder()
 }
 
-const (
-	varsKey = iota
-)
-
 func (suite *DeleteHandlerTestSuite) ServeRequest(method string, url string, vars map[string]string) {
 	req, err := http.NewRequest(method, url, strings.NewReader(""))
 	if err != nil {
