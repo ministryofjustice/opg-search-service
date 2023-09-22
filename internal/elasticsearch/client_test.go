@@ -99,7 +99,8 @@ func TestClient_DoBulkIndex(t *testing.T) {
 			)
 
 			op := NewBulkOp("this")
-			op.Index("1", map[string]string{"a": "b"})
+			err = op.Index("1", map[string]string{"a": "b"})
+			assert.Nil(err)
 
 			result, err := c.DoBulk(context.Background(), op)
 
@@ -168,7 +169,8 @@ func TestClient_DoBulkIndexWithRetry(t *testing.T) {
 		Once()
 
 	op := NewBulkOp("this")
-	op.Index("1", map[string]string{"a": "b"})
+	err = op.Index("1", map[string]string{"a": "b"})
+	assert.Nil(err)
 
 	result, err := c.DoBulk(context.Background(), op)
 
@@ -504,9 +506,12 @@ func TestClient_Search_InvalidESRequestBody(t *testing.T) {
 
 func TestBulkOp(t *testing.T) {
 	op := NewBulkOp("test")
-	op.Index("1", map[string]interface{}{"a": 1})
-	op.Index("2", map[string]interface{}{"b": "c"})
-	op.Index("3", map[string]interface{}{"d": false})
+	err := op.Index("1", map[string]interface{}{"a": 1})
+	assert.Nil(t, err)
+	err = op.Index("2", map[string]interface{}{"b": "c"})
+	assert.Nil(t, err)
+	err = op.Index("3", map[string]interface{}{"d": false})
+	assert.Nil(t, err)
 
 	expected := `{"index":{"_id":"1"}}
 {"a":1}
