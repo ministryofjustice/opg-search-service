@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/ministryofjustice/opg-go-common/env"
 	"github.com/ministryofjustice/opg-search-service/internal/cache"
 	"github.com/ministryofjustice/opg-search-service/internal/cmd"
 	"github.com/ministryofjustice/opg-search-service/internal/elasticsearch"
@@ -20,7 +21,50 @@ import (
 	"github.com/ministryofjustice/opg-search-service/internal/remove"
 	"github.com/ministryofjustice/opg-search-service/internal/search"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/contrib/detectors/aws/ecs"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/contrib/propagators/aws/xray"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/sdk/trace"
+	"google.golang.org/grpc"
 )
+
+func initTracerProvider(ctx context.Context, logger *logrus.Logger) func() {
+	resource, err := ecs.NewResourceDetector().Detect(ctx)
+	if err != nil {
+		logger.Fatal(err)
+	}
+
+	traceExporter, err := otlptracegrpc.New(ctx,
+		otlptracegrpc.WithInsecure(),
+		otlptracegrpc.WithEndpoint("0.0.0.0:4317"),
+		otlptracegrpc.WithDialOption(grpc.WithBlock()),
+	)
+	if err != nil {
+		logger.Fatal(err)
+	}
+
+	traceExporter.MarshalLog()
+
+	idg := xray.NewIDGenerator()
+	tp := trace.NewTracerProvider(
+		trace.WithResource(resource),
+		trace.WithSampler(trace.AlwaysSample()),
+		trace.WithBatcher(traceExporter),
+		trace.WithIDGenerator(idg),
+	)
+
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(xray.Propagator{})
+
+	return func() {
+		if err := tp.Shutdown(ctx); err != nil {
+			logger.Fatal(err)
+		}
+	}
+}
 
 func main() {
 	l := logrus.New()
@@ -50,7 +94,15 @@ func main() {
 
 	secretsCache := cache.New()
 
-	esClient, err := elasticsearch.NewClient(&http.Client{}, l)
+	if env.Get("TRACING_ENABLED", "0") == "1" {
+		shutdown := initTracerProvider(context.Background(), l)
+		defer shutdown()
+	}
+
+	httpClient := http.DefaultClient
+	httpClient.Transport = otelhttp.NewTransport(httpClient.Transport)
+
+	esClient, err := elasticsearch.NewClient(httpClient, l)
 	if err != nil {
 		l.Fatal(err)
 	}
@@ -70,6 +122,8 @@ func main() {
 
 	// Create new serveMux
 	sm := mux.NewRouter().PathPrefix(os.Getenv("PATH_PREFIX")).Subrouter()
+
+	sm.Use(otelmux.Middleware("search-server"))
 
 	// swagger:operation GET /health-check health-check
 	// Check if the service is up and running
