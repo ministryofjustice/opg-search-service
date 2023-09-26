@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"time"
 
+	"github.com/aws/aws-xray-sdk-go/xray"
 	"github.com/ministryofjustice/opg-search-service/internal/elasticsearch"
 	"github.com/ministryofjustice/opg-search-service/internal/response"
 	"github.com/sirupsen/logrus"
@@ -33,8 +33,6 @@ func NewHandler(logger *logrus.Logger, client SearchClient, prepareQuery Prepare
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	start := time.Now()
-
 	req, err := parseSearchRequest(r)
 	if err != nil {
 		h.logger.Println(err)
@@ -44,7 +42,10 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	indices, requestBody := h.prepareQuery(req)
 
+	_, subsegment := xray.BeginSubsegment(r.Context(), "do-search")
 	result, err := h.client.Search(r.Context(), indices, requestBody)
+	subsegment.Close(nil)
+
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
 			response.WriteJSONError(w, "request", "search request was cancelled", 499)
@@ -68,6 +69,4 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	jsonResp, _ := json.Marshal(resp)
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(jsonResp)
-
-	h.logger.Printf("Request took: %d", time.Since(start))
 }

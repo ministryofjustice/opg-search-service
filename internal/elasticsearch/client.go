@@ -99,6 +99,10 @@ func NewClient(httpClient HTTPClient, logger *logrus.Logger) (*Client, error) {
 	return client, nil
 }
 
+func (c *Client) SetHttpClient(httpClient HTTPClient) {
+	c.httpClient = httpClient
+}
+
 func (c *Client) doRequest(ctx context.Context, method, endpoint string, body io.ReadSeeker, contentType string) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx, method, c.domain+"/"+endpoint, body)
 	if err != nil {
