@@ -92,3 +92,13 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./.trivy-cache:/root/.cache
       - ./test-results:/test-results
+
+  pact-verifier:
+    image: pactfoundation/pact-ref-verifier
+    entrypoint:
+      - pact_verifier_cli
+      - --hostname=search-service.execute-api.localhost.localstack.cloud
+      - --port=4566
+      - --base-path=/current/
+      - --broker-url=https://pact-broker.api.opg.service.justice.gov.uk/
+      - --provider-name=search-service
