@@ -86,6 +86,7 @@ func main() {
 	// Create a sub-router for protected handlers
 	postRouter := sm.Methods(http.MethodPost).Subrouter()
 	postRouter.Use(middleware.JwtVerify(secretsCache, l))
+	postRouter.Use(middleware.ContentType())
 
 	// Register protected handlers
 
@@ -335,6 +336,7 @@ func main() {
 
 	deleteRouter := sm.Methods(http.MethodDelete).Subrouter()
 	deleteRouter.Use(middleware.JwtVerify(secretsCache, l))
+	deleteRouter.Use(middleware.ContentType())
 
 	// swagger:operation DELETE /persons/:uid delete-person
 	// Delete a person
