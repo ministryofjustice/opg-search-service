@@ -250,8 +250,39 @@ func TestPrepareQueryForDeputy(t *testing.T) {
 
 func TestPrepareQueryForAll(t *testing.T) {
 	req := &Request{
-		Term: "apples",
-		From: 123,
+		Term:    "apples",
+		From:    123,
+	}
+
+	indices, body := PrepareQueryForAll(req)
+
+	assert.Equal(t, map[string]interface{}{
+		"query": map[string]interface{}{
+			"multi_match": map[string]interface{}{
+				"query":  "apples",
+				"fields": []string{"firmName", "firmNumber", "caseRecNumber", "searchable"},
+			},
+		},
+		"aggs": map[string]interface{}{
+			"personType": map[string]interface{}{
+				"terms": map[string]interface{}{
+					"field": "personType",
+					"size":  "20",
+				},
+			},
+		},
+		"post_filter": map[string]interface{}{"bool": map[string]interface{}{"should": []interface{}{}}},
+		"from":        123,
+	}, body)
+
+	assert.Equal(t, []string{firm.AliasName, person.AliasName, poadraftapplication.AliasName}, indices)
+}
+
+func TestPrepareQueryForAllEmptyIndices(t *testing.T) {
+	req := &Request{
+		Term:    "apples",
+		From:    123,
+		Indices: []string{},
 	}
 
 	indices, body := PrepareQueryForAll(req)
