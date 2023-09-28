@@ -106,7 +106,7 @@ func PrepareQueryForAll(req *Request) ([]string, map[string]interface{}) {
 
 	indices := allIndices
 
-	if req.Indices != nil {
+	if len(req.Indices) > 0 {
 		indices = req.Indices
 	}
 
