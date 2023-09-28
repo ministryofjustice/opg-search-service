@@ -52,7 +52,7 @@ type elasticSearchResponse struct {
 			Relation string `json:"relation"`
 		} `json:"total"`
 		Hits []struct {
-			Index  string          `json:"_index"`
+			Index  string                 `json:"_index"`
 			Source map[string]interface{} `json:"_source"`
 		} `json:"hits"`
 	} `json:"hits"`
@@ -108,12 +108,21 @@ func (c *Client) doRequest(ctx context.Context, method, endpoint string, body io
 		req.Header.Add("Content-Type", contentType)
 	}
 
+	c.logger.Println("debug request is:", req)
+
 	_, err = c.signer.Sign(req, body, c.service, c.region, time.Now())
 	if err != nil {
 		return nil, err
 	}
 
-	return c.httpClient.Do(req)
+	response, err := c.httpClient.Do(req)
+	c.logger.Warn(response)
+
+	buf := new(strings.Builder)
+	_, _ = io.Copy(buf, response.Body)
+	c.logger.Warn(buf.String())
+
+	return response, err
 }
 
 type bulkResponse struct {
