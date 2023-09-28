@@ -28,6 +28,51 @@ End-to-end tests are executed as part of the `make unit-test` command.
 
 Generally they sit in `main_test.go`. The test suite will start up the search service in a go-routine to run tests against it, and therefore all ENV variables required for configuring the service have to be set prior to running the test suite. This is all automated with the `make unit-test` command.
 
+#### Pact provider tests
+
+To run the Pact provider-side tests:
+
+```
+# if you want to test your local branch, do this first,
+# otherwise the latest production image for the search service might be used
+docker compose build search-service
+
+# to run the Pact tests
+make provider-pact
+```
+
+If you want to run the tests against a specific version of the pact, you first need to find it. They are hosted on https://pact-broker.api.opg.service.justice.gov.uk/. The best way to find the right URL is to look at the build for Sirius (which publishes the pact via its consumer-side tests), in the "Backend Pact Unit Tests" task. You're looking for output like this (in the `make api-unit-pact` step):
+
+```
+Pact successfully published for sirius version 24f579d37f0615332bf3b0949cb2b6ee6bb2711d and provider search-service.
+
+  View the published pact at https://pact-broker.api.opg.service.justice.gov.uk/pacts/provider/search-service/consumer/sirius/version/24f579d37f0615332bf3b0949cb2b6ee6bb2711d
+```
+
+Once you have this, edit the docker-compose.yml entry for pact-verifier to look like this:
+
+```
+pact-verifier:
+  image: pactfoundation/pact-ref-verifier
+  depends_on:
+    - search-service
+    - pact-provider-state-api
+  entrypoint:
+    - pact_verifier_cli
+    - --hostname=search-service
+    - --port=8000
+    - --base-path=/services/search-service/
+    - --header=${PACT_HEADER}
+    - --loglevel=debug
+    - --state-change-url=http://pact-provider-state-api:5175/provider_state_change
+    - --state-change-teardown
+    #- --broker-url=https://pact-broker.api.opg.service.justice.gov.uk/
+    #- --provider-name=search-service
+    - --url=https://pact-broker.api.opg.service.justice.gov.uk/pacts/provider/search-service/consumer/sirius/version/b1a180aa83e2765e9ff2c22d6292bdd8662f961d
+```
+
+i.e. comment out `--broker-url` and `--provider` and use `--url` instead, pasting in the URL you found from the build logs.
+
 ## Formatting
 
 This project uses the standard Golang styleguide, and can be autoformatting by running `gofmt -s -w .`.

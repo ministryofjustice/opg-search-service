@@ -107,7 +107,7 @@ services:
       - --provider-name=search-service
       - --header=${PACT_HEADER}
       - --loglevel=debug
-      - --state-change-url=http://pact-provider-state-api:5175/_provider_state_change
+      - --state-change-url=http://pact-provider-state-api:5175/provider_state_change
       - --state-change-teardown
 
   pact-provider-state-api:
