@@ -115,14 +115,7 @@ func (c *Client) doRequest(ctx context.Context, method, endpoint string, body io
 		return nil, err
 	}
 
-	response, err := c.httpClient.Do(req)
-	c.logger.Warn(response)
-
-	buf := new(strings.Builder)
-	_, _ = io.Copy(buf, response.Body)
-	c.logger.Warn(buf.String())
-
-	return response, err
+	return c.httpClient.Do(req)
 }
 
 type bulkResponse struct {
