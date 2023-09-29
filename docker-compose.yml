@@ -96,7 +96,6 @@ services:
   pact-verifier:
     image: pactfoundation/pact-ref-verifier
     depends_on:
-      - search-service
       - pact-provider-state-api
     entrypoint:
       - pact_verifier_cli
@@ -105,14 +104,20 @@ services:
       - --base-path=/services/search-service/
       - --broker-url=https://pact-broker.api.opg.service.justice.gov.uk/
       - --provider-name=search-service
-      - --header=${PACT_HEADER}
+      - --header=${PACT_HEADER:-}
       - --loglevel=debug
       - --state-change-url=http://pact-provider-state-api:5175/provider_state_change
       - --state-change-teardown
 
   pact-provider-state-api:
+    depends_on:
+      - search-service
     build:
       context: pact
       dockerfile: Dockerfile
+    ports:
+      - 8175:5175
     volumes:
       - ./pact/api:/usr/src/app/api
+    environment:
+      SEARCH_SERVICE_URL: http://search-service:8000/services/search-service/
