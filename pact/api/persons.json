@@ -1,0 +1,79 @@
+{
+    "Person called Peter with person type Donor has been indexed": {
+        "id": 1,
+        "uId": "7000-9913-9102",
+        "firstname": "Peter",
+        "surname": "Vermax",
+        "personType": "Donor",
+        "email": "vermax@secret.hideout",
+        "dob": "11/11/1901",
+        "addresses": [
+            {
+                "addressLines": [
+                    "91 Nowhere Lane",
+                    "Borksville"
+                ],
+                "postcode": "X11 1XX"
+            }
+        ],
+        "cases": [
+            {
+                "batchId": "",
+                "caseRecNumber": "",
+                "caseSubtype": "pfa",
+                "caseType": "LPA",
+                "normalizedUid": 700000000021,
+                "onlineLpaId": "936592049175",
+                "uId":"7000-0000-0021"
+            }
+        ]
+    },
+    "Person with UID 7000-8813-9100 has been indexed": {
+        "id": 2,
+        "uId": "7000-8813-9100",
+        "firstname": "Scomox",
+        "surname": "Malecfoom",
+        "email": "malecfoom@secret.hideout",
+        "dob": "11/11/1921",
+        "addresses": [
+            {
+                "addressLines": [
+                    "92 Nowhere Lane",
+                    "Borksville"
+                ],
+                "postcode": "X11 1XX"
+            }
+        ]
+    },
+    "Person called Jarrett Wisniowski born 1928-04-15 with postcode L1 8WH has been indexed": {
+        "id": 3,
+        "uId": "7000-1111-0099",
+        "firstname": "Jarrett",
+        "surname": "Wisniowski",
+        "email": "jarrett.wisniowski@secret.hideout",
+        "dob": "15/04/1928",
+        "addresses": [
+            {
+                "addressLines": [
+                    "92 Nowhere Lane"
+                ],
+                "postcode": "L1 8WH"
+            }
+        ],
+        "phoneNumber": "0711119999",
+        "phoneNumbers": [
+            {
+                "type": "Work",
+                "phoneNumber": "0711119999",
+                "default": true
+            }
+        ],
+        "workPhoneNumber": [
+            {
+                "type": "Work",
+                "phoneNumber": "0711119999",
+                "default": true
+            }
+        ]
+    }
+}
