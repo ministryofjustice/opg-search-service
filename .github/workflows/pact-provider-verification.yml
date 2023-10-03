@@ -52,10 +52,10 @@ jobs:
         if: ${{ github.event_name == 'pull_request' }}
         run: |
           # for this to work, when making a PR on the search-service repo,
-          # there should either be Sirius branch with the same name as
-          # the search-service PR branch containing
+          # there should either be a Sirius branch with the same name as
+          # the search-service PR branch, containing
           # pacts to verify; or a consumer pact on the main Sirius branch
           PACT_HEADER=$PACT_HEADER docker-compose run --rm pact-verifier \
             --provider-version=$(git rev-parse HEAD) \
             --provider-branch=${{ github.head_ref }} \
-            --consumer-version-selectors='{ "branch": "${{ github.head_ref }}" }, { "mainBranch": true }'
+            --consumer-version-selectors='[ { "branch": "${{ github.head_ref }}" }, { "mainBranch": true } ]'
