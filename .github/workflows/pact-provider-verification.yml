@@ -22,7 +22,11 @@ jobs:
 
           # output from jwt_maker.py must be in form
           # Authorization=Bearer <token>
-          echo "PACT_HEADER=`python3 ./pact/api/jwt_maker.py`" >> "$GITHUB_ENV"
+          PACT_HEADER=`python3 ./pact/api/jwt_maker.py`
+
+          echo $PACT_HEADER
+
+          echo "PACT_HEADER=$PACT_HEADER" >> "$GITHUB_ENV"
       - name: Bring up services
         run: make build up
       - name: Verify specified Pact
@@ -49,7 +53,10 @@ jobs:
       - name: Verify pacts are still upheld
         if: ${{ github.event_name == 'pull_request' }}
         run: |
+          # for this to work, when making a PR on the search-service repo,
+          # there should either be corresponding Sirius branch containing
+          # pacts to verify, or a pact on the main Sirius branch
           PACT_HEADER=$PACT_HEADER docker-compose run --rm pact-verifier \
             --provider-version=$(git rev-parse HEAD) \
             --provider-branch=${{ github.head_ref }} \
-            --consumer-version-selectors='{"mainBranch": true}'
+            --consumer-version-selectors='{ "branch": "${{ github.head_ref }}" }, { "mainBranch": true }'
