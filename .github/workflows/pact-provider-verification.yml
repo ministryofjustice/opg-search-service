@@ -56,4 +56,4 @@ jobs:
           # the search-service PR branch, containing
           # pacts to verify; or a consumer pact on the main Sirius branch
           PACT_HEADER=$PACT_HEADER docker-compose run --rm pact-verifier \
-            --consumer-version-selectors='{ "branch": "${{ github.head_ref }}" "mainBranch": true }'
+            --consumer-version-selectors='{ "branch": "${{ github.head_ref }}", "mainBranch": true }'
