@@ -52,6 +52,7 @@
         "surname": "Wisniowski",
         "email": "jarrett.wisniowski@secret.hideout",
         "dob": "15/04/1928",
+        "personType": "Client",
         "addresses": [
             {
                 "addressLines": [
