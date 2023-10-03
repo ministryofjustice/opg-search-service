@@ -106,6 +106,7 @@ services:
       - --broker-url=https://pact-broker.api.opg.service.justice.gov.uk/
       - --provider-name=search-service
       - --header=${PACT_HEADER:-}
+      - --loglevel=debug
       - --state-change-url=http://pact-provider-state-api:5175/provider_state_change
       - --state-change-teardown
 
