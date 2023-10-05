@@ -45,7 +45,7 @@ func TestGetIDRange(t *testing.T) {
 	}
 
 	_, err = conn.Exec(ctx, `
-		INSERT INTO firm (id, firmname, addressline1, town, county, postcode, phonenumber, email, firmnumber)
+		INSERT INTO supervision.firm (id, firmname, addressline1, town, county, postcode, phonenumber, email, firmnumber)
 		VALUES (1, 'firm co', '123 Fake street', 'Faketon', 'Fakeshire', 'F1 1FF', '0111111111', 'email@example.com', '1234'),
 		(2, 'firm co', '123 Fake street', 'Faketon', 'Fakeshire', 'F1 1FF', '0111111111', 'email@example.com', '1234'),
 		(3, 'firm co', '123 Fake street', 'Faketon', 'Fakeshire', 'F1 1FF', '0111111111', 'email@example.com', '1234');
@@ -85,7 +85,7 @@ func TestQueryByID(t *testing.T) {
 	}
 
 	_, err = conn.Exec(ctx, `
-		INSERT INTO firm (id, firmname, addressline1, town, county, postcode, phonenumber, email, firmnumber)
+		INSERT INTO supervision.firm (id, firmname, addressline1, town, county, postcode, phonenumber, email, firmnumber)
 		VALUES (1, 'firm co', '123 Fake street', 'Faketon', 'Fakeshire', 'F1 1FF', '0111111111', 'email@example.com', 1234),
 		(2, 'firm co', '123 Fake street', 'Faketon', 'Fakeshire', 'F1 1FF', '0111111111', 'email@example.com', 1234),
 		(3, '', '', '', '', '', '', '', 1),
