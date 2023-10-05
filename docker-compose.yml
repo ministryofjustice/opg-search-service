@@ -6,6 +6,7 @@ services:
     image: 311462405659.dkr.ecr.eu-west-1.amazonaws.com/search_service:latest
     build:
       dockerfile: docker/search-service/Dockerfile
+      context: .
     ports: ["8000:8000"]
     depends_on:
       localstack:
@@ -92,3 +93,32 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./.trivy-cache:/root/.cache
       - ./test-results:/test-results
+
+  pact-verifier:
+    image: pactfoundation/pact-ref-verifier
+    depends_on:
+      - pact-provider-state-api
+    entrypoint:
+      - pact_verifier_cli
+      - --hostname=search-service
+      - --port=8000
+      - --base-path=/services/search-service/
+      - --broker-url=https://pact-broker.api.opg.service.justice.gov.uk/
+      - --provider-name=search-service
+      - --header=${PACT_HEADER:-}
+      - --loglevel=debug
+      - --state-change-url=http://pact-provider-state-api:5175/provider_state_change
+      - --state-change-teardown
+
+  pact-provider-state-api:
+    depends_on:
+      - search-service
+    build:
+      context: pact
+      dockerfile: Dockerfile
+    ports:
+      - 8175:5175
+    volumes:
+      - ./pact/api:/usr/src/app/api
+    environment:
+      SEARCH_SERVICE_URL: http://search-service:8000/services/search-service/

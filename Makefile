@@ -37,3 +37,10 @@ swagger-up docs: # Serve swagger API docs on port 8383
 
 down:
 	docker compose down
+
+# the docker command here generates an "Authorization=Bearer <jwt>" header so the pact verifier can talk to search-service
+provider-pact-build:
+	docker compose build pact-provider-state-api
+provider-pact: pact_header = "$(shell docker compose run pact-provider-state-api python ./api/jwt_maker.py)"
+provider-pact: provider-pact-build
+	PACT_HEADER=${pact_header} docker compose run --rm pact-verifier
