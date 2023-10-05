@@ -19,7 +19,7 @@ type DB struct {
 }
 
 func (db *DB) QueryIDRange(ctx context.Context) (min int, max int, err error) {
-	err = db.conn.QueryRow(ctx, "SELECT COALESCE(MIN(id), 0), COALESCE(MAX(id), 0) FROM firm").Scan(&min, &max)
+	err = db.conn.QueryRow(ctx, "SELECT COALESCE(MIN(id), 0), COALESCE(MAX(id), 0) FROM supervision.firm").Scan(&min, &max)
 
 	return min, max, err
 }
@@ -42,7 +42,7 @@ func makeQueryFirm(whereClause string) string {
 		coalesce(f.addressline1, ''), coalesce(f.addressline2, ''), coalesce(f.addressline3, ''),
 		coalesce(f.town, ''), coalesce(f.county, ''), coalesce(f.postcode, ''),
 		coalesce(f.phonenumber, '')
-FROM firm f
+FROM supervision.firm f
 WHERE ` + whereClause + `
 ORDER BY f.id`
 }

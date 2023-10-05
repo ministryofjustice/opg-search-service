@@ -281,11 +281,15 @@ WITH (
 )
 TABLESPACE pg_default;
 
--- Table: public.firm
+-- Table: supervision.firm
 
-DROP TABLE IF EXISTS public.firm;
+DROP TABLE IF EXISTS supervision.firm;
 
-CREATE TABLE public.firm
+DROP SCHEMA IF EXISTS supervision;
+
+CREATE SCHEMA supervision;
+
+CREATE TABLE supervision.firm
 (
     id integer NOT NULL,
     firmname character varying(255) NOT NULL,
