@@ -40,7 +40,7 @@ services:
     command: -exclude-dir=.gocache /app/...
 
   go-lint:
-    image: golangci/golangci-lint:v1.53.3
+    image: golangci/golangci-lint:v1.54.2
     working_dir: /go/src/app
     volumes:
       - ./:/go/src/app
@@ -48,7 +48,7 @@ services:
     command: golangci-lint run -v --timeout 5m
 
   postgres:
-    image: postgres:15.3
+    image: postgres:15.4
     ports: ["5434:5432"]
     command: postgres
     environment:
