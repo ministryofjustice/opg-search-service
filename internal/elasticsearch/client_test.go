@@ -617,7 +617,7 @@ func TestDelete(t *testing.T) {
 func TestClientSignRequest(t *testing.T) {
 	assert := assert.New(t)
 
-	AUTH_HEADER_PATTERN := `^AWS4-HMAC-SHA256 Credential=[^ ]+, SignedHeaders=content-type;host;x-amz-date, Signature=[a-f0-9]+$`
+	AUTH_HEADER_PATTERN := `^AWS4-HMAC-SHA256 Credential=[^ ]+, SignedHeaders=content-type;host;x-amz-content-sha256;x-amz-date, Signature=[a-f0-9]+$`
 
 	httpClient := &MockHttpClient{}
 	l, _ := logrus_test.NewNullLogger()
