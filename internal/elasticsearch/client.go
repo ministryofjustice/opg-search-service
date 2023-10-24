@@ -3,6 +3,9 @@ package elasticsearch
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -104,6 +107,19 @@ func (c *Client) doRequest(ctx context.Context, method, endpoint string, body io
 	if err != nil {
 		return nil, err
 	}
+
+	if body != nil {
+		buf := new(bytes.Buffer)
+		buf.ReadFrom(body)
+		body.Seek(0,io.SeekStart)
+		h := sha256.New()
+		h.Write(buf.Bytes())
+		bs := hex.EncodeToString(h.Sum(nil))
+		req.Header.Add("X-Amz-Content-Sha256", bs)
+		} else {
+			req.Header.Add("X-Amz-Content-Sha256", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+	}
+
 	if contentType != "" {
 		req.Header.Add("Content-Type", contentType)
 	}
