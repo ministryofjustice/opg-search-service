@@ -3,6 +3,9 @@ package elasticsearch
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -104,6 +107,27 @@ func (c *Client) doRequest(ctx context.Context, method, endpoint string, body io
 	if err != nil {
 		return nil, err
 	}
+
+	if body != nil {
+		buf := new(bytes.Buffer)
+		_, err = buf.ReadFrom(body)
+		if err != nil {
+			return nil, err
+		}
+
+		_, err = body.Seek(0,io.SeekStart)
+		if err != nil {
+			return nil, err
+		}
+
+		h := sha256.New()
+		h.Write(buf.Bytes())
+		bs := hex.EncodeToString(h.Sum(nil))
+		req.Header.Add("X-Amz-Content-Sha256", bs)
+		} else {
+			req.Header.Add("X-Amz-Content-Sha256", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+	}
+
 	if contentType != "" {
 		req.Header.Add("Content-Type", contentType)
 	}
@@ -319,6 +343,7 @@ func (c *Client) CreateIndex(ctx context.Context, name string, config []byte, fo
 		}
 
 		c.logger.Printf("index '%s' deleted", name)
+		time.Sleep(20 * time.Second)
 	}
 
 	if err := c.createIndex(ctx, name, config); err != nil {
