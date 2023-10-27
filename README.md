@@ -117,7 +117,7 @@ Another gotcha... Make sure annotations are written with 2 space tabs in order f
 
 | Variable                     | Default   | Description                                                                                                                     |
 |------------------------------|-----------|---------------------------------------------------------------------------------------------------------------------------------|
-| AWS_ELASTICSEARCH_ENDPOINT   |           | Used for overwriting the ElasticSearch endpoint locally e.g. http://search-service.eu-west-1.es.localhost.localstack.cloud:4566 |
+| AWS_ELASTICSEARCH_ENDPOINT   |           | Used for overwriting the ElasticSearch endpoint locally e.g. http://search-service.eu-west-1.opensearch.localhost.localstack.cloud:4566 |
 | AWS_REGION                   | eu-west-1 | Set the AWS region for all operations with the SDK                                                                              |
 | AWS_ACCESS_KEY_ID            |           | Used for authenticating with localstack e.g. set to "localstack"                                                                |
 | AWS_SECRET_ACCESS_KEY        |           | Used for authenticating with localstack e.g. set to "localstack"                                                                |
