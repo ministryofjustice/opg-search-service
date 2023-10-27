@@ -22,7 +22,7 @@ services:
     networks:
       default:
         aliases:
-          - search-service.eu-west-1.es.localhost.localstack.cloud
+          - search-service.eu-west-1.opensearch.localhost.localstack.cloud
     volumes:
       - "./scripts/localstack/init:/etc/localstack/init/ready.d"
       - "./scripts/localstack/wait:/scripts/wait"
