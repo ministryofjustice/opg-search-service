@@ -137,7 +137,7 @@ func TestQueryByID(t *testing.T) {
 			Phonenumber: "077777777",
 		}},
 		Addresses: []PersonAddress{{
-			Addresslines: []string{"1 Road", "", "Place"},
+			Addresslines: []string{"1 Road", "Place"},
 			Postcode:     "S1 1AB",
 		}},
 		Cases: []PersonCase{{
