@@ -331,3 +331,18 @@ func TestQueryFromDate(t *testing.T) {
 	_, ok = read(resultsCh, time.Nanosecond)
 	assert.False(ok)
 }
+
+func TestGetAddressLinesHandlesEmptyValues(t *testing.T) {
+	address := getAddressLines([]interface{}{"123 Test Street", "", nil,})
+	assert.Equal(t, []string{"123 Test Street"}, address)
+
+	// note that although we shouldn't get more than 3 address lines,
+	// this case checks that we cope correctly if we do for some reason
+	address = getAddressLines(map[string]interface{}{
+		"1": "123 Test Street",
+		"2": "",
+		"3": nil,
+		"4": nil,
+	})
+	assert.Equal(t, []string{"123 Test Street"}, address)
+}
