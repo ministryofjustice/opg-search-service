@@ -212,28 +212,26 @@ func addResultToPerson(a *personAdded, p *Person, s rowResult) {
 }
 
 func getAddressLines(lines interface{}) []string {
-	switch v := lines.(type) {
+	switch lines.(type) {
 	case []interface{}:
-		r := make([]string, len(v))
-		for i, x := range v {
-			r[i] = x.(string)
-		}
-		return r
-
-	case map[string]interface{}:
-		r := make([]string, 3)
-		for k, x := range v {
-			i, err := strconv.Atoi(k)
-			if err != nil {
-				return nil
+		r := []string{}
+		for _, x := range lines.([]interface{}) {
+			if x != nil && x != "" {
+				r = append(r, x.(string))
 			}
-
-			r[i] = x.(string)
 		}
 		return r
-
+	case map[string]interface{}:
+		r := []string{}
+		for _, x := range lines.(map[string]interface{}) {
+			if x != nil && x != "" {
+				r = append(r, x.(string))
+			}
+		}
+		return r
 	default:
 		return nil
+
 	}
 }
 
