@@ -3,6 +3,7 @@ package person
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strconv"
 	"time"
 
@@ -214,26 +215,48 @@ func addResultToPerson(a *personAdded, p *Person, s rowResult) {
 func getAddressLines(lines interface{}) []string {
 	switch v := lines.(type) {
 	case []interface{}:
-		r := make([]string, len(v))
-		for i, x := range v {
-			r[i] = x.(string)
+		r := []string{}
+		for _, x := range v {
+			if x != nil && x != "" {
+				r = append(r, x.(string))
+			}
 		}
 		return r
-
 	case map[string]interface{}:
-		r := make([]string, 3)
-		for k, x := range v {
-			i, err := strconv.Atoi(k)
+		keys := make([]string, len(v))
+		for key := range v {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+
+		sorted := []string{}
+		for _, key := range keys {
+			// ignore non-numeric keys
+			_, err := strconv.Atoi(key)
 			if err != nil {
-				return nil
+				continue
 			}
 
-			r[i] = x.(string)
-		}
-		return r
+			// ignore keys with null values
+			value := v[key]
+			if value == nil {
+				continue
+			}
 
+			strValue := value.(string)
+
+			// ignore empty strings
+			if strValue == "" {
+				continue
+			}
+
+			sorted = append(sorted, strValue)
+		}
+
+		return sorted
 	default:
 		return nil
+
 	}
 }
 
