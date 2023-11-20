@@ -137,7 +137,7 @@ func TestQueryByID(t *testing.T) {
 			Phonenumber: "077777777",
 		}},
 		Addresses: []PersonAddress{{
-			Addresslines: []string{"1 Road", "", "Place"},
+			Addresslines: []string{"1 Road", "Place"},
 			Postcode:     "S1 1AB",
 		}},
 		Cases: []PersonCase{{
@@ -330,4 +330,20 @@ func TestQueryFromDate(t *testing.T) {
 
 	_, ok = read(resultsCh, time.Nanosecond)
 	assert.False(ok)
+}
+
+func TestGetAddressLinesHandlesEmptyValues(t *testing.T) {
+	address := getAddressLines([]interface{}{"123 Test Street", "Footown", nil,})
+	assert.Equal(t, []string{"123 Test Street", "Footown"}, address)
+
+	// note that although we shouldn't get more than 3 address lines,
+	// this case checks that we cope correctly if we do for some reason
+	address = getAddressLines(map[string]interface{}{
+		"2": "",
+		"3": "Footown",
+		"1": "123 Test Street",
+		"4": nil,
+		"random": "nonsense",
+	})
+	assert.Equal(t, []string{"123 Test Street", "Footown"}, address)
 }
