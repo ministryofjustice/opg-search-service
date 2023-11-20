@@ -230,7 +230,6 @@ func getAddressLines(lines interface{}) []string {
 		sort.Strings(keys)
 
 		sorted := []string{}
-		i := 0
 		for _, key := range keys {
 			// ignore non-numeric keys
 			_, err := strconv.Atoi(key)
@@ -252,7 +251,6 @@ func getAddressLines(lines interface{}) []string {
 			}
 
 			sorted = append(sorted, strValue)
-			i++
 		}
 
 		return sorted
