@@ -79,7 +79,7 @@ func (c *indexCommand) Run(args []string) error {
 	}
 
 	indexers := map[string]*index.Indexer{}
-	noneSet := !*firmOnly && !*personOnly
+	noneSet := !*firmOnly && !*personOnly && !*poaDraftApplicationsOnly
 
 	if *firmOnly || noneSet {
 		for _, indexName := range c.currentIndices {
