@@ -60,7 +60,7 @@ ORDER BY p.id`
 
 type rowResult struct {
 	ID                 int
-	UID                int
+	UID                string
 	CaseRecNumber      string
 	DeputyNumber       *int
 	PhoneNumberID      *int
@@ -79,7 +79,7 @@ type rowResult struct {
 	AddressLines       interface{}
 	Postcode           string
 	CaseID             *int
-	CasesUID           *int
+	CasesUID           *string
 	CasesCaseRecNumber string
 	CasesOnlineLpaID   string
 	CasesBatchID       string
@@ -168,7 +168,7 @@ func addResultToPerson(a *personAdded, p *Person, s rowResult) {
 	if p.ID == nil {
 		p.ID = i64(s.ID)
 		p.UID = formatUID(s.UID)
-		p.Normalizeduid = int64(s.UID)
+		p.Normalizeduid = normaliseUid(s.UID)
 		p.CaseRecNumber = s.CaseRecNumber
 		p.DeputyNumber = nil
 		if s.DeputyNumber != nil {
@@ -202,7 +202,7 @@ func addResultToPerson(a *personAdded, p *Person, s rowResult) {
 	if s.CaseID != nil && !a.hasCase(*s.CaseID) {
 		p.Cases = append(p.Cases, PersonCase{
 			UID:           formatUID(*s.CasesUID),
-			Normalizeduid: int64(*s.CasesUID),
+			Normalizeduid: normaliseUid(*s.CasesUID),
 			Caserecnumber: s.CasesCaseRecNumber,
 			OnlineLpaId:   s.CasesOnlineLpaID,
 			Batchid:       s.CasesBatchID,
@@ -260,13 +260,12 @@ func getAddressLines(lines interface{}) []string {
 	}
 }
 
-func formatUID(uid int) string {
-	s := strconv.Itoa(uid)
-	if len(s) != 12 {
-		return s
+func formatUID(uid string) string {
+	if len(uid) != 12 {
+		return uid
 	}
 
-	return fmt.Sprintf("%s-%s-%s", s[0:4], s[4:8], s[8:12])
+	return fmt.Sprintf("%s-%s-%s", uid[0:4], uid[4:8], uid[8:12])
 }
 
 func resolvePersonType(t string) string {
@@ -309,4 +308,12 @@ func resolvePersonType(t string) string {
 func i64(x int) *int64 {
 	y := int64(x)
 	return &y
+}
+
+func normaliseUid(s string) int64 {
+	i, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		fmt.Println("Can't convert this to an int!")
+	}
+	return i
 }
