@@ -46,9 +46,9 @@ func TestGetIDRange(t *testing.T) {
 
 	_, err = conn.Exec(ctx, `
 		INSERT INTO persons (id, uid, caserecnumber, email, dob, firstname, middlenames, surname, companyname, type, organisationname)
-		VALUES (1, 700656728331, 1010101, 'email@example.com', '2002-01-02', 'John', 'J', 'Johnson', '& co', 'lpa_donor', 'Orgz'),
-		(2, 700656728332, null, null, '1990-01-02', 'Jack', null, 'Jackson', null, 'lpa_donor', null),
-		(3, 700656728333, null, null, '1990-01-02', 'J', null, 'J', null, 'lpa_donor', null);
+		VALUES (1, '700656728331', 1010101, 'email@example.com', '2002-01-02', 'John', 'J', 'Johnson', '& co', 'lpa_donor', 'Orgz'),
+		(2, '700656728332', null, null, '1990-01-02', 'Jack', null, 'Jackson', null, 'lpa_donor', null),
+		(3, '700656728333', null, null, '1990-01-02', 'J', null, 'J', null, 'lpa_donor', null);
 	`)
 	if !assert.Nil(err) {
 		return
@@ -86,10 +86,10 @@ func TestQueryByID(t *testing.T) {
 
 	_, err = conn.Exec(ctx, `
 		INSERT INTO persons (id, uid, caserecnumber, deputynumber, email, dob, firstname, middlenames, surname, companyname, type, organisationname)
-		VALUES (1, 700656728331, 1010101, null, 'email@example.com', '2002-01-02', 'John', 'J', 'Johnson', '& co', 'lpa_donor', 'Orgz'),
-		(2, 700656728332, null, null, null, '1990-01-02', 'Jack', null, 'Jackson', null, 'lpa_donor', null),
-		(3, 700656728333, null, 12345, 'deputy@example.com', '1970-03-06', 'D', null, 'D', null, 'actor_deputy', null),
-		(4, 700656728334, null, null, null, '1990-01-02', 'J', null, 'J', null, 'lpa_donor', null);
+		VALUES (1, '700656728331', 1010101, null, 'email@example.com', '2002-01-02', 'John', 'J', 'Johnson', '& co', 'lpa_donor', 'Orgz'),
+		(2, '700656728332', null, null, null, '1990-01-02', 'Jack', null, 'Jackson', null, 'lpa_donor', null),
+		(3, '700656728333', null, 12345, 'deputy@example.com', '1970-03-06', 'D', null, 'D', null, 'actor_deputy', null),
+		(4, '700656728334', null, null, null, '1990-01-02', 'J', null, 'J', null, 'lpa_donor', null);
 
 		INSERT INTO phonenumbers (id, person_id, phone_number)
 		VALUES (1, 1, '077777777');
@@ -98,8 +98,8 @@ func TestQueryByID(t *testing.T) {
 		VALUES (1, 1, json_build_object('0', '1 Road', '2', 'Place'), 'S1 1AB');
 
 		INSERT INTO cases (id, uid, caserecnumber, onlinelpaid, batchid, casetype, casesubtype)
-		VALUES (1, 700656728311, '545534', 'A123', 'x', 'lpa', 'hw'),
-		(2, 700656728312, '545532', 'A124', 'y', 'lpa', 'pfa');
+		VALUES (1, '700656728311', '545534', 'A123', 'x', 'lpa', 'hw'),
+		(2, '700656728312', '545532', 'A124', 'y', 'lpa', 'pfa');
 
 		INSERT INTO person_caseitem (person_id, caseitem_id) VALUES (1, 1), (1, 2);
 	`)
@@ -233,9 +233,9 @@ func TestQueryFromDate(t *testing.T) {
 
 	_, err = conn.Exec(ctx, `
 		INSERT INTO persons (id, updateddate, uid, caserecnumber, email, dob, firstname, middlenames, surname, companyname, type, organisationname)
-		VALUES (1, '2021-01-03 12:00:00', 7000, 1010101, 'email@example.com', '2002-01-02', 'John', 'J', 'Johnson', '& co', 'lpa_attorney', 'Orgz'),
-		(2, '2021-01-02 12:00:00', 7002, null, null, '1990-01-02', 'Jack', null, 'Jackson', null, 'lpa_donor', null),
-		(3, '2021-01-01 12:00:00', 7003, null, null, '1990-01-02', 'J', null, 'J', null, 'lpa_donor', null);
+		VALUES (1, '2021-01-03 12:00:00', '7000', 1010101, 'email@example.com', '2002-01-02', 'John', 'J', 'Johnson', '& co', 'lpa_attorney', 'Orgz'),
+		(2, '2021-01-02 12:00:00', '7002', null, null, '1990-01-02', 'Jack', null, 'Jackson', null, 'lpa_donor', null),
+		(3, '2021-01-01 12:00:00', '7003', null, null, '1990-01-02', 'J', null, 'J', null, 'lpa_donor', null);
 
 		INSERT INTO phonenumbers (id, person_id, phone_number)
 		VALUES (1, 1, '077777777');
@@ -244,8 +244,8 @@ func TestQueryFromDate(t *testing.T) {
 		VALUES (1, 1, json_build_array('123 Fake St'), 'S1 1AB');
 
 		INSERT INTO cases (id, uid, caserecnumber, onlinelpaid, batchid, casetype, casesubtype)
-		VALUES (1, 7000, '545534', 'A123', 'x', 'lpa', 'hw'),
-		(2, 7002, '545532', 'A124', 'y', 'lpa', 'pfa');
+		VALUES (1, '7000', '545534', 'A123', 'x', 'lpa', 'hw'),
+		(2, '7002', '545532', 'A124', 'y', 'lpa', 'pfa');
 
 		INSERT INTO person_caseitem (person_id, caseitem_id) VALUES (1, 1), (1, 2);
 	`)
