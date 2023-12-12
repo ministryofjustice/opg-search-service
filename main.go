@@ -16,7 +16,6 @@ import (
 	"github.com/ministryofjustice/opg-search-service/internal/index"
 	"github.com/ministryofjustice/opg-search-service/internal/middleware"
 	"github.com/ministryofjustice/opg-search-service/internal/person"
-	"github.com/ministryofjustice/opg-search-service/internal/poadraftapplication"
 	"github.com/ministryofjustice/opg-search-service/internal/remove"
 	"github.com/ministryofjustice/opg-search-service/internal/search"
 	"github.com/sirupsen/logrus"
@@ -37,15 +36,9 @@ func main() {
 		l.Fatal(err)
 	}
 
-	poaDraftApplicationIndex, poaDraftApplicationConfig, err := poadraftapplication.IndexConfig()
-	if err != nil {
-		l.Fatal(err)
-	}
-
 	currentIndices := map[string][]byte{
 		personIndex:              personConfig,
 		firmIndex:                firmConfig,
-		poaDraftApplicationIndex: poaDraftApplicationConfig,
 	}
 
 	secretsCache := cache.New()
@@ -65,8 +58,6 @@ func main() {
 
 	personIndices := createIndexAndAlias(esClient, person.AliasName, personIndex, personConfig, l)
 	firmIndices := createIndexAndAlias(esClient, firm.AliasName, firmIndex, firmConfig, l)
-
-	poaDraftApplicationIndices := createIndexAndAlias(esClient, poadraftapplication.AliasName, poaDraftApplicationIndex, poaDraftApplicationConfig, l)
 
 	// Create new serveMux
 	sm := mux.NewRouter().PathPrefix(os.Getenv("PATH_PREFIX")).Subrouter()
@@ -328,9 +319,6 @@ func main() {
 
 	postRouter.Handle("/firms", index.NewHandler(l, esClient, firmIndices, firm.ParseIndexRequest))
 	postRouter.Handle("/firms/search", search.NewHandler(l, esClient, search.PrepareQueryForFirm))
-
-	postRouter.Handle("/draftApplications", index.NewHandler(l, esClient, poaDraftApplicationIndices, poadraftapplication.ParseIndexRequest))
-	postRouter.Handle("/draftApplications/search", search.NewHandler(l, esClient, search.PrepareQueryForDraftApplication))
 
 	postRouter.Handle("/searchAll", search.NewHandler(l, esClient, search.PrepareQueryForAll))
 
