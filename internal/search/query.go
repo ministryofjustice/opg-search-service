@@ -3,33 +3,11 @@ package search
 import (
 	"github.com/ministryofjustice/opg-search-service/internal/firm"
 	"github.com/ministryofjustice/opg-search-service/internal/person"
-	"github.com/ministryofjustice/opg-search-service/internal/poadraftapplication"
 )
 
-var draftApplicationIndices = []string{poadraftapplication.AliasName}
 var firmIndices = []string{firm.AliasName}
 var personIndices = []string{person.AliasName}
-var allIndices = []string{firm.AliasName, person.AliasName, poadraftapplication.AliasName}
-
-func PrepareQueryForDraftApplication(req *Request) ([]string, map[string]interface{}) {
-	body := map[string]interface{}{
-		"query": map[string]interface{}{
-			"bool": map[string]interface{}{
-				"must": map[string]interface{}{
-					"simple_query_string": map[string]interface{}{
-						"query": req.Term,
-						"fields": []string{
-							"searchable",
-						},
-						"default_operator": "AND",
-					},
-				},
-			},
-		},
-	}
-
-	return draftApplicationIndices, withDefaults(req, body)
-}
+var allIndices = []string{firm.AliasName, person.AliasName}
 
 func PrepareQueryForFirm(req *Request) ([]string, map[string]interface{}) {
 	body := map[string]interface{}{
