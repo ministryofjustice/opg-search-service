@@ -7,45 +7,7 @@ import (
 
 	"github.com/ministryofjustice/opg-search-service/internal/firm"
 	"github.com/ministryofjustice/opg-search-service/internal/person"
-	"github.com/ministryofjustice/opg-search-service/internal/poadraftapplication"
 )
-
-func TestPrepareQueryForDraftApplication(t *testing.T) {
-	req := &Request{
-		Term: "MMMoooossssa",
-		From: 123,
-	}
-
-	indices, body := PrepareQueryForDraftApplication(req)
-
-	assert.Equal(t, map[string]interface{}{
-		"query": map[string]interface{}{
-			"bool": map[string]interface{}{
-				"must": map[string]interface{}{
-					"simple_query_string": map[string]interface{}{
-						"query": "MMMoooossssa",
-						"fields": []string{
-							"searchable",
-						},
-						"default_operator": "AND",
-					},
-				},
-			},
-		},
-		"aggs": map[string]interface{}{
-			"personType": map[string]interface{}{
-				"terms": map[string]interface{}{
-					"field": "personType",
-					"size":  "20",
-				},
-			},
-		},
-		"post_filter": map[string]interface{}{"bool": map[string]interface{}{"should": []interface{}{}}},
-		"from":        123,
-	}, body)
-
-	assert.Equal(t, []string{poadraftapplication.AliasName}, indices)
-}
 
 func TestPrepareQueryForFirm(t *testing.T) {
 	req := &Request{
@@ -275,7 +237,7 @@ func TestPrepareQueryForAll(t *testing.T) {
 		"from":        123,
 	}, body)
 
-	assert.Equal(t, []string{firm.AliasName, person.AliasName, poadraftapplication.AliasName}, indices)
+	assert.Equal(t, []string{firm.AliasName, person.AliasName}, indices)
 }
 
 func TestPrepareQueryForAllEmptyIndices(t *testing.T) {
@@ -306,7 +268,7 @@ func TestPrepareQueryForAllEmptyIndices(t *testing.T) {
 		"from":        123,
 	}, body)
 
-	assert.Equal(t, []string{firm.AliasName, person.AliasName, poadraftapplication.AliasName}, indices)
+	assert.Equal(t, []string{firm.AliasName, person.AliasName}, indices)
 }
 
 func TestPrepareQueryForAllWithOptions(t *testing.T) {

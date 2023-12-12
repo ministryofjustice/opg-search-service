@@ -373,12 +373,12 @@ func TestClient_Search(t *testing.T) {
 			scenario:          "Search returns matches",
 			esResponseError:   nil,
 			esResponseCode:    200,
-			esResponseMessage: `{"hits":{"hits":[{"_index":"poadraftapplication_foo1111","_source":{"id":1,"name":"test1"}},{"_index":"poadraftapplication_foo1111","_source":{"id":2,"name":"test1"}}]},"aggregations":{"personType":{"buckets":[{"key":"donor","doc_count":2}]}}}`,
+			esResponseMessage: `{"hits":{"hits":[{"_index":"person_foo1111","_source":{"id":1,"name":"test1"}},{"_index":"person_foo1111","_source":{"id":2,"name":"test1"}}]},"aggregations":{"personType":{"buckets":[{"key":"donor","doc_count":2}]}}}`,
 			expectedError:     nil,
 			expectedResult: &SearchResult{
 				Hits: []json.RawMessage{
-					[]byte(`{"_index":"poadraftapplication","id":1,"name":"test1"}`),
-					[]byte(`{"_index":"poadraftapplication","id":2,"name":"test1"}`),
+					[]byte(`{"_index":"person","id":1,"name":"test1"}`),
+					[]byte(`{"_index":"person","id":2,"name":"test1"}`),
 				},
 				Aggregations: map[string]map[string]int{
 					"personType": {
