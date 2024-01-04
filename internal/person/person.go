@@ -81,7 +81,7 @@ func IndexConfig() (name string, config []byte, err error) {
 
 	personConfig := map[string]interface{}{
 		"settings": map[string]interface{}{
-			"number_of_shards":   1,
+			"number_of_shards":   3,
 			"number_of_replicas": 1,
 			"refresh_interval":   "1s",
 			"analysis": map[string]interface{}{
