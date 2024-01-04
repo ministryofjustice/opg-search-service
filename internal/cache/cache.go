@@ -49,7 +49,7 @@ func New() *SecretsCache {
 }
 
 func (c *SecretsCache) GetSecretString(key string) (string, error) {
-	return c.cache.GetSecretString(c.env + "/" + key)
+	return c.cache.GetSecretString("/" + c.env + "/" + key)
 }
 
 func (c *SecretsCache) GetGlobalSecretString(key string) (string, error) {
