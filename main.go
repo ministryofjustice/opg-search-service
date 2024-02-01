@@ -326,6 +326,7 @@ func main() {
 	postRouter.Handle("/deputies/search", search.NewHandler(l, esClient, search.PrepareQueryForDeputy))
 
 	postRouter.Handle("/digitalLpa", index.NewHandler(l, esClient, digitalLpaIndices, digitallpa.ParseIndexRequest))
+	postRouter.Handle("/digitalLpa/search", search.NewHandler(l, esClient, search.PrepareQueryForDigitalLpa))
 
 	postRouter.Handle("/firms", index.NewHandler(l, esClient, firmIndices, firm.ParseIndexRequest))
 	postRouter.Handle("/firms/search", search.NewHandler(l, esClient, search.PrepareQueryForFirm))

@@ -48,6 +48,7 @@ func (c *indexCommand) Run(args []string) error {
 	flagset := flag.NewFlagSet("index", flag.ExitOnError)
 
 	all := flagset.Bool("all", false, "index all records for chosen indices")
+	digitalLpaOnly := flagset.Bool("digital-lpa", false, "index records to the digital lpa index")
 	firmOnly := flagset.Bool("firm", false, "index records to the firm index")
 	personOnly := flagset.Bool("person", false, "index records to the person index")
 	from := flagset.Int("from", 0, "index an id range starting from (use with -to)")
@@ -91,6 +92,15 @@ func (c *indexCommand) Run(args []string) error {
 		for _, indexName := range c.currentIndices {
 			if strings.HasPrefix(indexName, "person_") {
 				indexers["person"] = index.New(c.esClient, c.logger, person.NewDB(conn), indexName)
+				break
+			}
+		}
+	}
+
+	if *digitalLpaOnly || noneSet {
+		for _, indexName := range c.currentIndices {
+			if strings.HasPrefix(indexName, "digitalLpas_") {
+				indexers["digitalLpa"] = index.New(c.esClient, c.logger, nil, indexName)
 				break
 			}
 		}

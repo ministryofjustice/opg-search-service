@@ -1,10 +1,12 @@
 package search
 
 import (
+	"github.com/ministryofjustice/opg-search-service/internal/digitallpa"
 	"github.com/ministryofjustice/opg-search-service/internal/firm"
 	"github.com/ministryofjustice/opg-search-service/internal/person"
 )
 
+var digitalLpaIndices = []string{digitallpa.AliasName}
 var firmIndices = []string{firm.AliasName}
 var personIndices = []string{person.AliasName}
 var allIndices = []string{firm.AliasName, person.AliasName}
@@ -70,6 +72,26 @@ func PrepareQueryForDeputy(req *Request) ([]string, map[string]interface{}) {
 	}
 
 	return personIndices, withDefaults(req, body)
+}
+
+func PrepareQueryForDigitalLpa(req *Request) ([]string, map[string]interface{}) {
+	body := map[string]interface{}{
+		"query": map[string]interface{}{
+			"bool": map[string]interface{}{
+				"must": map[string]interface{}{
+					"simple_query_string": map[string]interface{}{
+						"query": req.Term,
+						"fields": []string{
+							"searchable",
+						},
+						"default_operator": "AND",
+					},
+				},
+			},
+		},
+	}
+
+	return digitalLpaIndices, withDefaults(req, body)
 }
 
 func PrepareQueryForAll(req *Request) ([]string, map[string]interface{}) {
