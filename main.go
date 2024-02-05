@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/ministryofjustice/opg-search-service/internal/cache"
 	"github.com/ministryofjustice/opg-search-service/internal/cmd"
+	"github.com/ministryofjustice/opg-search-service/internal/digitallpa"
 	"github.com/ministryofjustice/opg-search-service/internal/elasticsearch"
 	"github.com/ministryofjustice/opg-search-service/internal/firm"
 	"github.com/ministryofjustice/opg-search-service/internal/index"
@@ -36,9 +37,15 @@ func main() {
 		l.Fatal(err)
 	}
 
+	digitalLpaIndex, digitalLpaConfig, err := digitallpa.IndexConfig()
+	if err != nil {
+		l.Fatal(err)
+	}
+
 	currentIndices := map[string][]byte{
-		personIndex:              personConfig,
-		firmIndex:                firmConfig,
+		personIndex:     personConfig,
+		firmIndex:       firmConfig,
+		digitalLpaIndex: digitalLpaConfig,
 	}
 
 	secretsCache := cache.New()
@@ -58,6 +65,7 @@ func main() {
 
 	personIndices := createIndexAndAlias(esClient, person.AliasName, personIndex, personConfig, l)
 	firmIndices := createIndexAndAlias(esClient, firm.AliasName, firmIndex, firmConfig, l)
+	digitalLpaIndices := createIndexAndAlias(esClient, digitallpa.AliasName, digitalLpaIndex, digitalLpaConfig, l)
 
 	// Create new serveMux
 	sm := mux.NewRouter().PathPrefix(os.Getenv("PATH_PREFIX")).Subrouter()
@@ -316,6 +324,9 @@ func main() {
 	postRouter.Handle("/persons/search", search.NewHandler(l, esClient, search.PrepareQueryForPerson))
 
 	postRouter.Handle("/deputies/search", search.NewHandler(l, esClient, search.PrepareQueryForDeputy))
+
+	postRouter.Handle("/digitalLpa", index.NewHandler(l, esClient, digitalLpaIndices, digitallpa.ParseIndexRequest))
+	postRouter.Handle("/digitalLpa/search", search.NewHandler(l, esClient, search.PrepareQueryForDigitalLpa))
 
 	postRouter.Handle("/firms", index.NewHandler(l, esClient, firmIndices, firm.ParseIndexRequest))
 	postRouter.Handle("/firms/search", search.NewHandler(l, esClient, search.PrepareQueryForFirm))

@@ -1,6 +1,7 @@
 package search
 
 import (
+	"github.com/ministryofjustice/opg-search-service/internal/digitallpa"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -237,7 +238,7 @@ func TestPrepareQueryForAll(t *testing.T) {
 		"from":        123,
 	}, body)
 
-	assert.Equal(t, []string{firm.AliasName, person.AliasName}, indices)
+	assert.Equal(t, []string{firm.AliasName, person.AliasName, digitallpa.AliasName}, indices)
 }
 
 func TestPrepareQueryForAllEmptyIndices(t *testing.T) {
@@ -268,7 +269,7 @@ func TestPrepareQueryForAllEmptyIndices(t *testing.T) {
 		"from":        123,
 	}, body)
 
-	assert.Equal(t, []string{firm.AliasName, person.AliasName}, indices)
+	assert.Equal(t, []string{firm.AliasName, person.AliasName, digitallpa.AliasName}, indices)
 }
 
 func TestPrepareQueryForAllWithOptions(t *testing.T) {
