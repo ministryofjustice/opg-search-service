@@ -7,7 +7,7 @@ import (
 	"github.com/ministryofjustice/opg-search-service/internal/response"
 )
 
-const AliasName = "digitalLpa"
+const AliasName = "digital_lpa"
 
 type Person struct {
 	Firstnames string  `json:"firstNames"`
