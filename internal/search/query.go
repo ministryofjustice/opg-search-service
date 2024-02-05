@@ -9,7 +9,7 @@ import (
 var digitalLpaIndices = []string{digitallpa.AliasName}
 var firmIndices = []string{firm.AliasName}
 var personIndices = []string{person.AliasName}
-var allIndices = []string{firm.AliasName, person.AliasName}
+var allIndices = []string{firm.AliasName, person.AliasName, digitallpa.AliasName}
 
 func PrepareQueryForFirm(req *Request) ([]string, map[string]interface{}) {
 	body := map[string]interface{}{
