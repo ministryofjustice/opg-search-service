@@ -10,10 +10,9 @@ import (
 const AliasName = "digitalLpa"
 
 type Person struct {
-	Firstnames   string       `json:"firstNames"`
-	Surname      string       `json:"surname"`
-	AddressLines AddressLines `json:"AddressLines"`
-	Postcode     string       `json:"postcode"`
+	Firstnames string  `json:"firstNames"`
+	Surname    string  `json:"surname"`
+	Address    Address `json:"address"`
 }
 
 type Donor struct {
@@ -26,14 +25,15 @@ type Attorney struct {
 	Dob string `json:"dob"`
 }
 
-type AddressLines struct {
-	Line1 string `json:"line1"`
-	Line2 string `json:"line2"`
-	Line3 string `json:"line3"`
+type Address struct {
+	Line1    string `json:"line1"`
+	Line2    string `json:"line2"`
+	Line3    string `json:"line3"`
+	Postcode string `json:"postcode"`
 }
 
 type DigitalLpa struct {
-	Uid                 string     `json:"uid"`
+	Uid                 string     `json:"uId"`
 	LpaType             string     `json:"lpaType"`
 	Donor               Donor      `json:"donor"`
 	CertificateProvider Person     `json:"certificateProvider"`
@@ -94,37 +94,44 @@ func IndexConfig() (name string, config []byte, err error) {
 				"lpaType":    textField,
 				"donor": map[string]interface{}{
 					"properties": map[string]interface{}{
-						"firstnames":   searchableTextField,
-						"surname":      searchableTextField,
-						"addresslines": searchableTextField,
-						"dob":          searchableTextField,
-						"postcode": map[string]interface{}{
+						"firstnames": searchableTextField,
+						"surname":    searchableTextField,
+						"dob":        searchableTextField,
+						"address": map[string]interface{}{
 							"properties": map[string]interface{}{
 								"line1": searchableTextField,
 								"line2": searchableTextField,
 								"line3": searchableTextField,
+								"postcode": map[string]interface{}{
+									"type":     "text",
+									"analyzer": "no_space_analyzer",
+									"copy_to":  "searchable",
+									"fields": map[string]interface{}{
+										"keyword": keywordField,
+									},
+								},
 							},
-							"type":     "text",
-							"analyzer": "no_space_analyzer",
-							"copy_to":  "searchable",
 						},
 					},
 				},
 				"certificateProvider": map[string]interface{}{
 					"properties": map[string]interface{}{
-						"firstnames":   searchableTextField,
-						"surname":      searchableTextField,
-						"addresslines": searchableTextField,
-						"dob":          searchableTextField,
-						"postcode": map[string]interface{}{
+						"firstnames": searchableTextField,
+						"surname":    searchableTextField,
+						"address": map[string]interface{}{
 							"properties": map[string]interface{}{
 								"line1": searchableTextField,
 								"line2": searchableTextField,
 								"line3": searchableTextField,
+								"postcode": map[string]interface{}{
+									"type":     "text",
+									"analyzer": "no_space_analyzer",
+									"copy_to":  "searchable",
+									"fields": map[string]interface{}{
+										"keyword": keywordField,
+									},
+								},
 							},
-							"type":     "text",
-							"analyzer": "no_space_analyzer",
-							"copy_to":  "searchable",
 						},
 					},
 				},
@@ -133,19 +140,19 @@ func IndexConfig() (name string, config []byte, err error) {
 						"firstnames": searchableTextField,
 						"surname":    searchableTextField,
 						"dob":        searchableTextField,
-						"addresslines": map[string]interface{}{
+						"address": map[string]interface{}{
 							"properties": map[string]interface{}{
 								"line1": searchableTextField,
 								"line2": searchableTextField,
 								"line3": searchableTextField,
-							},
-						},
-						"postcode": map[string]interface{}{
-							"type":     "text",
-							"analyzer": "no_space_analyzer",
-							"copy_to":  "searchable",
-							"fields": map[string]interface{}{
-								"keyword": keywordField,
+								"postcode": map[string]interface{}{
+									"type":     "text",
+									"analyzer": "no_space_analyzer",
+									"copy_to":  "searchable",
+									"fields": map[string]interface{}{
+										"keyword": keywordField,
+									},
+								},
 							},
 						},
 					},
