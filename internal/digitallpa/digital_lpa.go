@@ -90,11 +90,11 @@ func IndexConfig() (name string, config []byte, err error) {
 		"mappings": map[string]interface{}{
 			"properties": map[string]interface{}{
 				"searchable": textField,
-				"uid":        searchableTextField,
+				"uId":        searchableTextField,
 				"lpaType":    textField,
 				"donor": map[string]interface{}{
 					"properties": map[string]interface{}{
-						"firstnames": searchableTextField,
+						"firstNames": searchableTextField,
 						"surname":    searchableTextField,
 						"dob":        searchableTextField,
 						"address": map[string]interface{}{
@@ -116,7 +116,7 @@ func IndexConfig() (name string, config []byte, err error) {
 				},
 				"certificateProvider": map[string]interface{}{
 					"properties": map[string]interface{}{
-						"firstnames": searchableTextField,
+						"firstNames": searchableTextField,
 						"surname":    searchableTextField,
 						"address": map[string]interface{}{
 							"properties": map[string]interface{}{
@@ -137,7 +137,7 @@ func IndexConfig() (name string, config []byte, err error) {
 				},
 				"attorneys": map[string]interface{}{
 					"properties": map[string]interface{}{
-						"firstnames": searchableTextField,
+						"firstNames": searchableTextField,
 						"surname":    searchableTextField,
 						"dob":        searchableTextField,
 						"address": map[string]interface{}{
