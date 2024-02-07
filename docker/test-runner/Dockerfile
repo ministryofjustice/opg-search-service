@@ -1,3 +1,3 @@
-FROM golang:1.21.6
+FROM golang:1.22.0
 ENV CGO_ENABLED=0
 RUN go install gotest.tools/gotestsum@latest
