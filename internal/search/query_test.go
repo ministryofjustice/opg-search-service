@@ -1,6 +1,7 @@
 package search
 
 import (
+	"github.com/ministryofjustice/opg-search-service/internal/digitallpa"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -157,6 +158,43 @@ func TestPrepareQueryForPersonWithOptions(t *testing.T) {
 	assert.Equal(t, []string{person.AliasName}, indices)
 }
 
+func TestPrepareQueryForDigitalLpa(t *testing.T) {
+	req := &Request{
+		Term: "MMMoooossssa",
+		From: 123,
+	}
+
+	indices, body := PrepareQueryForDigitalLpa(req)
+
+	assert.Equal(t, map[string]interface{}{
+		"query": map[string]interface{}{
+			"bool": map[string]interface{}{
+				"must": map[string]interface{}{
+					"simple_query_string": map[string]interface{}{
+						"query": "MMMoooossssa",
+						"fields": []string{
+							"searchable",
+						},
+						"default_operator": "AND",
+					},
+				},
+			},
+		},
+		"aggs": map[string]interface{}{
+			"personType": map[string]interface{}{
+				"terms": map[string]interface{}{
+					"field": "personType",
+					"size":  "20",
+				},
+			},
+		},
+		"post_filter": map[string]interface{}{"bool": map[string]interface{}{"should": []interface{}{}}},
+		"from":        123,
+	}, body)
+
+	assert.Equal(t, []string{digitallpa.AliasName}, indices)
+}
+
 func TestPrepareQueryForPersonAlreadyPrepared(t *testing.T) {
 	req := &Request{
 		Prepared: map[string]interface{}{
@@ -237,7 +275,7 @@ func TestPrepareQueryForAll(t *testing.T) {
 		"from":        123,
 	}, body)
 
-	assert.Equal(t, []string{firm.AliasName, person.AliasName}, indices)
+	assert.Equal(t, []string{firm.AliasName, person.AliasName, digitallpa.AliasName}, indices)
 }
 
 func TestPrepareQueryForAllEmptyIndices(t *testing.T) {
@@ -268,7 +306,7 @@ func TestPrepareQueryForAllEmptyIndices(t *testing.T) {
 		"from":        123,
 	}, body)
 
-	assert.Equal(t, []string{firm.AliasName, person.AliasName}, indices)
+	assert.Equal(t, []string{firm.AliasName, person.AliasName, digitallpa.AliasName}, indices)
 }
 
 func TestPrepareQueryForAllWithOptions(t *testing.T) {
