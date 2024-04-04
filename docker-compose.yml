@@ -15,7 +15,7 @@ services:
       - docker-compose.env
 
   localstack:
-    image: localstack/localstack:3.2.0
+    image: localstack/localstack:3.3.0
     environment:
       AWS_DEFAULT_REGION: eu-west-1
       SERVICES: es, secretsmanager
@@ -40,7 +40,7 @@ services:
     command: -exclude-dir=.gocache /app/...
 
   go-lint:
-    image: golangci/golangci-lint:v1.57.1
+    image: golangci/golangci-lint:v1.57.2
     working_dir: /go/src/app
     volumes:
       - ./:/go/src/app
