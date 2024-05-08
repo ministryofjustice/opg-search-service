@@ -1,6 +1,6 @@
 module github.com/ministryofjustice/opg-search-service
 
-go 1.16
+go 1.22
 
 require (
 	github.com/aws/aws-sdk-go v1.52.2
