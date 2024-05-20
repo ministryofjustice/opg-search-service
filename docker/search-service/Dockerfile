@@ -19,7 +19,7 @@ RUN apk --update --no-cache add \
 RUN apk --no-cache add tzdata
 
 # Patch vulnerabilities
-RUN apk upgrade --no-cache libcrypto3 libssl3
+RUN apk upgrade --no-cache busybox libcrypto3 libssl3
 
 COPY --from=build-env /go/bin/search-service /go/bin/search-service
 RUN addgroup -S app && adduser -S -g app app \
