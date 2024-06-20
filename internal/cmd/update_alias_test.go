@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"context"
+	"fmt"
+	"github.com/ministryofjustice/opg-search-service/internal/digitallpa"
 	"testing"
 
 	"github.com/ministryofjustice/opg-search-service/internal/firm"
@@ -83,4 +85,30 @@ func TestUpdateFirmAliasWhenAliasIsCurrent(t *testing.T) {
 	assert.Nil(t, command.Run([]string{}))
 
 	assert.Equal(t, "alias 'firm' is already set to 'firm_expected'", hook.LastEntry().Message)
+}
+
+func TestUpdateDigitalLpaAlias(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	client := &mockUpdateAliasClient{}
+	oldAlias := fmt.Sprintf("%s_1a2b3c4d", digitallpa.AliasName)
+	newAlias := fmt.Sprintf("%s_0z9y8x7w", digitallpa.AliasName)
+
+	client.
+		On("ResolveAlias", mock.Anything, digitallpa.AliasName).
+		Return(oldAlias, nil)
+
+	client.
+		On("UpdateAlias", mock.Anything, digitallpa.AliasName, oldAlias, newAlias).
+		Return(nil)
+
+	command := NewUpdateAlias(l, client, map[string][]byte{newAlias: indexConfig})
+	assert.Nil(t, command.Run([]string{}))
+}
+
+func TestUpdateDigitalLpaAliasWhenAliasIsBad(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	client := &mockUpdateAliasClient{}
+
+	command := NewUpdateAlias(l, client, map[string][]byte{"a": indexConfig})
+	assert.NotNil(t, command.Run([]string{}))
 }

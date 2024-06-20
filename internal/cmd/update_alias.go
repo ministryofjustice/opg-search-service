@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"strings"
 
@@ -42,7 +43,14 @@ func (c *updateAliasCommand) Run(args []string) error {
 	}
 
 	for indexName := range c.currentIndices {
-		aliasName := strings.Split(indexName, "_")[0]
+		// assumption is that the alias looks like <alias>_<hash>, where <hash> is appended by opensearch;
+		// <alias> may contain underscores, and we assume only the last _<hash> part can be discarded, with the
+		// remainder being the alias
+		aliasParts := strings.Split(indexName, "_")
+		if len(aliasParts) < 2 {
+			return errors.New("invalid index alias")
+		}
+		aliasName := strings.Join(aliasParts[0:len(aliasParts)-1], "_")
 
 		aliasedIndex, err := c.client.ResolveAlias(ctx, aliasName)
 		if err != nil {
