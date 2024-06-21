@@ -56,32 +56,23 @@ func TestCleanupIndices(t *testing.T) {
 	client.On("DeleteIndex", mock.Anything, "firm_xyz").Return(nil).Once()
 	client.On("DeleteIndex", mock.Anything, "firm_abc").Return(nil).Once()
 
-	command := NewCleanupIndices(l, client, map[string][]byte{"firm_something": indexConfig, "person_something": indexConfig})
+	command := NewCleanupIndices(
+		l,
+		client,
+		[]IndexConfig{
+			{
+				Name:   "person_something",
+				Alias:  "person",
+				Config: indexConfig,
+			},
+			{
+				Name:   "firm_something",
+				Alias:  "firm",
+				Config: indexConfig,
+			},
+		},
+	)
 	assert.Nil(t, command.Run([]string{}))
-}
-
-func TestCleanupIndicesWhenAliasNotCurrent(t *testing.T) {
-	l, _ := test.NewNullLogger()
-	client := &mockCleanupIndicesClient{}
-
-	client.
-		On("ResolveAlias", mock.Anything, person.AliasName).
-		Return("person_xyz", nil)
-
-	client.
-		On("ResolveAlias", mock.Anything, firm.AliasName).
-		Return("firm_xyz", nil)
-
-	client.
-		On("Indices", mock.Anything, "person_*").
-		Return([]string{"person_xyz", "person_something", "person_abc"}, nil)
-
-	client.
-		On("Indices", mock.Anything, "firm_*").
-		Return([]string{"firm_xyz", "firm_something", "firm_abc"}, nil)
-
-	command := NewCleanupIndices(l, client, map[string][]byte{"firm_something": indexConfig, "person_something": indexConfig})
-	assert.Equal(t, "alias 'firm' is set to 'firm_xyz' not a current index: firm_something, person_something", command.Run([]string{}).Error())
 }
 
 func TestCleanupIndicesExplain(t *testing.T) {
