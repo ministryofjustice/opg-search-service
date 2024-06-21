@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -22,30 +24,61 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+func buildIndexConfig(configFunc func() (config []byte, err error), alias string, l *logrus.Logger) cmd.IndexConfig {
+	config, err := configFunc()
+	if err != nil {
+		l.Fatal(err)
+	}
+
+	sum := sha256.Sum256(config)
+	indexName := fmt.Sprintf("%s_%x", alias, sum[:8])
+
+	return cmd.IndexConfig{
+		Name:   indexName,
+		Alias:  alias,
+		Config: config,
+	}
+}
+
+func createIndexAndAlias(esClient *elasticsearch.Client, indexConfig cmd.IndexConfig, l *logrus.Logger) []string {
+	ctx := context.Background()
+	if err := esClient.CreateIndex(ctx, indexConfig.Name, indexConfig.Config, false); err != nil {
+		l.Fatal(err)
+	}
+
+	aliasedIndex, err := esClient.ResolveAlias(ctx, indexConfig.Alias)
+	if err == elasticsearch.ErrAliasMissing {
+		if err := esClient.CreateAlias(ctx, indexConfig.Alias, indexConfig.Name); err != nil {
+			l.Fatal(err)
+		}
+		aliasedIndex = indexConfig.Name
+	} else if err != nil {
+		l.Fatal(err)
+	}
+
+	currentIndices := []string{indexConfig.Alias}
+	if aliasedIndex != indexConfig.Name {
+		currentIndices = append(currentIndices, indexConfig.Name)
+	}
+
+	l.Println("indexing to", currentIndices)
+
+	return currentIndices
+}
+
 func main() {
 	l := logrus.New()
 	l.SetFormatter(&logrus.JSONFormatter{})
 
-	//create indices for entities
-	personIndex, personConfig, err := person.IndexConfig()
-	if err != nil {
-		l.Fatal(err)
-	}
+	// create indices for entities
+	personIndexConfig := buildIndexConfig(person.IndexConfig, person.AliasName, l)
+	firmIndexConfig := buildIndexConfig(firm.IndexConfig, firm.AliasName, l)
+	digitallpaIndexConfig := buildIndexConfig(digitallpa.IndexConfig, digitallpa.AliasName, l)
 
-	firmIndex, firmConfig, err := firm.IndexConfig()
-	if err != nil {
-		l.Fatal(err)
-	}
-
-	digitalLpaIndex, digitalLpaConfig, err := digitallpa.IndexConfig()
-	if err != nil {
-		l.Fatal(err)
-	}
-
-	currentIndices := map[string][]byte{
-		personIndex:     personConfig,
-		firmIndex:       firmConfig,
-		digitalLpaIndex: digitalLpaConfig,
+	currentIndices := []cmd.IndexConfig{
+		personIndexConfig,
+		firmIndexConfig,
+		digitallpaIndexConfig,
 	}
 
 	secretsCache := cache.New()
@@ -63,9 +96,9 @@ func main() {
 		cmd.NewCleanupIndices(l, esClient, currentIndices),
 	)
 
-	personIndices := createIndexAndAlias(esClient, person.AliasName, personIndex, personConfig, l)
-	firmIndices := createIndexAndAlias(esClient, firm.AliasName, firmIndex, firmConfig, l)
-	digitalLpaIndices := createIndexAndAlias(esClient, digitallpa.AliasName, digitalLpaIndex, digitalLpaConfig, l)
+	personIndices := createIndexAndAlias(esClient, personIndexConfig, l)
+	firmIndices := createIndexAndAlias(esClient, firmIndexConfig, l)
+	digitalLpaIndices := createIndexAndAlias(esClient, digitallpaIndexConfig, l)
 
 	// Create new serveMux
 	sm := mux.NewRouter().PathPrefix(os.Getenv("PATH_PREFIX")).Subrouter()
@@ -404,30 +437,4 @@ func main() {
 	if err != nil {
 		l.Fatal(err)
 	}
-}
-
-func createIndexAndAlias(esClient *elasticsearch.Client, aliasName string, indexName string, indexConfig []byte, l *logrus.Logger) []string {
-	ctx := context.Background()
-	if err := esClient.CreateIndex(ctx, indexName, indexConfig, false); err != nil {
-		l.Fatal(err)
-	}
-
-	aliasedIndex, err := esClient.ResolveAlias(ctx, aliasName)
-	if err == elasticsearch.ErrAliasMissing {
-		if err := esClient.CreateAlias(ctx, aliasName, indexName); err != nil {
-			l.Fatal(err)
-		}
-		aliasedIndex = indexName
-	} else if err != nil {
-		l.Fatal(err)
-	}
-
-	currentIndices := []string{aliasName}
-	if aliasedIndex != indexName {
-		currentIndices = append(currentIndices, indexName)
-	}
-
-	l.Println("indexing to", currentIndices)
-
-	return currentIndices
 }

@@ -20,31 +20,42 @@ type Secrets interface {
 	GetGlobalSecretString(key string) (string, error)
 }
 
-type indexCommand struct {
-	logger         *logrus.Logger
-	esClient       index.BulkClient
-	secrets        Secrets
-	currentIndices []string
+type IndexCommand struct {
+	logger            *logrus.Logger
+	esClient          index.BulkClient
+	secrets           Secrets
+	currentIndexNames []string
 }
 
-func NewIndex(logger *logrus.Logger, esClient index.BulkClient, secrets Secrets, indexes map[string][]byte) *indexCommand {
-	var currentIndices []string
-	for indexName := range indexes {
-		currentIndices = append(currentIndices, indexName)
+type IndexConfig struct {
+	// simple alias for the index (e.g. digital_lpa, firm, person)
+	Alias string
+
+	// real name of the index on open search server inc. 8 digit hash
+	Name string
+
+	// configuration for the index
+	Config []byte
+}
+
+func NewIndex(logger *logrus.Logger, esClient index.BulkClient, secrets Secrets, indexes []IndexConfig) *IndexCommand {
+	var indexNames []string
+	for _, indexConfig := range indexes {
+		indexNames = append(indexNames, indexConfig.Name)
 	}
-	return &indexCommand{
-		logger:         logger,
-		esClient:       esClient,
-		secrets:        secrets,
-		currentIndices: currentIndices,
+	return &IndexCommand{
+		logger:            logger,
+		esClient:          esClient,
+		secrets:           secrets,
+		currentIndexNames: indexNames,
 	}
 }
 
-func (c *indexCommand) Info() (name, description string) {
+func (c *IndexCommand) Info() (name, description string) {
 	return "index", "index records"
 }
 
-func (c *indexCommand) Run(args []string) error {
+func (c *IndexCommand) Run(args []string) error {
 	flagset := flag.NewFlagSet("index", flag.ExitOnError)
 
 	all := flagset.Bool("all", false, "index all records for chosen indices")
@@ -80,7 +91,7 @@ func (c *indexCommand) Run(args []string) error {
 	noneSet := !*firmOnly && !*personOnly
 
 	if *firmOnly || noneSet {
-		for _, indexName := range c.currentIndices {
+		for _, indexName := range c.currentIndexNames {
 			if strings.HasPrefix(indexName, "firm_") {
 				indexers["firm"] = index.New(c.esClient, c.logger, firm.NewDB(conn), indexName)
 				break
@@ -88,7 +99,7 @@ func (c *indexCommand) Run(args []string) error {
 		}
 	}
 	if *personOnly || noneSet {
-		for _, indexName := range c.currentIndices {
+		for _, indexName := range c.currentIndexNames {
 			if strings.HasPrefix(indexName, "person_") {
 				indexers["person"] = index.New(c.esClient, c.logger, person.NewDB(conn), indexName)
 				break
@@ -129,7 +140,7 @@ func (c *indexCommand) Run(args []string) error {
 	return nil
 }
 
-func (c *indexCommand) dbConnectionString() (string, error) {
+func (c *IndexCommand) dbConnectionString() (string, error) {
 	pass := os.Getenv("SEARCH_SERVICE_DB_PASS")
 	if passSecret := os.Getenv("SEARCH_SERVICE_DB_PASS_SECRET"); passSecret != "" {
 		var err error

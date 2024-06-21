@@ -2,10 +2,7 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"flag"
-	"strings"
-
 	"github.com/sirupsen/logrus"
 )
 
@@ -14,25 +11,25 @@ type UpdateAliasClient interface {
 	UpdateAlias(ctx context.Context, alias, oldIndex, newIndex string) error
 }
 
-type updateAliasCommand struct {
+type UpdateAliasCommand struct {
 	logger         *logrus.Logger
 	client         UpdateAliasClient
-	currentIndices map[string][]byte
+	currentIndices []IndexConfig
 }
 
-func NewUpdateAlias(logger *logrus.Logger, client UpdateAliasClient, indices map[string][]byte) *updateAliasCommand {
-	return &updateAliasCommand{
+func NewUpdateAlias(logger *logrus.Logger, client UpdateAliasClient, currentIndices []IndexConfig) *UpdateAliasCommand {
+	return &UpdateAliasCommand{
 		logger:         logger,
 		client:         client,
-		currentIndices: indices,
+		currentIndices: currentIndices,
 	}
 }
 
-func (c *updateAliasCommand) Info() (name, description string) {
+func (c *UpdateAliasCommand) Info() (name, description string) {
 	return "update-alias", "update aliases to refer to the current indices"
 }
 
-func (c *updateAliasCommand) Run(args []string) error {
+func (c *UpdateAliasCommand) Run(args []string) error {
 	ctx := context.Background()
 	flagset := flag.NewFlagSet("update-alias", flag.ExitOnError)
 
@@ -42,30 +39,21 @@ func (c *updateAliasCommand) Run(args []string) error {
 		return err
 	}
 
-	for indexName := range c.currentIndices {
-		// assumption is that the alias looks like <alias>_<hash>, where <hash> is appended by opensearch;
-		// <alias> may contain underscores, and we assume only the last _<hash> part can be discarded, with the
-		// remainder being the alias
-		aliasParts := strings.Split(indexName, "_")
-		if len(aliasParts) < 2 {
-			return errors.New("invalid index alias")
-		}
-		aliasName := strings.Join(aliasParts[0:len(aliasParts)-1], "_")
-
-		aliasedIndex, err := c.client.ResolveAlias(ctx, aliasName)
+	for _, indexConfig := range c.currentIndices {
+		currentAliasedIndex, err := c.client.ResolveAlias(ctx, indexConfig.Alias)
 		if err != nil {
 			return err
 		}
 
-		if aliasedIndex == indexName {
-			c.logger.Printf("alias '%s' is already set to '%s'", aliasName, indexName)
+		if currentAliasedIndex == indexConfig.Name {
+			c.logger.Printf("alias '%s' is already set to '%s'", indexConfig.Alias, indexConfig.Name)
 			continue
 		}
 
 		if *explain {
-			c.logger.Printf("will update alias '%s' to '%s'", aliasName, indexName)
+			c.logger.Printf("will update alias '%s' to '%s'", indexConfig.Alias, indexConfig.Name)
 		} else {
-			if err := c.client.UpdateAlias(ctx, aliasName, aliasedIndex, indexName); err != nil {
+			if err := c.client.UpdateAlias(ctx, indexConfig.Alias, currentAliasedIndex, indexConfig.Name); err != nil {
 				return err
 			}
 		}
