@@ -79,8 +79,6 @@ func TestPerson_Validate(t *testing.T) {
 }
 
 func TestPerson_IndexConfig(t *testing.T) {
-	name, _, err := IndexConfig()
-
+	_, err := IndexConfig()
 	assert.Nil(t, err)
-	assert.Regexp(t, `[a-z]+_[a-z0-9]+`, name)
 }

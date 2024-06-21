@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/sha256"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -23,22 +21,6 @@ import (
 	"github.com/ministryofjustice/opg-search-service/internal/search"
 	"github.com/sirupsen/logrus"
 )
-
-func buildIndexConfig(configFunc func() (config []byte, err error), alias string, l *logrus.Logger) cmd.IndexConfig {
-	config, err := configFunc()
-	if err != nil {
-		l.Fatal(err)
-	}
-
-	sum := sha256.Sum256(config)
-	indexName := fmt.Sprintf("%s_%x", alias, sum[:8])
-
-	return cmd.IndexConfig{
-		Name:   indexName,
-		Alias:  alias,
-		Config: config,
-	}
-}
 
 func createIndexAndAlias(esClient *elasticsearch.Client, indexConfig cmd.IndexConfig, l *logrus.Logger) []string {
 	ctx := context.Background()
@@ -71,9 +53,9 @@ func main() {
 	l.SetFormatter(&logrus.JSONFormatter{})
 
 	// create indices for entities
-	personIndexConfig := buildIndexConfig(person.IndexConfig, person.AliasName, l)
-	firmIndexConfig := buildIndexConfig(firm.IndexConfig, firm.AliasName, l)
-	digitallpaIndexConfig := buildIndexConfig(digitallpa.IndexConfig, digitallpa.AliasName, l)
+	personIndexConfig := cmd.NewIndexConfig(person.IndexConfig, person.AliasName, l)
+	firmIndexConfig := cmd.NewIndexConfig(firm.IndexConfig, firm.AliasName, l)
+	digitallpaIndexConfig := cmd.NewIndexConfig(digitallpa.IndexConfig, digitallpa.AliasName, l)
 
 	currentIndices := []cmd.IndexConfig{
 		personIndexConfig,

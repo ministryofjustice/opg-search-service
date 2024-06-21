@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"flag"
 	"fmt"
@@ -36,6 +37,22 @@ type IndexConfig struct {
 
 	// configuration for the index
 	Config []byte
+}
+
+func NewIndexConfig(configFunc func() ([]byte, error), alias string, l *logrus.Logger) IndexConfig {
+	config, err := configFunc()
+	if err != nil {
+		l.Fatal(err)
+	}
+
+	sum := sha256.Sum256(config)
+	indexName := fmt.Sprintf("%s_%x", alias, sum[:8])
+
+	return IndexConfig{
+		Name:   indexName,
+		Alias:  alias,
+		Config: config,
+	}
 }
 
 func NewIndex(logger *logrus.Logger, esClient index.BulkClient, secrets Secrets, indexes []IndexConfig) *IndexCommand {

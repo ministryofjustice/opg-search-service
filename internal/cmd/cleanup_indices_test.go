@@ -95,10 +95,33 @@ func TestCleanupIndicesExplain(t *testing.T) {
 		On("Indices", mock.Anything, "firm_*").
 		Return([]string{"firm_xyz", "firm_something", "firm_abc"}, nil)
 
-	command := NewCleanupIndices(l, client, map[string][]byte{"firm_something": indexConfig, "person_something": indexConfig})
+	command := NewCleanupIndices(
+		l,
+		client,
+		[]IndexConfig{
+			{
+				Name:   "person_something",
+				Alias:  "person",
+				Config: indexConfig,
+			},
+			{
+				Name:   "firm_something",
+				Alias:  "firm",
+				Config: indexConfig,
+			},
+		},
+	)
+
 	assert.Nil(t, command.Run([]string{"-explain"}))
 
-	expected := []string{"will delete firm_xyz", "will delete firm_abc", "will delete person_xyz", "will delete person_abc"}
+	expected := []string{
+		"will delete person_xyz",
+		"keeping index person_something aliased as person",
+		"will delete person_abc",
+		"will delete firm_xyz",
+		"keeping index firm_something aliased as firm",
+		"will delete firm_abc",
+	}
 	if assert.Len(t, hook.Entries, len(expected)) {
 		for i, e := range hook.Entries {
 			assert.Equal(t, expected[i], e.Message)
