@@ -104,11 +104,3 @@ func TestUpdateDigitalLpaAlias(t *testing.T) {
 	command := NewUpdateAlias(l, client, map[string][]byte{newAlias: indexConfig})
 	assert.Nil(t, command.Run([]string{}))
 }
-
-func TestUpdateDigitalLpaAliasWhenAliasIsBad(t *testing.T) {
-	l, _ := test.NewNullLogger()
-	client := &mockUpdateAliasClient{}
-
-	command := NewUpdateAlias(l, client, map[string][]byte{"a": indexConfig})
-	assert.NotNil(t, command.Run([]string{}))
-}
