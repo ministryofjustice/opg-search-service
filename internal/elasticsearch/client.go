@@ -52,7 +52,7 @@ type elasticSearchResponse struct {
 			Relation string `json:"relation"`
 		} `json:"total"`
 		Hits []struct {
-			Index  string          `json:"_index"`
+			Index  string                 `json:"_index"`
 			Source map[string]interface{} `json:"_source"`
 		} `json:"hits"`
 	} `json:"hits"`
@@ -301,6 +301,7 @@ func (c *Client) Search(ctx context.Context, indices []string, requestBody map[s
 }
 
 func (c *Client) CreateIndex(ctx context.Context, name string, config []byte, force bool) error {
+	c.logger.Printf("Checking index '%s' exists", name)
 	exists, err := c.IndexExists(ctx, name)
 	if err != nil {
 		return err
@@ -330,8 +331,6 @@ func (c *Client) CreateIndex(ctx context.Context, name string, config []byte, fo
 }
 
 func (c *Client) IndexExists(ctx context.Context, name string) (bool, error) {
-	c.logger.Printf("Checking index '%s' exists", name)
-
 	resp, err := c.doRequest(ctx, http.MethodHead, name, nil, "")
 	if err != nil {
 		return false, err

@@ -1,9 +1,7 @@
 package person
 
 import (
-	"crypto/sha256"
 	"encoding/json"
-	"fmt"
 	"strconv"
 
 	"github.com/ministryofjustice/opg-search-service/internal/response"
@@ -73,7 +71,7 @@ func (p Person) Validate() []response.Error {
 	return errs
 }
 
-func IndexConfig() (name string, config []byte, err error) {
+func IndexConfig() (config []byte, err error) {
 	textField := map[string]interface{}{"type": "text"}
 	searchableTextField := map[string]interface{}{"type": "text", "copy_to": "searchable"}
 	keywordField := map[string]interface{}{"type": "keyword"}
@@ -161,10 +159,8 @@ func IndexConfig() (name string, config []byte, err error) {
 
 	data, err := json.Marshal(personConfig)
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
 
-	sum := sha256.Sum256(data)
-
-	return fmt.Sprintf("%s_%x", AliasName, sum[:8]), data, err
+	return data, err
 }

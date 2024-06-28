@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/ministryofjustice/opg-search-service/internal/cmd"
 	"io/ioutil"
 	"log"
 	"net"
@@ -160,15 +161,15 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 	suite.Nil(err)
 	suite.Equal(http.StatusOK, resp.StatusCode)
 
-	indexName, _, _ := person.IndexConfig()
-	indexNameFirm, _, _ := firm.IndexConfig()
+	personIndexConfig := cmd.NewIndexConfig(person.IndexConfig, person.AliasName, logger)
+	firmIndexConfig := cmd.NewIndexConfig(firm.IndexConfig, firm.AliasName, logger)
 	ctx := context.Background()
 
-	exists, err := suite.esClient.IndexExists(ctx, indexName)
+	exists, err := suite.esClient.IndexExists(ctx, personIndexConfig.Name)
 	suite.False(exists, "Person index should not exist at this point")
 	suite.Nil(err)
 
-	existsFirmIndex, err := suite.esClient.IndexExists(ctx, indexNameFirm)
+	existsFirmIndex, err := suite.esClient.IndexExists(ctx, firmIndexConfig.Name)
 	suite.False(existsFirmIndex, "Firm index should not exist at this point")
 	suite.Nil(err)
 
@@ -181,11 +182,11 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 			continue
 		}
 
-		exists, err = suite.esClient.IndexExists(ctx, indexName)
+		exists, err = suite.esClient.IndexExists(ctx, personIndexConfig.Name)
 		suite.True(exists, "Person index should exist at this point")
 		suite.Nil(err)
 
-		existsFirmIndex, err = suite.esClient.IndexExists(ctx, indexNameFirm)
+		existsFirmIndex, err = suite.esClient.IndexExists(ctx, firmIndexConfig.Name)
 		suite.True(existsFirmIndex, "Firm index should exist at this point")
 		suite.Nil(err)
 

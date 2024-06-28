@@ -65,7 +65,6 @@ func TestDigitalLpa_Validate(t *testing.T) {
 }
 
 func TestDigitalLpa_IndexConfig(t *testing.T) {
-	name, _, err := IndexConfig()
+	_, err := IndexConfig()
 	assert.Nil(t, err)
-	assert.Regexp(t, `[a-z]+_[a-z0-9]+`, name)
 }

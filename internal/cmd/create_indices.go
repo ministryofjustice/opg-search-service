@@ -3,8 +3,6 @@ package cmd
 import (
 	"context"
 	"flag"
-	"strings"
-
 	"github.com/ministryofjustice/opg-search-service/internal/elasticsearch"
 )
 
@@ -14,23 +12,23 @@ type IndexClient interface {
 	CreateAlias(ctx context.Context, alias, index string) error
 }
 
-type createIndicesCommand struct {
+type CreateIndicesCommand struct {
 	esClient IndexClient
-	indices  map[string][]byte
+	indices  []IndexConfig
 }
 
-func NewCreateIndices(esClient IndexClient, indices map[string][]byte) *createIndicesCommand {
-	return &createIndicesCommand{
+func NewCreateIndices(esClient IndexClient, indices []IndexConfig) *CreateIndicesCommand {
+	return &CreateIndicesCommand{
 		esClient: esClient,
 		indices:  indices,
 	}
 }
 
-func (c *createIndicesCommand) Info() (name, description string) {
+func (c *CreateIndicesCommand) Info() (name, description string) {
 	return "create-indices", "create indices"
 }
 
-func (c *createIndicesCommand) Run(args []string) error {
+func (c *CreateIndicesCommand) Run(args []string) error {
 	ctx := context.Background()
 	flagset := flag.NewFlagSet("create-indices", flag.ExitOnError)
 
@@ -40,16 +38,15 @@ func (c *createIndicesCommand) Run(args []string) error {
 		return err
 	}
 
-	for indexName, indexConfig := range c.indices {
-		if err := c.esClient.CreateIndex(ctx, indexName, indexConfig, *force); err != nil {
+	for _, indexConfig := range c.indices {
+		if err := c.esClient.CreateIndex(ctx, indexConfig.Name, indexConfig.Config, *force); err != nil {
 			return err
 		}
 
-		aliasName := strings.Split(indexName, "_")[0]
-		_, err := c.esClient.ResolveAlias(ctx, aliasName)
+		_, err := c.esClient.ResolveAlias(ctx, indexConfig.Alias)
 
 		if err == elasticsearch.ErrAliasMissing {
-			if err := c.esClient.CreateAlias(ctx, aliasName, indexName); err != nil {
+			if err := c.esClient.CreateAlias(ctx, indexConfig.Alias, indexConfig.Name); err != nil {
 				return err
 			}
 		} else if err != nil {

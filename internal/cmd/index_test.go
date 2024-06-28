@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"github.com/stretchr/testify/mock"
 	"os"
 	"testing"
 
@@ -20,8 +21,24 @@ func TestIndexPerson(t *testing.T) {
 	assert := assert.New(t)
 	ctx := context.Background()
 
+	mockClient := &elasticsearch.MockESClient{}
+
+	mockClient.
+		On("DoBulk", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(elasticsearch.BulkResult{
+			Successful: 0,
+			Failed:     0,
+			Error:      "",
+		}, nil)
+
 	l, hook := test.NewNullLogger()
-	command := NewIndex(l, &elasticsearch.MockESClient{}, nil, map[string][]byte{"person_1": indexConfig})
+	command := NewIndex(l, mockClient, nil, []IndexConfig{
+		{
+			Name:   "person_1",
+			Alias:  "person",
+			Config: indexConfig,
+		},
+	})
 
 	os.Setenv("SEARCH_SERVICE_DB_PASS", "searchservice")
 	os.Setenv("SEARCH_SERVICE_DB_USER", "searchservice")
@@ -59,7 +76,13 @@ func TestIndexFirm(t *testing.T) {
 	ctx := context.Background()
 
 	l, hook := test.NewNullLogger()
-	command := NewIndex(l, &elasticsearch.MockESClient{}, nil, map[string][]byte{"firm_1": indexConfig})
+	command := NewIndex(l, &elasticsearch.MockESClient{}, nil, []IndexConfig{
+		{
+			Name:   "firm_1",
+			Alias:  "firm",
+			Config: indexConfig,
+		},
+	})
 
 	os.Setenv("SEARCH_SERVICE_DB_PASS", "searchservice")
 	os.Setenv("SEARCH_SERVICE_DB_USER", "searchservice")
@@ -85,4 +108,10 @@ func TestIndexFirm(t *testing.T) {
 	err = command.Run([]string{"--firm"})
 	assert.Nil(err)
 	assert.Equal("indexing done successful=0 failed=0", hook.LastEntry().Message)
+}
+
+func TestNewIndexConfig(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	ic := NewIndexConfig(func() ([]byte, error) { return []byte{}, nil }, "somealias", l)
+	assert.Regexp(t, `[a-z]+_[a-z0-9]+`, ic.Name)
 }
