@@ -6,6 +6,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -184,5 +185,5 @@ func (c *IndexCommand) dbConnectionString() (string, error) {
 		return "", errors.New("SEARCH_SERVICE_DB_DATABASE must be specified")
 	}
 
-	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s", user, pass, host, port, database), nil
+	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s", user, url.QueryEscape(pass), host, port, database), nil
 }
