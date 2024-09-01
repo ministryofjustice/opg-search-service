@@ -15,7 +15,7 @@ services:
       - docker-compose.env
 
   localstack:
-    image: localstack/localstack:3.6.0
+    image: localstack/localstack:3.7.0
     environment:
       AWS_DEFAULT_REGION: eu-west-1
       SERVICES: es, secretsmanager
@@ -40,7 +40,7 @@ services:
     command: -exclude-dir=.gocache /app/...
 
   go-lint:
-    image: golangci/golangci-lint:v1.59.1
+    image: golangci/golangci-lint:v1.60.3
     working_dir: /go/src/app
     volumes:
       - ./:/go/src/app
@@ -48,7 +48,7 @@ services:
     command: golangci-lint run -v --timeout 5m
 
   postgres:
-    image: postgres:13.15
+    image: postgres:13.16
     ports: ["5434:5432"]
     command: postgres
     environment:
