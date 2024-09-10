@@ -30,7 +30,7 @@ jobs:
       - name: Verify specified Pact
         if: ${{ github.event_name == 'repository_dispatch' }}
         run: |
-          PACT_HEADER=$PACT_HEADER docker-compose run --rm pact-verifier \
+          PACT_HEADER=$PACT_HEADER docker compose run --rm pact-verifier \
             --provider-version=$(git rev-parse HEAD) \
             --provider-branch=main \
             --publish \
@@ -40,7 +40,7 @@ jobs:
       - name: Verify pacts, including pending
         if: ${{ github.event_name == 'push' }}
         run: |
-          PACT_HEADER=$PACT_HEADER docker-compose run --rm pact-verifier \
+          PACT_HEADER=$PACT_HEADER docker compose run --rm pact-verifier \
             --provider-version=$(git rev-parse HEAD) \
             --provider-branch=main \
             --publish \
@@ -55,4 +55,4 @@ jobs:
           # there should either be a Sirius branch with the same name as
           # the search-service PR branch, containing
           # pacts to verify; or a consumer pact on the main Sirius branch
-          PACT_HEADER=$PACT_HEADER docker-compose run --rm pact-verifier
+          PACT_HEADER=$PACT_HEADER docker compose run --rm pact-verifier
