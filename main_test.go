@@ -5,8 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/ministryofjustice/opg-search-service/internal/cmd"
-	"io/ioutil"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -14,6 +13,8 @@ import (
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/ministryofjustice/opg-search-service/internal/cmd"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/ministryofjustice/opg-search-service/internal/elasticsearch"
@@ -212,7 +213,7 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
 
 	suite.Equal(http.StatusAccepted, resp.StatusCode)
 
-	data, _ := ioutil.ReadAll(resp.Body)
+	data, _ := io.ReadAll(resp.Body)
 
 	suite.Equal(`{"successful":2,"failed":0}`, string(data))
 
@@ -338,7 +339,7 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
 
 				suite.Equal(http.StatusOK, resp.StatusCode)
 
-				respBody, _ = ioutil.ReadAll(resp.Body)
+				respBody, _ = io.ReadAll(resp.Body)
 
 				if bytes.Equal(expectedResponse, respBody) {
 					break
@@ -361,7 +362,7 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchFirm() {
 
 	suite.Equal(http.StatusAccepted, resp.StatusCode)
 
-	data, _ := ioutil.ReadAll(resp.Body)
+	data, _ := io.ReadAll(resp.Body)
 
 	suite.Equal(`{"successful":2,"failed":0}`, string(data))
 
@@ -407,7 +408,7 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchFirm() {
 
 				suite.Equal(http.StatusOK, resp.StatusCode)
 
-				respBody, _ = ioutil.ReadAll(resp.Body)
+				respBody, _ = io.ReadAll(resp.Body)
 
 				if bytes.Equal(expectedResponse, respBody) {
 					break
