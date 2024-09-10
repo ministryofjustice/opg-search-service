@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"regexp"
@@ -216,7 +215,7 @@ func (c *Client) doBulkOp(ctx context.Context, op *BulkOp) (BulkResult, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := ioutil.ReadAll(resp.Body)
+		bodyBytes, _ := io.ReadAll(resp.Body)
 		c.logger.Error(string(bodyBytes))
 
 		return BulkResult{}, fmt.Errorf("elasticsearch failed: %s", string(bodyBytes))
