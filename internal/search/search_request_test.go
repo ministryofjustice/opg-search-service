@@ -3,7 +3,7 @@ package search
 import (
 	"bytes"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"testing"
 
@@ -68,14 +68,14 @@ func TestCreateSearchRequestFromRequest(t *testing.T) {
 			`{"term":"Vega","indices":["person","firm"]}`,
 			nil,
 			&Request{
-				Term: "Vega",
+				Term:    "Vega",
 				Indices: []string{"person", "firm"},
 			},
 		},
 	}
 	for _, test := range tests {
 		req := http.Request{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(test.reqJson))),
+			Body: io.NopCloser(bytes.NewReader([]byte(test.reqJson))),
 		}
 		sr, err := parseSearchRequest(&req)
 

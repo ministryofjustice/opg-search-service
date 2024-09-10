@@ -1,10 +1,11 @@
 package response
 
 import (
-	"github.com/stretchr/testify/assert"
-	"io/ioutil"
+	"io"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestWriteJSONErrors(t *testing.T) {
@@ -45,7 +46,7 @@ func TestWriteJSONErrors(t *testing.T) {
 		WriteJSONErrors(rr, test.message, test.errors, test.code)
 
 		r := rr.Result()
-		b, _ := ioutil.ReadAll(r.Body)
+		b, _ := io.ReadAll(r.Body)
 
 		assert.Equal(t, test.expected, string(b), test.scenario)
 		assert.Equal(t, test.code, r.StatusCode, test.scenario)
@@ -81,7 +82,7 @@ func TestWriteJSONError(t *testing.T) {
 		WriteJSONError(rr, test.name, test.descr, test.code)
 
 		r := rr.Result()
-		b, _ := ioutil.ReadAll(r.Body)
+		b, _ := io.ReadAll(r.Body)
 
 		assert.Equal(t, test.expected, string(b), test.scenario)
 		assert.Equal(t, test.code, r.StatusCode, test.scenario)

@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"regexp"
@@ -94,7 +93,7 @@ func TestClient_DoBulkIndex(t *testing.T) {
 			mcCall.Return(
 				&http.Response{
 					StatusCode: test.expectedStatusCode,
-					Body:       ioutil.NopCloser(strings.NewReader(test.expectedResponse)),
+					Body:       io.NopCloser(strings.NewReader(test.expectedResponse)),
 				},
 				test.esResponseError,
 			)
@@ -143,7 +142,7 @@ func TestClient_DoBulkIndexWithRetry(t *testing.T) {
 		Return(
 			&http.Response{
 				StatusCode: http.StatusTooManyRequests,
-				Body:       ioutil.NopCloser(strings.NewReader("")),
+				Body:       io.NopCloser(strings.NewReader("")),
 			},
 			nil,
 		).
@@ -163,7 +162,7 @@ func TestClient_DoBulkIndexWithRetry(t *testing.T) {
 		Return(
 			&http.Response{
 				StatusCode: http.StatusOK,
-				Body:       ioutil.NopCloser(strings.NewReader(`{"errors":false,"items":[{"index":{"_id":"12","status":200}}]}`)),
+				Body:       io.NopCloser(strings.NewReader(`{"errors":false,"items":[{"index":{"_id":"12","status":200}}]}`)),
 			},
 			nil,
 		).
@@ -193,7 +192,7 @@ func TestClientCreateIndex(t *testing.T) {
 			return req.Method == http.MethodHead &&
 				req.URL.String() == os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")+"/test-index"
 		})).
-		Return(&http.Response{StatusCode: http.StatusNotFound, Body: ioutil.NopCloser(strings.NewReader(""))}, nil).
+		Return(&http.Response{StatusCode: http.StatusNotFound, Body: io.NopCloser(strings.NewReader(""))}, nil).
 		Once()
 
 	httpClient.
@@ -204,7 +203,7 @@ func TestClientCreateIndex(t *testing.T) {
 				req.URL.String() == os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")+"/test-index" &&
 				bytes.Equal(data, indexConfig)
 		})).
-		Return(&http.Response{StatusCode: http.StatusOK, Body: ioutil.NopCloser(strings.NewReader("test message"))}, nil).
+		Return(&http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader("test message"))}, nil).
 		Once()
 
 	err = client.CreateIndex(context.Background(), "test-index", indexConfig, false)
@@ -226,7 +225,7 @@ func TestClientCreateIndexWhenIndexExists(t *testing.T) {
 			return req.Method == http.MethodHead &&
 				req.URL.String() == os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")+"/test-index"
 		})).
-		Return(&http.Response{StatusCode: http.StatusOK, Body: ioutil.NopCloser(strings.NewReader(""))}, nil).
+		Return(&http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(""))}, nil).
 		Once()
 
 	err = client.CreateIndex(context.Background(), "test-index", indexConfig, false)
@@ -248,7 +247,7 @@ func TestClientCreateIndexWhenIndexExistsAndForced(t *testing.T) {
 			return req.Method == http.MethodHead &&
 				req.URL.String() == os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")+"/test-index"
 		})).
-		Return(&http.Response{StatusCode: http.StatusOK, Body: ioutil.NopCloser(strings.NewReader(""))}, nil).
+		Return(&http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(""))}, nil).
 		Once()
 
 	httpClient.
@@ -256,7 +255,7 @@ func TestClientCreateIndexWhenIndexExistsAndForced(t *testing.T) {
 			return req.Method == http.MethodDelete &&
 				req.URL.String() == os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")+"/test-index"
 		})).
-		Return(&http.Response{StatusCode: http.StatusOK, Body: ioutil.NopCloser(strings.NewReader(""))}, nil).
+		Return(&http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(""))}, nil).
 		Once()
 
 	httpClient.
@@ -267,7 +266,7 @@ func TestClientCreateIndexWhenIndexExistsAndForced(t *testing.T) {
 				req.URL.String() == os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")+"/test-index" &&
 				bytes.Equal(data, indexConfig)
 		})).
-		Return(&http.Response{StatusCode: http.StatusOK, Body: ioutil.NopCloser(strings.NewReader("test message"))}, nil).
+		Return(&http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader("test message"))}, nil).
 		Once()
 
 	err = client.CreateIndex(context.Background(), "test-index", indexConfig, true)
@@ -289,7 +288,7 @@ func TestClientCreateIndexErrorIndexExists(t *testing.T) {
 			return req.Method == http.MethodHead &&
 				req.URL.String() == os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")+"/test-index"
 		})).
-		Return(&http.Response{StatusCode: http.StatusInternalServerError, Body: ioutil.NopCloser(strings.NewReader(""))}, nil).
+		Return(&http.Response{StatusCode: http.StatusInternalServerError, Body: io.NopCloser(strings.NewReader(""))}, nil).
 		Once()
 
 	err = client.CreateIndex(context.Background(), "test-index", indexConfig, false)
@@ -311,7 +310,7 @@ func TestClientCreateIndexErrorDeleteIndex(t *testing.T) {
 			return req.Method == http.MethodHead &&
 				req.URL.String() == os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")+"/test-index"
 		})).
-		Return(&http.Response{StatusCode: http.StatusOK, Body: ioutil.NopCloser(strings.NewReader(""))}, nil).
+		Return(&http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(""))}, nil).
 		Once()
 
 	httpClient.
@@ -319,7 +318,7 @@ func TestClientCreateIndexErrorDeleteIndex(t *testing.T) {
 			return req.Method == http.MethodDelete &&
 				req.URL.String() == os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")+"/test-index"
 		})).
-		Return(&http.Response{StatusCode: http.StatusOK, Body: ioutil.NopCloser(strings.NewReader(""))}, errors.New("hey")).
+		Return(&http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(""))}, errors.New("hey")).
 		Once()
 
 	err = client.CreateIndex(context.Background(), "test-index", indexConfig, true)
@@ -341,7 +340,7 @@ func TestClientCreateIndexErrorCreateIndex(t *testing.T) {
 			return req.Method == http.MethodHead &&
 				req.URL.String() == os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")+"/test-index"
 		})).
-		Return(&http.Response{StatusCode: http.StatusNotFound, Body: ioutil.NopCloser(strings.NewReader(""))}, nil).
+		Return(&http.Response{StatusCode: http.StatusNotFound, Body: io.NopCloser(strings.NewReader(""))}, nil).
 		Once()
 
 	httpClient.
@@ -452,7 +451,7 @@ func TestClient_Search(t *testing.T) {
 			mcCall.Return(
 				&http.Response{
 					StatusCode: test.esResponseCode,
-					Body:       ioutil.NopCloser(strings.NewReader(test.esResponseMessage)),
+					Body:       io.NopCloser(strings.NewReader(test.esResponseMessage)),
 				},
 				test.esResponseError,
 			)
@@ -596,7 +595,7 @@ func TestDelete(t *testing.T) {
 			mcCall.Return(
 				&http.Response{
 					StatusCode: test.esResponseCode,
-					Body:       ioutil.NopCloser(strings.NewReader(test.esResponseMessage)),
+					Body:       io.NopCloser(strings.NewReader(test.esResponseMessage)),
 				},
 				test.esResponseError,
 			)
