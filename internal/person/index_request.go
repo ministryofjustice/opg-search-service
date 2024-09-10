@@ -14,7 +14,7 @@ type IndexRequest struct {
 func (r *IndexRequest) Validate() []response.Error {
 	var errs []response.Error
 
-	if r.Persons == nil || len(r.Persons) == 0 {
+	if len(r.Persons) == 0 {
 		errs = append(errs, response.Error{
 			Name:        "persons",
 			Description: "field is empty",
