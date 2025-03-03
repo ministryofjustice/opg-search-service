@@ -2,7 +2,7 @@ module github.com/ministryofjustice/opg-search-service
 
 go 1.22
 
-toolchain go1.23.5
+toolchain go1.24.0
 
 require (
 	github.com/aws/aws-sdk-go v1.55.6
