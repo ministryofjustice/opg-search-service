@@ -208,7 +208,7 @@ func (c *Client) doBulkOp(ctx context.Context, op *BulkOp) (BulkResult, error) {
 
 		return BulkResult{}, fmt.Errorf("unable to process index request: %w", err)
 	}
-	defer resp.Body.Close() //#nosec G307 false positive
+	defer resp.Body.Close() //nolint:errcheck // no need to check error when closing body
 
 	if resp.StatusCode == http.StatusTooManyRequests {
 		return BulkResult{}, errTooManyRequests
@@ -255,7 +255,7 @@ func (c *Client) Search(ctx context.Context, indices []string, requestBody map[s
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close() //#nosec G307 false positive
+	defer resp.Body.Close() //nolint:errcheck // no need to check error when closing body
 
 	if resp.StatusCode != http.StatusOK {
 		buf.Reset()
@@ -334,7 +334,7 @@ func (c *Client) IndexExists(ctx context.Context, name string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	defer resp.Body.Close() //#nosec G307 false positive
+	defer resp.Body.Close() //nolint:errcheck // no need to check error when closing body
 
 	switch resp.StatusCode {
 	case http.StatusOK:
@@ -353,7 +353,7 @@ func (c *Client) createIndex(ctx context.Context, name string, config []byte) er
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close() //#nosec G307 false positive
+	defer resp.Body.Close() //nolint:errcheck // no need to check error when closing body
 
 	if resp.StatusCode != http.StatusOK {
 		data, _ := io.ReadAll(resp.Body)
@@ -370,7 +370,7 @@ func (c *Client) DeleteIndex(ctx context.Context, name string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close() //#nosec G307 false positive
+	defer resp.Body.Close() //nolint:errcheck // no need to check error when closing body
 
 	return nil
 }
@@ -380,7 +380,7 @@ func (c *Client) ResolveAlias(ctx context.Context, name string) (string, error) 
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close() //#nosec G307 false positive
+	defer resp.Body.Close() //nolint:errcheck // no need to check error when closing body
 
 	if resp.StatusCode == http.StatusNotFound {
 		return "", ErrAliasMissing
@@ -403,7 +403,7 @@ func (c *Client) CreateAlias(ctx context.Context, alias, index string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close() //#nosec G307 false positive
+	defer resp.Body.Close() //nolint:errcheck // no need to check error when closing body
 
 	var v struct {
 		Acknowledged bool `json:"acknowledged"`
@@ -452,7 +452,7 @@ func (c *Client) UpdateAlias(ctx context.Context, alias, oldIndex, newIndex stri
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close() //#nosec G307 false positive
+	defer resp.Body.Close() //nolint:errcheck // no need to check error when closing body
 
 	var v struct {
 		Acknowledged bool `json:"acknowledged"`
@@ -473,7 +473,7 @@ func (c *Client) Indices(ctx context.Context, term string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close() //#nosec G307 false positive
+	defer resp.Body.Close() //nolint:errcheck // no need to check error when closing body
 
 	var v map[string]struct{}
 	if err := json.NewDecoder(resp.Body).Decode(&v); err != nil {
@@ -501,7 +501,7 @@ func (c *Client) Delete(ctx context.Context, indices []string, requestBody map[s
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close() //#nosec G307 false positive
+	defer resp.Body.Close() //nolint:errcheck // no need to check error when closing body
 
 	if resp.StatusCode != http.StatusOK {
 		buf.Reset()
