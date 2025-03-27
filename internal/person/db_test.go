@@ -35,7 +35,7 @@ func TestGetIDRange(t *testing.T) {
 	if !assert.Nil(err) {
 		return
 	}
-	defer conn.Close(ctx)
+	defer conn.Close(ctx) //nolint:errcheck // no need to check DB close error in tests
 
 	schemaSql, _ := os.ReadFile("../testdata/schema.sql")
 
@@ -75,7 +75,7 @@ func TestQueryByID(t *testing.T) {
 	if !assert.Nil(err) {
 		return
 	}
-	defer conn.Close(ctx)
+	defer conn.Close(ctx) //nolint:errcheck // no need to check DB close error in tests
 
 	schemaSql, _ := os.ReadFile("../testdata/schema.sql")
 
@@ -222,7 +222,7 @@ func TestQueryFromDate(t *testing.T) {
 	if !assert.Nil(err) {
 		return
 	}
-	defer conn.Close(ctx)
+	defer conn.Close(ctx) //nolint:errcheck // no need to check DB close error in tests
 
 	schemaSql, _ := os.ReadFile("../testdata/schema.sql")
 

@@ -1,6 +1,6 @@
-all: go-lint gosec unit-test build scan swagger-generate down
+all: go-lint unit-test build scan swagger-generate down
 
-.PHONY: build unit-test gosec swagger-generate swagger-up swagger-down docs
+.PHONY: build unit-test swagger-generate swagger-up swagger-down docs
 
 up:
 	docker compose up -d --build search-service
@@ -24,9 +24,6 @@ unit-test: setup-directories
 scan: setup-directories
 	docker compose run --rm trivy image --format table --exit-code 0 311462405659.dkr.ecr.eu-west-1.amazonaws.com/search-service:latest
 	docker compose run --rm trivy image --format sarif --output /test-results/trivy.sarif --exit-code 1 311462405659.dkr.ecr.eu-west-1.amazonaws.com/search-service:latest
-
-gosec: # Run Golang Security Checker
-	docker compose run --rm gosec
 
 swagger-generate: # Generate API swagger docs from inline code annotations using Go Swagger (https://goswagger.io/)
 	docker compose run --rm swagger-generate

@@ -99,7 +99,7 @@ func (c *IndexCommand) Run(args []string) error {
 	if err != nil {
 		return err
 	}
-	defer conn.Close(ctx)
+	defer conn.Close(ctx) //nolint:errcheck // no need to check error when closing DB connection
 
 	if err := conn.Ping(ctx); err != nil {
 		return err

@@ -78,9 +78,9 @@ func makeToken() string {
 }
 
 func (suite *EndToEndTestSuite) SetupSuite() {
-	os.Setenv("JWT_SECRET", "MyTestSecret")
-	os.Setenv("USER_HASH_SALT", "ufUvZWyqrCikO1HPcPfrz7qQ6ENV84p0")
-	os.Setenv("ENVIRONMENT", "local")
+	_ = os.Setenv("JWT_SECRET", "MyTestSecret")
+	_ = os.Setenv("USER_HASH_SALT", "ufUvZWyqrCikO1HPcPfrz7qQ6ENV84p0")
+	_ = os.Setenv("ENVIRONMENT", "local")
 
 	logger, _ := test.NewNullLogger()
 	httpClient := &http.Client{}
@@ -191,7 +191,7 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 		suite.True(existsFirmIndex, "Firm index should exist at this point")
 		suite.Nil(err)
 
-		conn.Close()
+		conn.Close() //nolint:errcheck,gosec // no need to check connection close error in tests
 		return
 	}
 
@@ -209,7 +209,7 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {
 	if err != nil {
 		suite.Fail("Error indexing person", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck // no need to check error when closing body
 
 	suite.Equal(http.StatusAccepted, resp.StatusCode)
 
@@ -358,7 +358,7 @@ func (suite *EndToEndTestSuite) TestIndexAndSearchFirm() {
 	if err != nil {
 		suite.Fail("Error indexing firm", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck // no need to check error when closing body
 
 	suite.Equal(http.StatusAccepted, resp.StatusCode)
 

@@ -57,12 +57,13 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if result.Total == 1 {
+	switch result.Total {
+	case 1:
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("{}"))
-	} else if result.Total == 0 {
+	case 0:
 		response.WriteJSONErrors(w, "could not find document to delete", []response.Error{}, http.StatusNotFound)
-	} else {
+	default:
 		response.WriteJSONErrors(w, fmt.Sprintf("deleted %d documents matching query", result.Total), []response.Error{}, http.StatusInternalServerError)
 	}
 }
