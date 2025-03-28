@@ -2,9 +2,10 @@ package cmd
 
 import (
 	"context"
-	"github.com/stretchr/testify/mock"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/mock"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/ministryofjustice/opg-search-service/internal/elasticsearch"
@@ -40,11 +41,11 @@ func TestIndexPerson(t *testing.T) {
 		},
 	})
 
-	os.Setenv("SEARCH_SERVICE_DB_PASS", "searchservice")
-	os.Setenv("SEARCH_SERVICE_DB_USER", "searchservice")
-	os.Setenv("SEARCH_SERVICE_DB_HOST", "postgres")
-	os.Setenv("SEARCH_SERVICE_DB_PORT", "5432")
-	os.Setenv("SEARCH_SERVICE_DB_DATABASE", "searchservice")
+	_ = os.Setenv("SEARCH_SERVICE_DB_PASS", "searchservice")
+	_ = os.Setenv("SEARCH_SERVICE_DB_USER", "searchservice")
+	_ = os.Setenv("SEARCH_SERVICE_DB_HOST", "postgres")
+	_ = os.Setenv("SEARCH_SERVICE_DB_PORT", "5432")
+	_ = os.Setenv("SEARCH_SERVICE_DB_DATABASE", "searchservice")
 
 	connString, _ := command.dbConnectionString()
 
@@ -52,7 +53,7 @@ func TestIndexPerson(t *testing.T) {
 	if !assert.Nil(err) {
 		return
 	}
-	defer conn.Close(ctx)
+	defer conn.Close(ctx) //nolint:errcheck // no need to check DB close error in tests
 
 	schemaSql, _ := os.ReadFile("../testdata/schema.sql")
 
@@ -84,11 +85,11 @@ func TestIndexFirm(t *testing.T) {
 		},
 	})
 
-	os.Setenv("SEARCH_SERVICE_DB_PASS", "searchservice")
-	os.Setenv("SEARCH_SERVICE_DB_USER", "searchservice")
-	os.Setenv("SEARCH_SERVICE_DB_HOST", "postgres")
-	os.Setenv("SEARCH_SERVICE_DB_PORT", "5432")
-	os.Setenv("SEARCH_SERVICE_DB_DATABASE", "searchservice")
+	_ = os.Setenv("SEARCH_SERVICE_DB_PASS", "searchservice")
+	_ = os.Setenv("SEARCH_SERVICE_DB_USER", "searchservice")
+	_ = os.Setenv("SEARCH_SERVICE_DB_HOST", "postgres")
+	_ = os.Setenv("SEARCH_SERVICE_DB_PORT", "5432")
+	_ = os.Setenv("SEARCH_SERVICE_DB_DATABASE", "searchservice")
 
 	connString, _ := command.dbConnectionString()
 
@@ -96,7 +97,7 @@ func TestIndexFirm(t *testing.T) {
 	if !assert.Nil(err) {
 		return
 	}
-	defer conn.Close(ctx)
+	defer conn.Close(ctx) //nolint:errcheck // no need to check DB close error in tests
 
 	schemaSql, _ := os.ReadFile("../testdata/schema.sql")
 

@@ -16,10 +16,11 @@ type Command interface {
 
 func Run(logger *logrus.Logger, cmds ...Command) {
 	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s <command> [arguments]:\n\n Commands:\n", os.Args[0])
+		_, _ = fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s <command> [arguments]:\n\n Commands:\n", os.Args[0])
+
 		for _, cmd := range cmds {
 			name, description := cmd.Info()
-			fmt.Fprintf(flag.CommandLine.Output(), "  %s %s %s\n", name, strings.Repeat(" ", 20-len(name)), description)
+			_, _ = fmt.Fprintf(flag.CommandLine.Output(), "  %s %s %s\n", name, strings.Repeat(" ", 20-len(name)), description)
 		}
 	}
 	flag.Parse()

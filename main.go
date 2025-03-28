@@ -383,7 +383,7 @@ func main() {
 	deleteRouter.Handle("/persons/{uid:\\d{4}-\\d{4}-\\d{4}}", remove.NewHandler(l, esClient, []string{person.AliasName}))
 
 	w := l.Writer()
-	defer w.Close()
+	defer w.Close() //nolint:errcheck // no need to check error when closing logger
 
 	s := &http.Server{
 		Addr:              ":8000",           // configure the bind address

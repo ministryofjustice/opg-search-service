@@ -20,7 +20,7 @@ Run `make unit-test` to execute the test suites and output code coverage for eac
 package. Most of the tests aren't dependent on external services, these can be
 run using `go test -short ./...`.
 
-Run `make gosec` to execute the [Golang Security Checker](https://github.com/securego/gosec)
+Run `make go-lint` to execute inting checks, including [Golang Security Checker](https://github.com/securego/gosec)
 
 #### End-to-end tests
 
@@ -76,8 +76,6 @@ i.e. comment out `--broker-url` and `--provider` and use `--url` instead, pastin
 ## Formatting
 
 This project uses the standard Golang styleguide, and can be autoformatting by running `gofmt -s -w .`.
-To run the go linter run `make go-lint`.
-
 
 ## Changing the index definition
 
