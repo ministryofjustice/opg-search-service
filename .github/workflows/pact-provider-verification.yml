@@ -15,7 +15,7 @@ jobs:
     name: Provider verification
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.2.2
       - name: Generate JWT
         run: |
           pip install -r ./pact/requirements.txt
