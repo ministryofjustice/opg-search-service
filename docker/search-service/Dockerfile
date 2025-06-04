@@ -1,5 +1,6 @@
 FROM golang:1.24 as build-env
 
+ARG TARGETARCH
 WORKDIR /app
 
 COPY go.mod .
@@ -7,9 +8,10 @@ COPY go.sum .
 
 RUN go mod download
 
-COPY . .
+COPY main.go main.go
+COPY internal internal
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o /go/bin/search-service
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -a -installsuffix cgo -o /go/bin/search-service
 
 FROM alpine:3
 
