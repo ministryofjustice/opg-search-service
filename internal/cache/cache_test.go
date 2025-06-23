@@ -63,7 +63,7 @@ func TestSecretsCache_GetSecretString(t *testing.T) {
 	}
 	for _, test := range tests {
 		msc := new(MockAwsSecretsCache)
-		msc.On("GetSecretString", test.env+"/"+test.secretKey).Return(test.returnedSecret, test.returnedErr).Times(1)
+		msc.On("GetSecretString", "/"+test.env+"/"+test.secretKey).Return(test.returnedSecret, test.returnedErr).Times(1)
 
 		sc := SecretsCache{
 			env:   test.env,
