@@ -15,7 +15,7 @@ services:
       - docker-compose.env
 
   localstack:
-    image: localstack/localstack:4.4.0
+    image: localstack/localstack:4.5.0
     environment:
       AWS_DEFAULT_REGION: eu-west-1
       SERVICES: es, secretsmanager
@@ -33,7 +33,7 @@ services:
       retries: 8
 
   go-lint:
-    image: golangci/golangci-lint:v2.1.6
+    image: golangci/golangci-lint:v2.2.0
     working_dir: /go/src/app
     volumes:
       - ./:/go/src/app
