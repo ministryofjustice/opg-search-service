@@ -65,13 +65,6 @@ jobs:
         id: extract_branch
       - uses: unfor19/install-aws-cli-action@e8b481e524a99f37fbd39fdc1dcb3341ab091367 # v1.0.7
 
-      - name: Bump version
-        id: semver_tag
-        uses: ministryofjustice/opg-github-actions/.github/actions/semver-tag@464975f6f9e628ffcece3db87ecb819d8d391ab6 # v3.1.6
-        with:
-          default_bump: minor
-          releases_enabled: false
-
       - name: Set up Docker
         run: |
           echo '{"experimental": true, "features": { "containerd-snapshotter": true }}' | sudo tee -a /etc/docker/daemon.json
