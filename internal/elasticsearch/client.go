@@ -3,6 +3,8 @@ package elasticsearch
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,9 +15,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/sirupsen/logrus"
 )
 
@@ -36,12 +37,13 @@ type HTTPClient interface {
 }
 
 type Client struct {
-	httpClient HTTPClient
-	logger     *logrus.Logger
-	domain     string
-	region     string
-	service    string
-	signer     *v4.Signer
+	httpClient  HTTPClient
+	logger      *logrus.Logger
+	domain      string
+	region      string
+	service     string
+	signer      *v4.Signer
+	credentials aws.CredentialsProvider
 }
 
 type elasticSearchResponse struct {
@@ -74,21 +76,15 @@ type DeleteResult struct {
 	Total int
 }
 
-func NewClient(httpClient HTTPClient, logger *logrus.Logger) (*Client, error) {
-	region := os.Getenv("AWS_REGION")
-	if region == "" {
-		region = "eu-west-1"
-	}
-
-	sess := session.Must(session.NewSession(&aws.Config{Region: aws.String(region)}))
-
+func NewClient(httpClient HTTPClient, logger *logrus.Logger, cfg *aws.Config) (*Client, error) {
 	client := &Client{
-		httpClient: httpClient,
-		logger:     logger,
-		domain:     os.Getenv("AWS_ELASTICSEARCH_ENDPOINT"),
-		region:     region,
-		service:    os.Getenv("AWS_SEARCH_PROVIDER"),
-		signer:     v4.NewSigner(sess.Config.Credentials),
+		httpClient:  httpClient,
+		logger:      logger,
+		domain:      os.Getenv("AWS_ELASTICSEARCH_ENDPOINT"),
+		region:      cfg.Region,
+		service:     os.Getenv("AWS_SEARCH_PROVIDER"),
+		signer:      v4.NewSigner(),
+		credentials: cfg.Credentials,
 	}
 
 	if client.service == "" {
@@ -99,7 +95,8 @@ func NewClient(httpClient HTTPClient, logger *logrus.Logger) (*Client, error) {
 }
 
 func (c *Client) doRequest(ctx context.Context, method, endpoint string, body io.ReadSeeker, contentType string) (*http.Response, error) {
-	req, err := http.NewRequestWithContext(ctx, method, c.domain+"/"+endpoint, body)
+	url := c.domain + "/" + endpoint
+	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +104,35 @@ func (c *Client) doRequest(ctx context.Context, method, endpoint string, body io
 		req.Header.Add("Content-Type", contentType)
 	}
 
-	_, err = c.signer.Sign(req, body, c.service, c.region, time.Now())
+	// Ensure body is seekable and compute payload hash
+	var payloadHash string
+	var seekableBody io.ReadSeeker
+	if body != nil {
+		// Read body into buffer to hash and reset
+		buf := new(bytes.Buffer)
+		_, err := io.Copy(buf, body)
+		if err != nil {
+			return nil, err
+		}
+		hash := sha256.Sum256(buf.Bytes())
+		payloadHash = hex.EncodeToString(hash[:])
+		seekableBody = bytes.NewReader(buf.Bytes())
+	} else {
+		payloadHash = hex.EncodeToString(sha256.New().Sum(nil)) // hash of empty string
+		seekableBody = bytes.NewReader([]byte{})
+	}
+
+	// Replace request body with seekable version
+	req.Body = io.NopCloser(seekableBody)
+
+	// Retrieve credentials
+	creds, err := c.credentials.Retrieve(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Sign the request
+	err = c.signer.SignHTTP(ctx, creds, req, payloadHash, c.service, c.region, time.Now())
 	if err != nil {
 		return nil, err
 	}
