@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"io"
 	"net/http"
 	"os"
@@ -74,7 +75,7 @@ func TestClient_DoBulkIndex(t *testing.T) {
 
 			l, hook := logrus_test.NewNullLogger()
 
-			c, err := NewClient(mc, l)
+			c, err := NewClient(mc, l, aws.NewConfig())
 
 			assert.IsType(&Client{}, c)
 			assert.Nil(err)
@@ -123,7 +124,7 @@ func TestClient_DoBulkIndexWithRetry(t *testing.T) {
 
 	l, _ := logrus_test.NewNullLogger()
 
-	c, err := NewClient(mc, l)
+	c, err := NewClient(mc, l, aws.NewConfig())
 
 	assert.IsType(&Client{}, c)
 	assert.Nil(err)
@@ -184,7 +185,7 @@ func TestClientCreateIndex(t *testing.T) {
 	httpClient := &MockHttpClient{}
 	l, hook := logrus_test.NewNullLogger()
 
-	client, err := NewClient(httpClient, l)
+	client, err := NewClient(httpClient, l, aws.NewConfig())
 	assert.Nil(err)
 
 	httpClient.
@@ -217,7 +218,7 @@ func TestClientCreateIndexWhenIndexExists(t *testing.T) {
 	httpClient := &MockHttpClient{}
 	l, hook := logrus_test.NewNullLogger()
 
-	client, err := NewClient(httpClient, l)
+	client, err := NewClient(httpClient, l, aws.NewConfig())
 	assert.Nil(err)
 
 	httpClient.
@@ -239,7 +240,7 @@ func TestClientCreateIndexWhenIndexExistsAndForced(t *testing.T) {
 	httpClient := &MockHttpClient{}
 	l, hook := logrus_test.NewNullLogger()
 
-	client, err := NewClient(httpClient, l)
+	client, err := NewClient(httpClient, l, aws.NewConfig())
 	assert.Nil(err)
 
 	httpClient.
@@ -280,7 +281,7 @@ func TestClientCreateIndexErrorIndexExists(t *testing.T) {
 	httpClient := &MockHttpClient{}
 	l, hook := logrus_test.NewNullLogger()
 
-	client, err := NewClient(httpClient, l)
+	client, err := NewClient(httpClient, l, aws.NewConfig())
 	assert.Nil(err)
 
 	httpClient.
@@ -302,7 +303,7 @@ func TestClientCreateIndexErrorDeleteIndex(t *testing.T) {
 	httpClient := &MockHttpClient{}
 	l, hook := logrus_test.NewNullLogger()
 
-	client, err := NewClient(httpClient, l)
+	client, err := NewClient(httpClient, l, aws.NewConfig())
 	assert.Nil(err)
 
 	httpClient.
@@ -332,7 +333,7 @@ func TestClientCreateIndexErrorCreateIndex(t *testing.T) {
 	httpClient := &MockHttpClient{}
 	l, hook := logrus_test.NewNullLogger()
 
-	client, err := NewClient(httpClient, l)
+	client, err := NewClient(httpClient, l, aws.NewConfig())
 	assert.Nil(err)
 
 	httpClient.
@@ -430,7 +431,7 @@ func TestClient_Search(t *testing.T) {
 
 			l, _ := logrus_test.NewNullLogger()
 
-			c, err := NewClient(mc, l)
+			c, err := NewClient(mc, l, nil)
 
 			assert.IsType(&Client{}, c)
 			assert.Nil(err)
@@ -476,7 +477,7 @@ func TestClient_Search_MalformedEndpoint(t *testing.T) {
 
 	l, _ := logrus_test.NewNullLogger()
 
-	c, _ := NewClient(mc, l)
+	c, _ := NewClient(mc, l, nil)
 
 	res, err := c.Search(context.Background(), []string{"test-index"}, map[string]interface{}{})
 
@@ -492,7 +493,7 @@ func TestClient_Search_InvalidESRequestBody(t *testing.T) {
 
 	l, _ := logrus_test.NewNullLogger()
 
-	c, _ := NewClient(mc, l)
+	c, _ := NewClient(mc, l, nil)
 
 	esReqBody := map[string]interface{}{
 		"term": func() {},
@@ -571,7 +572,7 @@ func TestDelete(t *testing.T) {
 			mc := new(MockHttpClient)
 			l, _ := logrus_test.NewNullLogger()
 
-			client, err := NewClient(mc, l)
+			client, err := NewClient(mc, l, nil)
 			assert.Nil(err)
 
 			reqBody := map[string]interface{}{
@@ -621,7 +622,7 @@ func TestClientSignRequest(t *testing.T) {
 	httpClient := &MockHttpClient{}
 	l, _ := logrus_test.NewNullLogger()
 
-	client, err := NewClient(httpClient, l)
+	client, err := NewClient(httpClient, l, aws.NewConfig())
 	assert.Nil(err)
 
 	httpClient.
