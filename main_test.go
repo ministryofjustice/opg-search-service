@@ -84,7 +84,7 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 
 	logger, _ := test.NewNullLogger()
 	httpClient := &http.Client{}
-	suite.esClient, _ = elasticsearch.NewClient(httpClient, logger)
+	suite.esClient, _ = elasticsearch.NewClient(httpClient, logger, nil)
 
 	suite.authHeader = "Bearer " + makeToken()
 
