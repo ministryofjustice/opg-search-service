@@ -2,6 +2,10 @@ package main
 
 import (
 	"context"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"log"
 	"net/http"
 	"os"
@@ -49,6 +53,7 @@ func createIndexAndAlias(esClient *elasticsearch.Client, indexConfig cmd.IndexCo
 }
 
 func main() {
+	ctx := context.Background()
 	l := logrus.New()
 	l.SetFormatter(&logrus.JSONFormatter{})
 
@@ -63,9 +68,14 @@ func main() {
 		digitallpaIndexConfig,
 	}
 
-	secretsCache := cache.New()
+	cfg, err := awsConfig(ctx)
+	if err != nil {
+		l.Fatal(err)
+	}
 
-	esClient, err := elasticsearch.NewClient(&http.Client{}, l)
+	secretsCache := cache.New(cfg)
+
+	esClient, err := elasticsearch.NewClient(&http.Client{}, l, cfg)
 	if err != nil {
 		l.Fatal(err)
 	}
@@ -419,4 +429,30 @@ func main() {
 	if err != nil {
 		l.Fatal(err)
 	}
+}
+
+func awsConfig(ctx context.Context) (*aws.Config, error) {
+	awsRegion := "eu-west-1"
+	if region, ok := os.LookupEnv("AWS_REGION"); ok {
+		awsRegion = region
+	}
+
+	cfg, err := config.LoadDefaultConfig(
+		ctx,
+		config.WithRegion(awsRegion),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if iamRole, ok := os.LookupEnv("AWS_IAM_ROLE"); ok {
+		client := sts.NewFromConfig(cfg)
+		cfg.Credentials = stscreds.NewAssumeRoleProvider(client, iamRole)
+	}
+
+	if endpoint, ok := os.LookupEnv("AWS_SECRETS_MANAGER_ENDPOINT"); ok {
+		cfg.BaseEndpoint = &endpoint
+	}
+
+	return &cfg, nil
 }
