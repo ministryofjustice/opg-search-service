@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/aws/aws-sdk-go-v2/config"
 	"io"
 	"net/http"
 	"os"
@@ -74,7 +75,10 @@ func TestClient_DoBulkIndex(t *testing.T) {
 
 			l, hook := logrus_test.NewNullLogger()
 
-			c, err := NewClient(mc, l)
+			_ = os.Setenv("AWS_ACCESS_KEY_ID", "test")
+			_ = os.Setenv("AWS_SECRET_ACCESS_KEY", "test")
+			cfg, _ := config.LoadDefaultConfig(context.Background())
+			c, err := NewClient(mc, l, &cfg)
 
 			assert.IsType(&Client{}, c)
 			assert.Nil(err)
@@ -123,7 +127,10 @@ func TestClient_DoBulkIndexWithRetry(t *testing.T) {
 
 	l, _ := logrus_test.NewNullLogger()
 
-	c, err := NewClient(mc, l)
+	_ = os.Setenv("AWS_ACCESS_KEY_ID", "test")
+	_ = os.Setenv("AWS_SECRET_ACCESS_KEY", "test")
+	cfg, _ := config.LoadDefaultConfig(context.Background())
+	c, err := NewClient(mc, l, &cfg)
 
 	assert.IsType(&Client{}, c)
 	assert.Nil(err)
@@ -184,7 +191,10 @@ func TestClientCreateIndex(t *testing.T) {
 	httpClient := &MockHttpClient{}
 	l, hook := logrus_test.NewNullLogger()
 
-	client, err := NewClient(httpClient, l)
+	_ = os.Setenv("AWS_ACCESS_KEY_ID", "test")
+	_ = os.Setenv("AWS_SECRET_ACCESS_KEY", "test")
+	cfg, _ := config.LoadDefaultConfig(context.Background())
+	client, err := NewClient(httpClient, l, &cfg)
 	assert.Nil(err)
 
 	httpClient.
@@ -217,7 +227,10 @@ func TestClientCreateIndexWhenIndexExists(t *testing.T) {
 	httpClient := &MockHttpClient{}
 	l, hook := logrus_test.NewNullLogger()
 
-	client, err := NewClient(httpClient, l)
+	_ = os.Setenv("AWS_ACCESS_KEY_ID", "test")
+	_ = os.Setenv("AWS_SECRET_ACCESS_KEY", "test")
+	cfg, _ := config.LoadDefaultConfig(context.Background())
+	client, err := NewClient(httpClient, l, &cfg)
 	assert.Nil(err)
 
 	httpClient.
@@ -239,7 +252,10 @@ func TestClientCreateIndexWhenIndexExistsAndForced(t *testing.T) {
 	httpClient := &MockHttpClient{}
 	l, hook := logrus_test.NewNullLogger()
 
-	client, err := NewClient(httpClient, l)
+	_ = os.Setenv("AWS_ACCESS_KEY_ID", "test")
+	_ = os.Setenv("AWS_SECRET_ACCESS_KEY", "test")
+	cfg, _ := config.LoadDefaultConfig(context.Background())
+	client, err := NewClient(httpClient, l, &cfg)
 	assert.Nil(err)
 
 	httpClient.
@@ -280,7 +296,10 @@ func TestClientCreateIndexErrorIndexExists(t *testing.T) {
 	httpClient := &MockHttpClient{}
 	l, hook := logrus_test.NewNullLogger()
 
-	client, err := NewClient(httpClient, l)
+	_ = os.Setenv("AWS_ACCESS_KEY_ID", "test")
+	_ = os.Setenv("AWS_SECRET_ACCESS_KEY", "test")
+	cfg, _ := config.LoadDefaultConfig(context.Background())
+	client, err := NewClient(httpClient, l, &cfg)
 	assert.Nil(err)
 
 	httpClient.
@@ -302,7 +321,10 @@ func TestClientCreateIndexErrorDeleteIndex(t *testing.T) {
 	httpClient := &MockHttpClient{}
 	l, hook := logrus_test.NewNullLogger()
 
-	client, err := NewClient(httpClient, l)
+	_ = os.Setenv("AWS_ACCESS_KEY_ID", "test")
+	_ = os.Setenv("AWS_SECRET_ACCESS_KEY", "test")
+	cfg, _ := config.LoadDefaultConfig(context.Background())
+	client, err := NewClient(httpClient, l, &cfg)
 	assert.Nil(err)
 
 	httpClient.
@@ -332,7 +354,10 @@ func TestClientCreateIndexErrorCreateIndex(t *testing.T) {
 	httpClient := &MockHttpClient{}
 	l, hook := logrus_test.NewNullLogger()
 
-	client, err := NewClient(httpClient, l)
+	_ = os.Setenv("AWS_ACCESS_KEY_ID", "test")
+	_ = os.Setenv("AWS_SECRET_ACCESS_KEY", "test")
+	cfg, _ := config.LoadDefaultConfig(context.Background())
+	client, err := NewClient(httpClient, l, &cfg)
 	assert.Nil(err)
 
 	httpClient.
@@ -430,7 +455,10 @@ func TestClient_Search(t *testing.T) {
 
 			l, _ := logrus_test.NewNullLogger()
 
-			c, err := NewClient(mc, l)
+			_ = os.Setenv("AWS_ACCESS_KEY_ID", "test")
+			_ = os.Setenv("AWS_SECRET_ACCESS_KEY", "test")
+			cfg, _ := config.LoadDefaultConfig(context.Background())
+			c, err := NewClient(mc, l, &cfg)
 
 			assert.IsType(&Client{}, c)
 			assert.Nil(err)
@@ -476,7 +504,10 @@ func TestClient_Search_MalformedEndpoint(t *testing.T) {
 
 	l, _ := logrus_test.NewNullLogger()
 
-	c, _ := NewClient(mc, l)
+	_ = os.Setenv("AWS_ACCESS_KEY_ID", "test")
+	_ = os.Setenv("AWS_SECRET_ACCESS_KEY", "test")
+	cfg, _ := config.LoadDefaultConfig(context.Background())
+	c, _ := NewClient(mc, l, &cfg)
 
 	res, err := c.Search(context.Background(), []string{"test-index"}, map[string]interface{}{})
 
@@ -492,7 +523,10 @@ func TestClient_Search_InvalidESRequestBody(t *testing.T) {
 
 	l, _ := logrus_test.NewNullLogger()
 
-	c, _ := NewClient(mc, l)
+	_ = os.Setenv("AWS_ACCESS_KEY_ID", "test")
+	_ = os.Setenv("AWS_SECRET_ACCESS_KEY", "test")
+	cfg, _ := config.LoadDefaultConfig(context.Background())
+	c, _ := NewClient(mc, l, &cfg)
 
 	esReqBody := map[string]interface{}{
 		"term": func() {},
@@ -571,8 +605,10 @@ func TestDelete(t *testing.T) {
 			mc := new(MockHttpClient)
 			l, _ := logrus_test.NewNullLogger()
 
-			client, err := NewClient(mc, l)
-			assert.Nil(err)
+			_ = os.Setenv("AWS_ACCESS_KEY_ID", "test")
+			_ = os.Setenv("AWS_SECRET_ACCESS_KEY", "test")
+			cfg, _ := config.LoadDefaultConfig(context.Background())
+			client, _ := NewClient(mc, l, &cfg)
 
 			reqBody := map[string]interface{}{
 				"query": map[string]interface{}{
@@ -621,7 +657,10 @@ func TestClientSignRequest(t *testing.T) {
 	httpClient := &MockHttpClient{}
 	l, _ := logrus_test.NewNullLogger()
 
-	client, err := NewClient(httpClient, l)
+	_ = os.Setenv("AWS_ACCESS_KEY_ID", "test")
+	_ = os.Setenv("AWS_SECRET_ACCESS_KEY", "test")
+	cfg, _ := config.LoadDefaultConfig(context.Background())
+	client, err := NewClient(httpClient, l, &cfg)
 	assert.Nil(err)
 
 	httpClient.
