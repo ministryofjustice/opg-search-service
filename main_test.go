@@ -78,13 +78,19 @@ func makeToken() string {
 }
 
 func (suite *EndToEndTestSuite) SetupSuite() {
+	_ = os.Setenv("ENVIRONMENT", "local")
 	_ = os.Setenv("JWT_SECRET", "MyTestSecret")
 	_ = os.Setenv("USER_HASH_SALT", "ufUvZWyqrCikO1HPcPfrz7qQ6ENV84p0")
 	_ = os.Setenv("ENVIRONMENT", "local")
+	_ = os.Setenv("AWS_ACCESS_KEY_ID", "test")
+	_ = os.Setenv("AWS_SECRET_ACCESS_KEY", "test")
+	_ = os.Setenv("AWS_SECRETS_MANAGER_ENDPOINT", "http://localstack:4566")
 
 	logger, _ := test.NewNullLogger()
 	httpClient := &http.Client{}
-	suite.esClient, _ = elasticsearch.NewClient(httpClient, logger)
+	ctx := context.Background()
+	cfg, _ := awsConfig(ctx)
+	suite.esClient, _ = elasticsearch.NewClient(httpClient, logger, cfg)
 
 	suite.authHeader = "Bearer " + makeToken()
 
@@ -164,7 +170,6 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 
 	personIndexConfig := cmd.NewIndexConfig(person.IndexConfig, person.AliasName, logger)
 	firmIndexConfig := cmd.NewIndexConfig(firm.IndexConfig, firm.AliasName, logger)
-	ctx := context.Background()
 
 	exists, err := suite.esClient.IndexExists(ctx, personIndexConfig.Name)
 	suite.False(exists, "Person index should not exist at this point")
