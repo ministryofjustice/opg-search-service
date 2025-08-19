@@ -663,18 +663,6 @@ func TestClientSignRequest(t *testing.T) {
 	client, err := NewClient(httpClient, l, &cfg)
 	assert.Nil(err)
 
-	//req.Header
-	//AWS4-HMAC-SHA256 Credential=test/20250819/eu-west-1/es/aws4_request,
-	//SignedHeaders=content-type;
-	//host;x-amz-content-sha256;x-amz-date,
-	//Signature=b4dfeb7772a38b198ae9c336c873ad0ebc81184f635ac409cb20083e7c9b2692
-
-	//expected Header
-	//^AWS4-HMAC-SHA256 Credential=[^ ]+,
-	//SignedHeaders=content-type;
-	//host;x-amz-date,
-	//Signature=[a-f0-9]+$
-
 	httpClient.
 		On("Do", mock.MatchedBy(func(req *http.Request) bool {
 			matched, _ := regexp.MatchString(AUTH_HEADER_PATTERN, req.Header["Authorization"][0])

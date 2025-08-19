@@ -76,7 +76,6 @@ func main() {
 	secretsCache := cache.New(cfg)
 
 	esClient, err := elasticsearch.NewClient(&http.Client{}, l, cfg)
-
 	if err != nil {
 		l.Fatal(err)
 	}

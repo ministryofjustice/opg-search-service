@@ -20,7 +20,7 @@ Run `make unit-test` to execute the test suites and output code coverage for eac
 package. Most of the tests aren't dependent on external services, these can be
 run using `go test -short ./...`.
 
-Run `make go-lint` to execute inting checks, including [Golang Security Checker](https://github.com/securego/gosec)
+Run `make go-lint` to execute linting checks, including [Golang Security Checker](https://github.com/securego/gosec)
 
 #### End-to-end tests
 
