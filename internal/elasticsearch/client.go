@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/opensearch-project/opensearch-go/v4/signer"
-	requestsigner "github.com/opensearch-project/opensearch-go/v4/signer/awsv2"
+	"github.com/opensearch-project/opensearch-go/v4/signer/awsv2"
 	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
@@ -35,13 +35,12 @@ type HTTPClient interface {
 }
 
 type Client struct {
-	httpClient  HTTPClient
-	logger      *logrus.Logger
-	domain      string
-	region      string
-	service     string
-	signer      signer.Signer
-	credentials aws.CredentialsProvider
+	httpClient HTTPClient
+	logger     *logrus.Logger
+	domain     string
+	region     string
+	service    string
+	signer     signer.Signer
 }
 
 type elasticSearchResponse struct {
@@ -76,19 +75,18 @@ type DeleteResult struct {
 
 func NewClient(httpClient HTTPClient, logger *logrus.Logger, cfg *aws.Config) (*Client, error) {
 	// Create an AWS request Signer and load AWS configuration using default config folder or env vars.
-	mySigner, err := requestsigner.NewSignerWithService(*cfg, "es")
+	mySigner, err := awsv2.NewSignerWithService(*cfg, "es")
 	if err != nil {
 		return nil, err
 	}
 
 	client := &Client{
-		httpClient:  httpClient,
-		logger:      logger,
-		domain:      os.Getenv("AWS_ELASTICSEARCH_ENDPOINT"),
-		region:      cfg.Region,
-		service:     os.Getenv("AWS_SEARCH_PROVIDER"),
-		signer:      mySigner,
-		credentials: cfg.Credentials,
+		httpClient: httpClient,
+		logger:     logger,
+		domain:     os.Getenv("AWS_ELASTICSEARCH_ENDPOINT"),
+		region:     cfg.Region,
+		service:    os.Getenv("AWS_SEARCH_PROVIDER"),
+		signer:     mySigner,
 	}
 
 	if client.service == "" {
@@ -107,38 +105,6 @@ func (c *Client) doRequest(ctx context.Context, method, endpoint string, body io
 	if contentType != "" {
 		req.Header.Add("Content-Type", contentType)
 	}
-
-	//think this encoding is now replaced by hexencodedsha within the signer
-	// Ensure body is seekable and compute payload hash
-	//var payloadHash string
-	var seekableBody io.ReadSeeker
-	if body != nil {
-		// Read body into buffer to hash and reset
-		buf := new(bytes.Buffer)
-		_, err := io.Copy(buf, body)
-		if err != nil {
-			return nil, err
-		}
-		//hash := sha256.Sum256(buf.Bytes())
-		//payloadHash = hex.EncodeToString(hash[:])
-		seekableBody = bytes.NewReader(buf.Bytes())
-	} else {
-		//payloadHash = hex.EncodeToString(sha256.New().Sum(nil)) // hash of empty string
-		seekableBody = bytes.NewReader([]byte{})
-	}
-
-	//Replace request body with seekable version
-	req.Body = io.NopCloser(seekableBody)
-
-	//this is pulled in by sign request - gets cfg.credentials.retrieve
-	// Retrieve credentials
-	//creds, err := c.credentials.Retrieve(ctx)
-	//if err != nil {
-	//	return nil, err
-	//}
-
-	// Sign the request
-	//err = c.signer.SignHTTP(ctx, creds, req, payloadHash, c.service, c.region, time.Now())
 	err = c.signer.SignRequest(req)
 
 	if err != nil {
