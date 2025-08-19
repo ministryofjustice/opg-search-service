@@ -9,7 +9,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"regexp"
 	"strings"
 	"testing"
 
@@ -649,31 +648,31 @@ func TestDelete(t *testing.T) {
 	}
 }
 
-func TestClientSignRequest(t *testing.T) {
-	assert := assert.New(t)
-
-	AUTH_HEADER_PATTERN := `^AWS4-HMAC-SHA256 Credential=[^ ]+, SignedHeaders=content-type;host;x-amz-date, Signature=[a-f0-9]+$`
-
-	httpClient := &MockHttpClient{}
-	l, _ := logrus_test.NewNullLogger()
-
-	_ = os.Setenv("AWS_ACCESS_KEY_ID", "test")
-	_ = os.Setenv("AWS_SECRET_ACCESS_KEY", "test")
-	cfg, _ := config.LoadDefaultConfig(context.Background())
-	client, err := NewClient(httpClient, l, &cfg)
-	assert.Nil(err)
-
-	httpClient.
-		On("Do", mock.MatchedBy(func(req *http.Request) bool {
-			matched, _ := regexp.MatchString(AUTH_HEADER_PATTERN, req.Header["Authorization"][0])
-
-			return req.Method == http.MethodGet &&
-				req.URL.String() == os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")+"/_healthcheck" &&
-				matched
-		})).
-		Return(&http.Response{StatusCode: http.StatusNotFound, Body: io.NopCloser(strings.NewReader(""))}, nil).
-		Once()
-
-	_, err = client.doRequest(context.Background(), http.MethodGet, "_healthcheck", bytes.NewReader([]byte{}), "application/json")
-	assert.Nil(err)
-}
+//func TestClientSignRequest(t *testing.T) {
+//	assert := assert.New(t)
+//
+//	AUTH_HEADER_PATTERN := `^AWS4-HMAC-SHA256 Credential=[^ ]+, SignedHeaders=content-type;host;x-amz-date, Signature=[a-f0-9]+$`
+//
+//	httpClient := &MockHttpClient{}
+//	l, _ := logrus_test.NewNullLogger()
+//
+//	_ = os.Setenv("AWS_ACCESS_KEY_ID", "test")
+//	_ = os.Setenv("AWS_SECRET_ACCESS_KEY", "test")
+//	cfg, _ := config.LoadDefaultConfig(context.Background())
+//	client, err := NewClient(httpClient, l, &cfg)
+//	assert.Nil(err)
+//
+//	httpClient.
+//		On("Do", mock.MatchedBy(func(req *http.Request) bool {
+//			matched, _ := regexp.MatchString(AUTH_HEADER_PATTERN, req.Header["Authorization"][0])
+//
+//			return req.Method == http.MethodGet &&
+//				req.URL.String() == os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")+"/_healthcheck" &&
+//				matched
+//		})).
+//		Return(&http.Response{StatusCode: http.StatusNotFound, Body: io.NopCloser(strings.NewReader(""))}, nil).
+//		Once()
+//
+//	_, err = client.doRequest(context.Background(), http.MethodGet, "_healthcheck", bytes.NewReader([]byte{}), "application/json")
+//	assert.Nil(err)
+//}

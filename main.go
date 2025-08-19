@@ -76,6 +76,16 @@ func main() {
 	secretsCache := cache.New(cfg)
 
 	esClient, err := elasticsearch.NewClient(&http.Client{}, l, cfg)
+
+	//client, err := opensearch.NewClient(opensearch.Config{
+	//	Transport: &http.Transport{
+	//		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	//	},
+	//	Addresses: []string{"https://localhost:9200"},
+	//	Username:  "admin", // For testing only. Don't store credentials in code.
+	//	Password:  "admin",
+	//})
+
 	if err != nil {
 		l.Fatal(err)
 	}
