@@ -46,7 +46,7 @@ jobs:
     name: Build Image
     uses: ministryofjustice/opg-github-workflows/.github/workflows/build-multi-architecture-image.yml@27a0f72b83c6b026fa4131230289bfbed9049cc7 # v3.15.0
     with:
-      image_name: 311462405659.dkr.ecr.eu-west-1.amazonaws.com/search-service
+      image_name: 311462405659.dkr.ecr.eu-west-1.amazonaws.com/sirius/search-service
       build_options: --file docker/search-service/Dockerfile
 
   push:
@@ -106,14 +106,14 @@ jobs:
 
       - name: Tag & Push
         run: |
-          docker tag 311462405659.dkr.ecr.eu-west-1.amazonaws.com/search-service:latest 311462405659.dkr.ecr.eu-west-1.amazonaws.com/search-service:${{ needs.create-tag.outputs.tag }}
+          docker tag 311462405659.dkr.ecr.eu-west-1.amazonaws.com/sirius/search-service:latest 311462405659.dkr.ecr.eu-west-1.amazonaws.com/sirius/search-service:${{ needs.create-tag.outputs.tag }}
           if [ $BRANCH_NAME == "main" ]; then
-            docker tag 311462405659.dkr.ecr.eu-west-1.amazonaws.com/search-service:latest 311462405659.dkr.ecr.eu-west-1.amazonaws.com/search-service:main-${{ needs.create-tag.outputs.tag }}
-            docker tag 311462405659.dkr.ecr.eu-west-1.amazonaws.com/search-service:latest 311462405659.dkr.ecr.eu-west-1.amazonaws.com/search-service:main-${{ needs.create-tag.outputs.tag }}-${{ needs.create-tag.outputs.timestamp }}
+            docker tag 311462405659.dkr.ecr.eu-west-1.amazonaws.com/sirius/search-service:latest 311462405659.dkr.ecr.eu-west-1.amazonaws.com/sirius/search-service:main-${{ needs.create-tag.outputs.tag }}
+            docker tag 311462405659.dkr.ecr.eu-west-1.amazonaws.com/sirius/search-service:latest 311462405659.dkr.ecr.eu-west-1.amazonaws.com/sirius/search-service:main-${{ needs.create-tag.outputs.tag }}-${{ needs.create-tag.outputs.timestamp }}
             # We want all of the tags pushed
-            docker push  --all-tags 311462405659.dkr.ecr.eu-west-1.amazonaws.com/search-service
+            docker push  --all-tags 311462405659.dkr.ecr.eu-west-1.amazonaws.com/sirius/search-service
           else
-            docker push 311462405659.dkr.ecr.eu-west-1.amazonaws.com/search-service:${{ needs.create-tag.outputs.tag }}
+            docker push 311462405659.dkr.ecr.eu-west-1.amazonaws.com/sirius/search-service:${{ needs.create-tag.outputs.tag }}
           fi
 
   end_of_pr_workflow:
