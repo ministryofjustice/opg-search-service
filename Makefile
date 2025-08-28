@@ -22,8 +22,8 @@ unit-test: setup-directories
 	docker compose down postgres localstack
 
 scan: setup-directories
-	docker compose run --rm trivy image --format table --exit-code 0 311462405659.dkr.ecr.eu-west-1.amazonaws.com/search-service:latest
-	docker compose run --rm trivy image --format sarif --output /test-results/trivy.sarif --exit-code 1 311462405659.dkr.ecr.eu-west-1.amazonaws.com/search-service:latest
+	docker compose run --rm trivy image --format table --exit-code 0 311462405659.dkr.ecr.eu-west-1.amazonaws.com/sirius/search-service:latest
+	docker compose run --rm trivy image --format sarif --output /test-results/trivy.sarif --exit-code 1 311462405659.dkr.ecr.eu-west-1.amazonaws.com/sirius/search-service:latest
 
 swagger-generate: # Generate API swagger docs from inline code annotations using Go Swagger (https://goswagger.io/)
 	docker compose run --rm swagger-generate
