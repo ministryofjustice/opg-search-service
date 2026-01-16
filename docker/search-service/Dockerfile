@@ -13,18 +13,12 @@ COPY internal internal
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -a -installsuffix cgo -o /go/bin/search-service
 
-FROM alpine:3
+FROM scratch
 
-RUN apk --update --no-cache add \
-    ca-certificates \
-    && rm -rf /var/cache/apk/*
-RUN apk --no-cache add tzdata
-
-# Patch vulnerabilities
-RUN apk upgrade --no-cache busybox libcrypto3 libssl3
-
+COPY --from=build-env /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=build-env /usr/share/zoneinfo /usr/share/zoneinfo
 COPY --from=build-env /go/bin/search-service /go/bin/search-service
-RUN addgroup -S app && adduser -S -g app app \
-    && chown app:app /go/bin/search-service
-USER app
+
+USER 65532
+
 ENTRYPOINT ["/go/bin/search-service"]
