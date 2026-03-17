@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const connectionString = "postgres://searchservice:searchservice@postgres:5432/searchservice"
+const connectionString = "postgres://searchservice:searchservice@postgres:5432/searchservice" //nolint:gosec // this is a test password
 
 func read(results chan index.Indexable, deadline time.Duration) (index.Indexable, bool) {
 	select {
