@@ -159,8 +159,8 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 	go main()
 
 	// delete all indices
-	req, _ := http.NewRequest(http.MethodDelete, os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")+"/_all", nil)
-	resp, err := httpClient.Do(req)
+	req, _ := http.NewRequest(http.MethodDelete, os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")+"/_all", nil) //nolint:gosec // this test intentionally trusts the env var
+	resp, err := httpClient.Do(req) //nolint:gosec // req has been constructed with trusted data
 	if err != nil {
 		panic(err)
 	}
@@ -204,7 +204,7 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 }
 
 func (suite *EndToEndTestSuite) TestHealthCheck() {
-	resp, err := http.Get("http://localhost:8000" + os.Getenv("PATH_PREFIX") + "/health-check")
+	resp, err := http.Get("http://localhost:8000" + os.Getenv("PATH_PREFIX") + "/health-check") //nolint:gosec // this test intentionally trusts the env var
 	suite.Nil(err)
 	suite.Equal(http.StatusOK, resp.StatusCode)
 }
@@ -448,7 +448,7 @@ func doRequest(authHeader, path string, data interface{}) (*http.Response, error
 		return nil, err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, "http://localhost:8000"+os.Getenv("PATH_PREFIX")+path, &buf)
+	req, err := http.NewRequest(http.MethodPost, "http://localhost:8000"+os.Getenv("PATH_PREFIX")+path, &buf) //nolint:gosec // this test intentionally trusts the env var
 	if err != nil {
 		return nil, err
 	}
@@ -456,5 +456,5 @@ func doRequest(authHeader, path string, data interface{}) (*http.Response, error
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", authHeader)
 
-	return http.DefaultClient.Do(req)
+	return http.DefaultClient.Do(req) //nolint:gosec // req has been constructed with trusted data
 }
