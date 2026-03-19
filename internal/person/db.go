@@ -3,11 +3,12 @@ package person
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sort"
 	"strconv"
 	"time"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 	"github.com/ministryofjustice/opg-search-service/internal/index"
 )
 
