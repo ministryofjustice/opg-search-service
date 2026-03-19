@@ -84,6 +84,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./.trivy-cache:/root/.cache
       - ./test-results:/test-results
+      - ./.trivyignore:/.trivyignore
 
   pact-verifier:
     image: pactfoundation/pact-ref-verifier
