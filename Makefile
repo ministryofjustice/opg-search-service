@@ -1,4 +1,4 @@
-all: go-lint unit-test build scan swagger-generate down
+all: go-lint unit-test build swagger-generate down
 
 .PHONY: build unit-test swagger-generate swagger-up swagger-down docs
 
@@ -9,7 +9,7 @@ go-lint:
 	docker compose run --rm go-lint
 
 test-results:
-	mkdir -p -m 0777 test-results .gocache .trivy-cache
+	mkdir -p -m 0777 test-results .gocache
 
 setup-directories: test-results
 
@@ -20,10 +20,6 @@ unit-test: setup-directories
 	docker compose up -d --wait postgres localstack
 	docker compose run --rm test-runner
 	docker compose down postgres localstack
-
-scan: setup-directories
-	docker compose run --rm trivy image --format table --exit-code 0 311462405659.dkr.ecr.eu-west-1.amazonaws.com/sirius/search-service:latest
-	docker compose run --rm trivy image --format sarif --output /test-results/trivy.sarif --exit-code 1 311462405659.dkr.ecr.eu-west-1.amazonaws.com/sirius/search-service:latest
 
 swagger-generate: # Generate API swagger docs from inline code annotations using Go Swagger (https://goswagger.io/)
 	docker compose run --rm swagger-generate

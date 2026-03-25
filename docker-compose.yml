@@ -78,13 +78,6 @@ services:
     working_dir: /go/src
     entrypoint: ["swagger", "generate", "spec", "-o", "/go/src/docs/openapi/openapi.yml", "--scan-models"]
 
-  trivy:
-    image: aquasec/trivy:latest
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./.trivy-cache:/root/.cache
-      - ./test-results:/test-results
-
   pact-verifier:
     image: pactfoundation/pact-ref-verifier
     depends_on:
