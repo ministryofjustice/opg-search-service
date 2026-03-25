@@ -25,5 +25,4 @@ opg-search-service
 test-results
 
 .cache
-.trivy-cache
 .gocache
