@@ -57,7 +57,7 @@ jobs:
 
   build:
     name: Build Image
-    uses: ministryofjustice/opg-github-workflows/.github/workflows/build-multi-architecture-image.yml@775636910c06dbeb813ab4d83b55142d1bb94d28 # v3.17.0
+    uses: ministryofjustice/opg-github-workflows/.github/workflows/build-multi-architecture-image.yml@6e25a7da7d1f1d728915ef6a51f1a269e9751069 # v3.18.0
     with:
       image_name: 311462405659.dkr.ecr.eu-west-1.amazonaws.com/sirius/search-service
       build_options: --file docker/search-service/Dockerfile
