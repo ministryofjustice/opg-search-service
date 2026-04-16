@@ -15,6 +15,7 @@
     "postUpdateOptions": [
         "gomodTidy"
     ],
+    "minimumReleaseAge": "7 days",
     "packageRules": [
         {
             "description": [
@@ -41,7 +42,6 @@
                 "patch"
             ],
             "prPriority": 1,
-            "minimumReleaseAge": "3 days",
             "matchPackageNames": [
                 "*"
             ]
@@ -55,7 +55,6 @@
                 "patch"
             ],
             "prPriority": 2,
-            "minimumReleaseAge": "3 days",
             "matchPackageNames": [
                 "*"
             ],
@@ -68,8 +67,7 @@
         "labels": [
             "Dependencies",
             "Renovate"
-        ],
-        "minimumReleaseAge": "3 days"
+        ]
     },
     "vulnerabilityAlerts": {
         "groupName": "Vulnerability Patches",
