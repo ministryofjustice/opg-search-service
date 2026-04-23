@@ -11,7 +11,7 @@ require (
 	github.com/aws/aws-secretsmanager-caching-go/v2 v2.2.0
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/gorilla/mux v1.8.1
-	github.com/jackc/pgx/v5 v5.9.1
+	github.com/jackc/pgx/v5 v5.9.2
 	github.com/opensearch-project/opensearch-go/v4 v4.6.0
 	github.com/sirupsen/logrus v1.9.4
 	github.com/stretchr/testify v1.11.1
