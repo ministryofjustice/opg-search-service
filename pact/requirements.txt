@@ -23,7 +23,7 @@ markupsafe==3.0.3
     #   werkzeug
 pyjwt==2.13.0
     # via -r requirements.in
-requests==2.34.2
+requests==2.33.0
     # via -r requirements.in
 urllib3==2.7.0
     # via requests
