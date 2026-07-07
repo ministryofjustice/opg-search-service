@@ -6,6 +6,8 @@ services:
       dockerfile: docker/search-service/Dockerfile
       context: .
     ports: ["8000:8000"]
+    privileged: false
+    user: app
     depends_on:
       localstack:
         condition: service_healthy
