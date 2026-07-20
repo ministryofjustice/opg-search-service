@@ -135,6 +135,10 @@ func withDefaults(req *Request, body map[string]interface{}) map[string]interfac
 	}
 	body["from"] = req.From
 	body["post_filter"] = map[string]interface{}{"bool": map[string]interface{}{"should": filters}}
+	body["sort"] = []interface{}{
+		map[string]interface{}{"_score": "desc"},
+		map[string]interface{}{"_id": "asc"},
+	}
 	if req.Size > 0 {
 		body["size"] = req.Size
 	}

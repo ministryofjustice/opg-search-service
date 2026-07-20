@@ -1,8 +1,9 @@
 package search
 
 import (
-	"github.com/ministryofjustice/opg-search-service/internal/digitallpa"
 	"testing"
+
+	"github.com/ministryofjustice/opg-search-service/internal/digitallpa"
 
 	"github.com/stretchr/testify/assert"
 
@@ -34,7 +35,11 @@ func TestPrepareQueryForFirm(t *testing.T) {
 			},
 		},
 		"post_filter": map[string]interface{}{"bool": map[string]interface{}{"should": []interface{}{}}},
-		"from":        123,
+		"sort": []interface{}{
+			map[string]interface{}{"_score": "desc"},
+			map[string]interface{}{"_id": "asc"},
+		},
+		"from": 123,
 	}, body)
 
 	assert.Equal(t, []string{firm.AliasName}, indices)
@@ -69,6 +74,10 @@ func TestPrepareQueryForFirmWithOptions(t *testing.T) {
 			map[string]interface{}{"term": map[string]string{"personType": "deputy"}},
 			map[string]interface{}{"term": map[string]string{"personType": "donor"}},
 		}}},
+		"sort": []interface{}{
+			map[string]interface{}{"_score": "desc"},
+			map[string]interface{}{"_id": "asc"},
+		},
 		"from": 123,
 		"size": 10,
 	}, body)
@@ -108,7 +117,11 @@ func TestPrepareQueryForPerson(t *testing.T) {
 			},
 		},
 		"post_filter": map[string]interface{}{"bool": map[string]interface{}{"should": []interface{}{}}},
-		"from":        123,
+		"sort": []interface{}{
+			map[string]interface{}{"_score": "desc"},
+			map[string]interface{}{"_id": "asc"},
+		},
+		"from": 123,
 	}, body)
 
 	assert.Equal(t, []string{person.AliasName}, indices)
@@ -151,6 +164,10 @@ func TestPrepareQueryForPersonWithOptions(t *testing.T) {
 			map[string]interface{}{"term": map[string]string{"personType": "deputy"}},
 			map[string]interface{}{"term": map[string]string{"personType": "donor"}},
 		}}},
+		"sort": []interface{}{
+			map[string]interface{}{"_score": "desc"},
+			map[string]interface{}{"_id": "asc"},
+		},
 		"from": 123,
 		"size": 10,
 	}, body)
@@ -189,7 +206,11 @@ func TestPrepareQueryForDigitalLpa(t *testing.T) {
 			},
 		},
 		"post_filter": map[string]interface{}{"bool": map[string]interface{}{"should": []interface{}{}}},
-		"from":        123,
+		"sort": []interface{}{
+			map[string]interface{}{"_score": "desc"},
+			map[string]interface{}{"_id": "asc"},
+		},
+		"from": 123,
 	}, body)
 
 	assert.Equal(t, []string{digitallpa.AliasName}, indices)
@@ -242,7 +263,11 @@ func TestPrepareQueryForDeputy(t *testing.T) {
 			},
 		},
 		"post_filter": map[string]interface{}{"bool": map[string]interface{}{"should": []interface{}{}}},
-		"from":        9,
+		"sort": []interface{}{
+			map[string]interface{}{"_score": "desc"},
+			map[string]interface{}{"_id": "asc"},
+		},
+		"from": 9,
 	}, body)
 
 	assert.Equal(t, []string{person.AliasName}, indices)
@@ -272,7 +297,11 @@ func TestPrepareQueryForAll(t *testing.T) {
 			},
 		},
 		"post_filter": map[string]interface{}{"bool": map[string]interface{}{"should": []interface{}{}}},
-		"from":        123,
+		"sort": []interface{}{
+			map[string]interface{}{"_score": "desc"},
+			map[string]interface{}{"_id": "asc"},
+		},
+		"from": 123,
 	}, body)
 
 	assert.Equal(t, []string{firm.AliasName, person.AliasName, digitallpa.AliasName}, indices)
@@ -303,7 +332,11 @@ func TestPrepareQueryForAllEmptyIndices(t *testing.T) {
 			},
 		},
 		"post_filter": map[string]interface{}{"bool": map[string]interface{}{"should": []interface{}{}}},
-		"from":        123,
+		"sort": []interface{}{
+			map[string]interface{}{"_score": "desc"},
+			map[string]interface{}{"_id": "asc"},
+		},
+		"from": 123,
 	}, body)
 
 	assert.Equal(t, []string{firm.AliasName, person.AliasName, digitallpa.AliasName}, indices)
@@ -339,6 +372,10 @@ func TestPrepareQueryForAllWithOptions(t *testing.T) {
 			map[string]interface{}{"term": map[string]string{"personType": "deputy"}},
 			map[string]interface{}{"term": map[string]string{"personType": "donor"}},
 		}}},
+		"sort": []interface{}{
+			map[string]interface{}{"_score": "desc"},
+			map[string]interface{}{"_id": "asc"},
+		},
 		"from": 123,
 		"size": 10,
 	}, body)
