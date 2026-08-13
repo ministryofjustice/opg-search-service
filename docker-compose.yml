@@ -8,6 +8,7 @@ services:
     ports: ["8000:8000"]
     privileged: false
     user: app
+    read_only: true
     depends_on:
       localstack:
         condition: service_healthy
