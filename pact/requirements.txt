@@ -21,7 +21,7 @@ markupsafe==3.0.3
     #   flask
     #   jinja2
     #   werkzeug
-pyjwt==2.14.0
+pyjwt==2.15.0
     # via -r requirements.in
 requests==2.34.2
     # via -r requirements.in
