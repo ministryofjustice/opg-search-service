@@ -25,7 +25,7 @@ pyjwt==2.15.0
     # via -r requirements.in
 requests==2.34.2
     # via -r requirements.in
-urllib3==2.7.0
+urllib3==2.8.0
     # via requests
 werkzeug==3.1.8
     # via flask
