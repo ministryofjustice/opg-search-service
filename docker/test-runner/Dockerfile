@@ -1,3 +1,3 @@
-FROM golang:1.26@sha256:68cb6d68bed024785b69195b89af7ac7a444f27791435f98647edff595aa0479
+FROM golang:1.26.6@sha256:0d1d3a794be25f809dd2cb3160d8c73276c4056a9f8242a138e908ddeee7b6b6
 ENV CGO_ENABLED=0
 RUN go install gotest.tools/gotestsum@latest
