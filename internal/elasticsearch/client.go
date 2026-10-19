@@ -6,16 +6,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/opensearch-project/opensearch-go/v4/signer"
-	"github.com/opensearch-project/opensearch-go/v4/signer/awsv2"
-	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
 	"os"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/opensearch-project/opensearch-go/v5/signer"
+	"github.com/opensearch-project/opensearch-go/v5/signer/awsv2"
+	"github.com/sirupsen/logrus"
 )
 
 const maxPayloadSize = 10485760 // bytes
