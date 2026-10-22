@@ -1,6 +1,6 @@
 module github.com/ministryofjustice/opg-search-service
 
-go 1.26.6
+go 1.26.8
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.47.1
@@ -12,8 +12,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/gorilla/mux v1.8.1
 	github.com/jackc/pgx/v5 v5.11.0
-	github.com/opensearch-project/opensearch-go/v4 v4.8.1
-	github.com/opensearch-project/opensearch-go/v5 v5.0.0
+	github.com/opensearch-project/opensearch-go/v5 v5.0.1
 	github.com/sirupsen/logrus v1.10.2
 	github.com/stretchr/testify v1.12.1
 )
