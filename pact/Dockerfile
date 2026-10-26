@@ -1,5 +1,5 @@
 # pact provider state endpoint
-FROM python:3-alpine3.17@sha256:fc34b07ec97a4f288bc17083d288374a803dd59800399c76b977016c9fe5b8f2
+FROM python:3.13.7-alpine3.22@sha256:9ba6d8cbebf0fb6546ae71f2a1c14f6ffd2fdab83af7fa5669734ef30ad48844
 
 WORKDIR /usr/src/app
 
