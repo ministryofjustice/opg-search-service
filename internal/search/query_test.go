@@ -247,7 +247,7 @@ func TestPrepareQueryForDeputy(t *testing.T) {
 					"simple_query_string": map[string]interface{}{
 						"query": "Niko",
 						"fields": []string{
-							"firstname", "middlenames", "surname", "previousnames", "othernames", "organisationName", "deputyNumber",
+							"firstname", "middlenames", "surname", "previousnames", "othernames", "organisationName", "deputyNumber", "normalizedUid",
 						},
 						"default_operator": "AND",
 					},
