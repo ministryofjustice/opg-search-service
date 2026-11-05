@@ -63,6 +63,8 @@ func PrepareQueryForDeputy(req *Request) ([]string, map[string]interface{}) {
 							"previousnames",
 							"othernames",
 							"organisationName",
+							"deputyNumber",
+							"normalizedUid",
 						},
 						"default_operator": "AND",
 					},
