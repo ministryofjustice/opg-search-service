@@ -11,6 +11,28 @@ import (
 	"github.com/ministryofjustice/opg-search-service/internal/person"
 )
 
+func TestPrepareQueryForSplitPersons(t *testing.T) {
+	for _, tt := range []struct {
+		alias string
+		query func(*Request) ([]string, map[string]interface{})
+	}{
+		{"poas-person", PrepareQueryForPOASPerson},
+		{"supervision-person", PrepareQueryForSupervisionPerson},
+	} {
+		t.Run(tt.alias, func(t *testing.T) {
+			for _, req := range []*Request{
+				{Term: "apples", Indices: []string{"person"}},
+				{Prepared: map[string]interface{}{"query": "prepared"}, Indices: []string{"person"}},
+			} {
+				_, expectedBody := PrepareQueryForPerson(req)
+				indices, body := tt.query(req)
+				assert.Equal(t, []string{tt.alias}, indices)
+				assert.Equal(t, expectedBody, body)
+			}
+		})
+	}
+}
+
 func TestPrepareQueryForFirm(t *testing.T) {
 	req := &Request{
 		Term: "apples",
