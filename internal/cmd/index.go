@@ -15,6 +15,8 @@ import (
 	"github.com/ministryofjustice/opg-search-service/internal/firm"
 	"github.com/ministryofjustice/opg-search-service/internal/index"
 	"github.com/ministryofjustice/opg-search-service/internal/person"
+	poasperson "github.com/ministryofjustice/opg-search-service/internal/poas-person"
+	supervisionperson "github.com/ministryofjustice/opg-search-service/internal/supervision-person"
 	"github.com/sirupsen/logrus"
 )
 
@@ -79,6 +81,8 @@ func (c *IndexCommand) Run(args []string) error {
 	all := flagset.Bool("all", false, "index all records for chosen indices")
 	firmOnly := flagset.Bool("firm", false, "index records to the firm index")
 	personOnly := flagset.Bool("person", false, "index records to the person index")
+	poasPersonOnly := flagset.Bool(poasperson.AliasName, false, "index records to the POAS person index")
+	supervisionPersonOnly := flagset.Bool(supervisionperson.AliasName, false, "index records to the Supervision person index")
 	from := flagset.Int("from", 0, "index an id range starting from (use with -to)")
 	to := flagset.Int("to", 100, "index an id range ending at (use with -from)")
 	batchSize := flagset.Int("batch-size", 10000, "batch size to read from db")
@@ -106,20 +110,23 @@ func (c *IndexCommand) Run(args []string) error {
 	}
 
 	indexers := map[string]*index.Indexer{}
-	noneSet := !*firmOnly && !*personOnly
-
-	if *firmOnly || noneSet {
-		for _, indexName := range c.currentIndexNames {
-			if strings.HasPrefix(indexName, "firm_") {
-				indexers["firm"] = index.New(c.esClient, c.logger, firm.NewDB(conn), indexName)
-				break
-			}
+	noneSet := !*firmOnly && !*personOnly && !*poasPersonOnly && !*supervisionPersonOnly
+	for _, target := range []struct {
+		alias    string
+		selected bool
+		db       index.DB
+	}{
+		{firm.AliasName, *firmOnly || noneSet, firm.NewDB(conn)},
+		{person.AliasName, *personOnly || noneSet, person.NewDB(conn)},
+		{poasperson.AliasName, *poasPersonOnly, poasperson.NewDB(conn)},
+		{supervisionperson.AliasName, *supervisionPersonOnly, supervisionperson.NewDB(conn)},
+	} {
+		if !target.selected {
+			continue
 		}
-	}
-	if *personOnly || noneSet {
 		for _, indexName := range c.currentIndexNames {
-			if strings.HasPrefix(indexName, "person_") {
-				indexers["person"] = index.New(c.esClient, c.logger, person.NewDB(conn), indexName)
+			if strings.HasPrefix(indexName, target.alias+"_") {
+				indexers[target.alias] = index.New(c.esClient, c.logger, target.db, indexName)
 				break
 			}
 		}
