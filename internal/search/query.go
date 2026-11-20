@@ -4,6 +4,8 @@ import (
 	"github.com/ministryofjustice/opg-search-service/internal/digitallpa"
 	"github.com/ministryofjustice/opg-search-service/internal/firm"
 	"github.com/ministryofjustice/opg-search-service/internal/person"
+	poasperson "github.com/ministryofjustice/opg-search-service/internal/poas-person"
+	supervisionperson "github.com/ministryofjustice/opg-search-service/internal/supervision-person"
 )
 
 var digitalLpaIndices = []string{digitallpa.AliasName}
@@ -25,8 +27,20 @@ func PrepareQueryForFirm(req *Request) ([]string, map[string]interface{}) {
 }
 
 func PrepareQueryForPerson(req *Request) ([]string, map[string]interface{}) {
+	return prepareQueryForPerson(req, personIndices)
+}
+
+func PrepareQueryForPOASPerson(req *Request) ([]string, map[string]interface{}) {
+	return prepareQueryForPerson(req, []string{poasperson.AliasName})
+}
+
+func PrepareQueryForSupervisionPerson(req *Request) ([]string, map[string]interface{}) {
+	return prepareQueryForPerson(req, []string{supervisionperson.AliasName})
+}
+
+func prepareQueryForPerson(req *Request, indices []string) ([]string, map[string]interface{}) {
 	if req.Prepared != nil {
-		return personIndices, req.Prepared
+		return indices, req.Prepared
 	}
 
 	body := map[string]interface{}{
@@ -46,7 +60,7 @@ func PrepareQueryForPerson(req *Request) ([]string, map[string]interface{}) {
 		},
 	}
 
-	return personIndices, withDefaults(req, body)
+	return indices, withDefaults(req, body)
 }
 
 func PrepareQueryForDeputy(req *Request) ([]string, map[string]interface{}) {
