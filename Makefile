@@ -1,4 +1,4 @@
-all: go-lint unit-test build swagger-generate down
+all: go-lint gosec unit-test build swagger-generate down
 
 .PHONY: build unit-test swagger-generate swagger-up swagger-down docs
 
@@ -7,6 +7,9 @@ up:
 
 go-lint:
 	docker compose run --rm go-lint
+
+gosec: setup-directories
+	docker compose run --rm gosec
 
 test-results:
 	mkdir -p -m 0777 test-results .gocache
