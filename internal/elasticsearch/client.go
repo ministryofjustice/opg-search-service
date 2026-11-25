@@ -348,6 +348,13 @@ func (c *Client) IndexExists(ctx context.Context, name string) (bool, error) {
 func (c *Client) createIndex(ctx context.Context, name string, config []byte) error {
 	c.logger.Printf("Creating index '%s'", name)
 
+	if c.service == "aoss" {
+		var err error
+		if config, err = serverlessIndexConfig(config); err != nil {
+			return err
+		}
+	}
+
 	resp, err := c.doRequest(ctx, http.MethodPut, name, bytes.NewReader(config), "application/json")
 	if err != nil {
 		return err
@@ -360,6 +367,21 @@ func (c *Client) createIndex(ctx context.Context, name string, config []byte) er
 	}
 
 	return nil
+}
+
+func serverlessIndexConfig(config []byte) ([]byte, error) {
+	var cfg map[string]interface{}
+	if err := json.Unmarshal(config, &cfg); err != nil {
+		return nil, err
+	}
+
+	if settings, ok := cfg["settings"].(map[string]interface{}); ok {
+		delete(settings, "number_of_shards")
+		delete(settings, "number_of_replicas")
+		settings["refresh_interval"] = "5s"
+	}
+
+	return json.Marshal(cfg)
 }
 
 func (c *Client) DeleteIndex(ctx context.Context, name string) error {
