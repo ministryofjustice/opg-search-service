@@ -75,26 +75,25 @@ type DeleteResult struct {
 }
 
 func NewClient(httpClient HTTPClient, logger *logrus.Logger, cfg *aws.Config) (*Client, error) {
+	service := os.Getenv("AWS_SEARCH_PROVIDER")
+	if service == "" {
+		service = "es"
+	}
+
 	// Create an AWS request Signer and load AWS configuration using default config folder or env vars.
-	mySigner, err := awsv2.NewSignerWithService(*cfg, "es")
+	mySigner, err := awsv2.NewSignerWithService(*cfg, service)
 	if err != nil {
 		return nil, err
 	}
 
-	client := &Client{
+	return &Client{
 		httpClient: httpClient,
 		logger:     logger,
 		domain:     os.Getenv("AWS_ELASTICSEARCH_ENDPOINT"),
 		region:     cfg.Region,
-		service:    os.Getenv("AWS_SEARCH_PROVIDER"),
+		service:    service,
 		signer:     mySigner,
-	}
-
-	if client.service == "" {
-		client.service = "es"
-	}
-
-	return client, nil
+	}, nil
 }
 
 func (c *Client) doRequest(ctx context.Context, method, endpoint string, body io.ReadSeeker, contentType string) (*http.Response, error) {
