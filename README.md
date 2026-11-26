@@ -79,6 +79,20 @@ This project uses the standard Golang styleguide, and can be autoformatting by r
 
 ## Changing the index definition
 
+### Separate person indices
+
+Use `POST /poas-person` and `POST /poas-person/search` for POAS, and
+`POST /supervision-person` and `POST /supervision-person/search` for Supervision.
+Send records to the endpoint for their domain. Legacy `/persons` writes and
+deletes still affect only the shared index.
+
+To backfill the new indices from Sirius, run `index -all -poas-person` for
+`lpa_*` and `epa_*` records, and `index -all -supervision-person` for `actor_*`
+records. The `-person` flag still targets only the legacy index. Without an
+index selection flag, the command still targets the legacy person and firm indices.
+
+### Index changes and aliases
+
 The index config is defined in <person/person.go>. When the definition is
 changed:
 - the service will create a new index

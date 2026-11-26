@@ -22,6 +22,7 @@ import (
 	"github.com/ministryofjustice/opg-search-service/internal/person"
 	"github.com/ministryofjustice/opg-search-service/internal/search"
 	"github.com/sirupsen/logrus/hooks/test"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -160,7 +161,7 @@ func (suite *EndToEndTestSuite) SetupSuite() {
 
 	// delete all indices
 	req, _ := http.NewRequest(http.MethodDelete, os.Getenv("AWS_ELASTICSEARCH_ENDPOINT")+"/_all", nil) //nolint:gosec // this test intentionally trusts the env var
-	resp, err := httpClient.Do(req) //nolint:gosec // req has been constructed with trusted data
+	resp, err := httpClient.Do(req)                                                                    //nolint:gosec // req has been constructed with trusted data
 	if err != nil {
 		panic(err)
 	}
@@ -207,6 +208,49 @@ func (suite *EndToEndTestSuite) TestHealthCheck() {
 	resp, err := http.Get("http://localhost:8000" + os.Getenv("PATH_PREFIX") + "/health-check") //nolint:gosec // this test intentionally trusts the env var
 	suite.Nil(err)
 	suite.Equal(http.StatusOK, resp.StatusCode)
+}
+
+func (suite *EndToEndTestSuite) TestIndexAndSearchSplitPersons() {
+	targets := []struct {
+		alias string
+		role  string
+	}{
+		{"poas-person", "Donor"},
+		{"supervision-person", "Deputy"},
+	}
+	const term = "SplitPersonTest"
+
+	for _, target := range targets {
+		resp, err := doRequest(suite.authHeader, "/"+target.alias, map[string]interface{}{
+			"persons": []map[string]interface{}{{"id": 123, "surname": term, "personType": target.role}},
+		})
+		suite.Require().NoError(err)
+		body, err := io.ReadAll(resp.Body)
+		resp.Body.Close() //nolint:errcheck,gosec // no need to check error when closing body
+		suite.Require().NoError(err)
+		suite.Require().Equal(http.StatusAccepted, resp.StatusCode)
+		suite.JSONEq(`{"successful":1,"failed":0}`, string(body))
+	}
+
+	for _, target := range targets {
+		suite.Run(target.alias, func() {
+			suite.EventuallyWithT(func(collect *assert.CollectT) {
+				resp, err := doRequest(suite.authHeader, "/"+target.alias+"/search", map[string]string{"term": term})
+				if !assert.NoError(collect, err) {
+					return
+				}
+				defer resp.Body.Close() //nolint:errcheck // no need to check error when closing body
+
+				var result search.Response
+				if assert.Equal(collect, http.StatusOK, resp.StatusCode) &&
+					assert.NoError(collect, json.NewDecoder(resp.Body).Decode(&result)) &&
+					assert.Len(collect, result.Results, 1) {
+					assert.Contains(collect, string(result.Results[0]), `"_index":"`+target.alias+`"`)
+					assert.Contains(collect, string(result.Results[0]), `"personType":"`+target.role+`"`)
+				}
+			}, 5*time.Second, 100*time.Millisecond)
+		})
+	}
 }
 
 func (suite *EndToEndTestSuite) TestIndexAndSearchPerson() {

@@ -2,15 +2,16 @@ package main
 
 import (
 	"context"
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
-	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 
 	"github.com/gorilla/mux"
 	"github.com/ministryofjustice/opg-search-service/internal/cache"
@@ -21,8 +22,10 @@ import (
 	"github.com/ministryofjustice/opg-search-service/internal/index"
 	"github.com/ministryofjustice/opg-search-service/internal/middleware"
 	"github.com/ministryofjustice/opg-search-service/internal/person"
+	poasperson "github.com/ministryofjustice/opg-search-service/internal/poas-person"
 	"github.com/ministryofjustice/opg-search-service/internal/remove"
 	"github.com/ministryofjustice/opg-search-service/internal/search"
+	supervisionperson "github.com/ministryofjustice/opg-search-service/internal/supervision-person"
 	"github.com/sirupsen/logrus"
 )
 
@@ -59,11 +62,15 @@ func main() {
 
 	// create indices for entities
 	personIndexConfig := cmd.NewIndexConfig(person.IndexConfig, person.AliasName, l)
+	poasPersonIndexConfig := cmd.NewIndexConfig(poasperson.IndexConfig, poasperson.AliasName, l)
+	supervisionPersonIndexConfig := cmd.NewIndexConfig(supervisionperson.IndexConfig, supervisionperson.AliasName, l)
 	firmIndexConfig := cmd.NewIndexConfig(firm.IndexConfig, firm.AliasName, l)
 	digitallpaIndexConfig := cmd.NewIndexConfig(digitallpa.IndexConfig, digitallpa.AliasName, l)
 
 	currentIndices := []cmd.IndexConfig{
 		personIndexConfig,
+		poasPersonIndexConfig,
+		supervisionPersonIndexConfig,
 		firmIndexConfig,
 		digitallpaIndexConfig,
 	}
@@ -89,6 +96,8 @@ func main() {
 	)
 
 	personIndices := createIndexAndAlias(esClient, personIndexConfig, l)
+	poasPersonIndices := createIndexAndAlias(esClient, poasPersonIndexConfig, l)
+	supervisionPersonIndices := createIndexAndAlias(esClient, supervisionPersonIndexConfig, l)
 	firmIndices := createIndexAndAlias(esClient, firmIndexConfig, l)
 	digitalLpaIndices := createIndexAndAlias(esClient, digitallpaIndexConfig, l)
 
@@ -347,6 +356,425 @@ func main() {
 	//     description: Unexpected error occurred
 	postRouter.Handle("/persons", index.NewHandler(l, esClient, personIndices, person.ParseIndexRequest))
 	postRouter.Handle("/persons/search", search.NewHandler(l, esClient, search.PrepareQueryForPerson))
+
+	// swagger:operation POST /poas-person post-poas-person
+	// Index one or many POAS Persons
+	// ---
+	// consumes:
+	// - application/json
+	// produces:
+	// - application/json
+	// parameters:
+	// - in: "body"
+	//   name: "body"
+	//   description: ""
+	//   required: true
+	//   schema:
+	//     type: object
+	//     properties:
+	//       persons:
+	//         type: array
+	//         items:
+	//           type: object
+	//           properties:
+	//             id:
+	//               type: integer
+	//               format: int64
+	//             uId:
+	//               type: string
+	//             normalizedUid:
+	//               type: integer
+	//               format: int64
+	//             sageId:
+	//               type: string
+	//             caseRecNumber:
+	//               type: string
+	//             workPhoneNumber:
+	//               type: object
+	//               properties:
+	//                 id:
+	//                   type: integer
+	//                   format: int32
+	//                 phoneNumber:
+	//                   type: string
+	//                 type:
+	//                   type: string
+	//                 default:
+	//                   type: boolean
+	//                 className:
+	//                   type: string
+	//             homePhoneNumber:
+	//               type: object
+	//               properties:
+	//                 id:
+	//                   type: integer
+	//                   format: int32
+	//                 phoneNumber:
+	//                   type: string
+	//                 type:
+	//                   type: string
+	//                 default:
+	//                   type: boolean
+	//                 className:
+	//                   type: string
+	//             mobilePhoneNumber:
+	//               type: object
+	//               properties:
+	//                 id:
+	//                   type: integer
+	//                   format: int32
+	//                 phoneNumber:
+	//                   type: string
+	//                 type:
+	//                   type: string
+	//                 default:
+	//                   type: boolean
+	//                 className:
+	//                   type: string
+	//             email:
+	//               type: string
+	//             dob:
+	//               type: string
+	//             firstname:
+	//               type: string
+	//             middlenames:
+	//               type: string
+	//             surname:
+	//               type: string
+	//             companyName:
+	//               type: string
+	//             addressLine1:
+	//               type: string
+	//             addressLine2:
+	//               type: string
+	//             addressLine3:
+	//               type: string
+	//             town:
+	//               type: string
+	//             county:
+	//               type: string
+	//             postcode:
+	//               type: string
+	//             country:
+	//               type: string
+	//             isAirmailRequired:
+	//               type: boolean
+	//             addresses:
+	//               type: array
+	//               items:
+	//                 type: object
+	//                 properties:
+	//                   addressLines:
+	//                     type: array
+	//                     items:
+	//                       type: string
+	//                   postcode:
+	//                     type: string
+	//                   className:
+	//                     type: string
+	//             phoneNumber:
+	//               type: string
+	//             phoneNumbers:
+	//               type: array
+	//               items:
+	//                 type: object
+	//                 properties:
+	//                   id:
+	//                     type: integer
+	//                     format: int32
+	//                   phoneNumber:
+	//                     type: string
+	//                   type:
+	//                     type: string
+	//                   default:
+	//                     type: boolean
+	//                   className:
+	//                     type: string
+	//             personType:
+	//               type: string
+	//             cases:
+	//               type: array
+	//               items:
+	//                 type: object
+	//                 properties:
+	//                   uId:
+	//                     type: string
+	//                   normalizedUid:
+	//                     type: integer
+	//                     format: int64
+	//                   caseRecNumber:
+	//                     type: string
+	//                   onlineLpaId:
+	//                     type: string
+	//                   batchId:
+	//                     type: string
+	//                   className:
+	//                     type: string
+	//                   caseType:
+	//                     type: string
+	//                   caseSubtype:
+	//                     type: string
+	//             className:
+	//               type: string
+	// responses:
+	//   '202':
+	//     description: The request has been handled and individual index responses are included in the response body
+	//     schema:
+	//       type: object
+	//       properties:
+	//         successful:
+	//           type: integer
+	//           format: int64
+	//         failed:
+	//           type: integer
+	//           format: int64
+	//         errors:
+	//           type: array
+	//           items:
+	//             type: string
+	//         results:
+	//           type: array
+	//           items:
+	//             type: object
+	//             properties:
+	//               id:
+	//                 type: integer
+	//                 format: int64
+	//               statusCode:
+	//                 type: integer
+	//               message:
+	//                 type: string
+	//   '400':
+	//     description: Request failed validation
+	//     schema:
+	//       type: object
+	//       properties:
+	//         message:
+	//           type: string
+	//         errors:
+	//           type: array
+	//           items:
+	//             type: object
+	//             properties:
+	//               name:
+	//                 type: string
+	//               description:
+	//                 type: string
+	//   '404':
+	//     description: Not found
+	//   '500':
+	//     description: Unexpected error occurred
+	postRouter.Handle("/poas-person", index.NewHandler(l, esClient, poasPersonIndices, poasperson.ParseIndexRequest))
+	postRouter.Handle("/poas-person/search", search.NewHandler(l, esClient, search.PrepareQueryForPOASPerson))
+
+	// swagger:operation POST /supervision-person post-supervision-person
+	// Index one or many Supervision Persons
+	// ---
+	// consumes:
+	// - application/json
+	// produces:
+	// - application/json
+	// parameters:
+	// - in: "body"
+	//   name: "body"
+	//   description: ""
+	//   required: true
+	//   schema:
+	//     type: object
+	//     properties:
+	//       persons:
+	//         type: array
+	//         items:
+	//           type: object
+	//           properties:
+	//             id:
+	//               type: integer
+	//               format: int64
+	//             uId:
+	//               type: string
+	//             normalizedUid:
+	//               type: integer
+	//               format: int64
+	//             caseRecNumber:
+	//               type: string
+	//             deputyNumber:
+	//               type: integer
+	//               format: int64
+	//             workPhoneNumber:
+	//               type: object
+	//               properties:
+	//                 id:
+	//                   type: integer
+	//                   format: int32
+	//                 phoneNumber:
+	//                   type: string
+	//                 type:
+	//                   type: string
+	//                 default:
+	//                   type: boolean
+	//                 className:
+	//                   type: string
+	//             homePhoneNumber:
+	//               type: object
+	//               properties:
+	//                 id:
+	//                   type: integer
+	//                   format: int32
+	//                 phoneNumber:
+	//                   type: string
+	//                 type:
+	//                   type: string
+	//                 default:
+	//                   type: boolean
+	//                 className:
+	//                   type: string
+	//             mobilePhoneNumber:
+	//               type: object
+	//               properties:
+	//                 id:
+	//                   type: integer
+	//                   format: int32
+	//                 phoneNumber:
+	//                   type: string
+	//                 type:
+	//                   type: string
+	//                 default:
+	//                   type: boolean
+	//                 className:
+	//                   type: string
+	//             email:
+	//               type: string
+	//             dob:
+	//               type: string
+	//             firstname:
+	//               type: string
+	//             middlenames:
+	//               type: string
+	//             surname:
+	//               type: string
+	//             companyName:
+	//               type: string
+	//             addressLine1:
+	//               type: string
+	//             addressLine2:
+	//               type: string
+	//             addressLine3:
+	//               type: string
+	//             town:
+	//               type: string
+	//             county:
+	//               type: string
+	//             postcode:
+	//               type: string
+	//             country:
+	//               type: string
+	//             isAirmailRequired:
+	//               type: boolean
+	//             addresses:
+	//               type: array
+	//               items:
+	//                 type: object
+	//                 properties:
+	//                   addressLines:
+	//                     type: array
+	//                     items:
+	//                       type: string
+	//                   postcode:
+	//                     type: string
+	//                   className:
+	//                     type: string
+	//             phoneNumber:
+	//               type: string
+	//             phoneNumbers:
+	//               type: array
+	//               items:
+	//                 type: object
+	//                 properties:
+	//                   id:
+	//                     type: integer
+	//                     format: int32
+	//                   phoneNumber:
+	//                     type: string
+	//                   type:
+	//                     type: string
+	//                   default:
+	//                     type: boolean
+	//                   className:
+	//                     type: string
+	//             personType:
+	//               type: string
+	//             deputyType:
+	//               type: string
+	//             cases:
+	//               type: array
+	//               items:
+	//                 type: object
+	//                 properties:
+	//                   uId:
+	//                     type: string
+	//                   normalizedUid:
+	//                     type: integer
+	//                     format: int64
+	//                   caseRecNumber:
+	//                     type: string
+	//                   className:
+	//                     type: string
+	//                   caseType:
+	//                     type: string
+	//                   caseSubtype:
+	//                     type: string
+	//             className:
+	//               type: string
+	// responses:
+	//   '202':
+	//     description: The request has been handled and individual index responses are included in the response body
+	//     schema:
+	//       type: object
+	//       properties:
+	//         successful:
+	//           type: integer
+	//           format: int64
+	//         failed:
+	//           type: integer
+	//           format: int64
+	//         errors:
+	//           type: array
+	//           items:
+	//             type: string
+	//         results:
+	//           type: array
+	//           items:
+	//             type: object
+	//             properties:
+	//               id:
+	//                 type: integer
+	//                 format: int64
+	//               statusCode:
+	//                 type: integer
+	//               message:
+	//                 type: string
+	//   '400':
+	//     description: Request failed validation
+	//     schema:
+	//       type: object
+	//       properties:
+	//         message:
+	//           type: string
+	//         errors:
+	//           type: array
+	//           items:
+	//             type: object
+	//             properties:
+	//               name:
+	//                 type: string
+	//               description:
+	//                 type: string
+	//   '404':
+	//     description: Not found
+	//   '500':
+	//     description: Unexpected error occurred
+	postRouter.Handle("/supervision-person", index.NewHandler(l, esClient, supervisionPersonIndices, supervisionperson.ParseIndexRequest))
+	postRouter.Handle("/supervision-person/search", search.NewHandler(l, esClient, search.PrepareQueryForSupervisionPerson))
 
 	postRouter.Handle("/deputies/search", search.NewHandler(l, esClient, search.PrepareQueryForDeputy))
 
